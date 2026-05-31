@@ -44,8 +44,8 @@ Các chức năng này có giá trị, nhưng làm sớm sẽ đẩy rủi ro sa
 
 | Thành phần | Lựa chọn | Lý do |
 | --- | --- | --- |
-| Backend | Python + FastAPI | Dễ tích hợp LLM, sinh OpenAPI/Swagger tự động, phù hợp viết test |
-| Validation | Pydantic | Khai báo `SearchPlan` và chặn query LLM không hợp lệ |
+| Backend | Java 21 + Spring Boot 3 | Phù hợp stack đã chọn, có hệ sinh thái REST API, validation, test và OpenAPI tốt |
+| Validation | Bean Validation + Jackson | Khai báo `SearchPlan`, parse JSON và chặn query LLM không hợp lệ |
 | App database | PostgreSQL | Lưu query history và audit log, tách khỏi kho event |
 | Search engine | Elasticsearch `9.4.1` Basic | Theo quyết định tại [search-engine-decision.md](../docs/search-engine-decision.md) |
 | Frontend | React + TypeScript + Vite | Làm giao diện dashboard nhanh, dễ dùng chart library |
@@ -66,10 +66,10 @@ Browser
 Domain HTTPS
    |
 Caddy :80/:443
-   |-- /api/*  -> FastAPI backend
+   |-- /api/*  -> Spring Boot backend
    |-- /*      -> React static frontend
    |
-FastAPI backend
+Spring Boot backend
    |-- LLM API: natural language -> SearchPlan JSON
    |-- Validator + compiler: SearchPlan -> Elasticsearch Query DSL
    |-- Elasticsearch: event search + aggregation
@@ -123,7 +123,7 @@ Trên VPS, cần đặt `vm.max_map_count=1048576` theo [tài liệu Elastic](ht
 ### 5.4. Phi chức năng
 
 - Docker Compose local và production.
-- Swagger tại `/api/docs`.
+- Swagger UI tại `/swagger-ui.html`, OpenAPI JSON tại `/v3/api-docs`.
 - Audit log ứng dụng: user demo, timestamp, câu hỏi gốc, DSL, mode, số kết quả, latency và trạng thái thành công/thất bại.
 - Unit test và integration test, coverage tối thiểu 50%.
 - Health endpoint:
@@ -172,7 +172,7 @@ Việc cần làm:
   - `scripts/`
   - `tests/`
   - `.github/workflows/`
-- Khởi tạo FastAPI, endpoint `/api/v1/health/live`, cấu hình lint và test.
+- Khởi tạo Java 21 + Spring Boot 3, endpoint `/api/v1/health/live`, cấu hình Maven hoặc Gradle, lint và test.
 - Khởi tạo React TypeScript, tạo trang placeholder và gọi health API.
 - Tạo Dockerfile cho backend và frontend.
 - Tạo `docker-compose.yml` cho local gồm backend, frontend, Elasticsearch và PostgreSQL.
@@ -223,7 +223,7 @@ Việc cần làm:
 
 Việc cần làm:
 
-- Định nghĩa Pydantic model `SearchPlan`.
+- Định nghĩa Java record hoặc class `SearchPlan` với Bean Validation.
 - Hỗ trợ filter thời gian, severity, event type, user, host, IP và country code.
 - Compile `SearchPlan` thành Query DSL:
   - `bool.filter`
@@ -250,7 +250,7 @@ Việc cần làm:
 - Chọn một hosted LLM API để giảm tải VPS. Không host model local trong sprint này.
 - Viết system prompt mô tả schema, field allowlist và JSON schema của `SearchPlan`.
 - Tạo LLM client có timeout, retry giới hạn và mock implementation.
-- Parse JSON bằng model Pydantic; nếu sai schema, trả lỗi thân thiện hoặc repair tối đa một lần.
+- Parse JSON bằng Jackson và validate bằng Bean Validation; nếu sai schema, trả lỗi thân thiện hoặc repair tối đa một lần.
 - Tạo endpoint `POST /api/v1/search`.
 - Log câu hỏi gốc, `SearchPlan`, DSL và latency.
 - Kiểm thử tối thiểu 10 câu hỏi Việt/Anh:
