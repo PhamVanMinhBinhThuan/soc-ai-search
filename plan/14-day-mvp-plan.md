@@ -50,7 +50,7 @@ Các chức năng này có giá trị, nhưng làm sớm sẽ đẩy rủi ro sa
 | Search engine | Elasticsearch `9.4.1` Basic | Theo quyết định tại [search-engine-decision.md](../docs/search-engine-decision.md) |
 | Frontend | React + TypeScript + Vite | Làm giao diện dashboard nhanh, dễ dùng chart library |
 | Chart | Recharts hoặc Apache ECharts | Hỗ trợ bar, pie và time-series line chart |
-| Reverse proxy và TLS | Caddy | Reverse proxy đơn giản, tự động cấp và gia hạn HTTPS |
+| Reverse proxy và TLS | Nginx + Certbot | Reverse proxy trên host EC2, cấp và gia hạn HTTPS với Let's Encrypt |
 | Đóng gói | Docker Compose | Đúng yêu cầu MVP và phù hợp một VPS |
 | CI/CD | GitHub Actions + GitHub Container Registry (`ghcr.io`) | Build, lưu image và deploy từ GitHub |
 | VPS | AWS EC2 Ubuntu, khuyến nghị `t3.large` 8 GiB RAM | Đủ chỗ chạy Elasticsearch và các container MVP trên cùng máy |
@@ -65,7 +65,7 @@ Browser
    |
 Domain HTTPS
    |
-Caddy :80/:443
+Nginx :80/:443
    |-- /api/*  -> Spring Boot backend
    |-- /*      -> React static frontend
    |
@@ -80,7 +80,7 @@ Elasticsearch 9.4.1 Basic
 
 Chỉ publish `80`, `443` và `22` ra internet:
 
-- `80` và `443`: cho Caddy.
+- `80` và `443`: cho Nginx.
 - `22`: SSH, giới hạn theo IP cá nhân nếu có thể.
 - Không publish Elasticsearch `9200`, PostgreSQL `5432` hoặc backend port trực tiếp ra internet.
 
@@ -350,10 +350,10 @@ Việc cần làm:
 - Thiết lập vĩnh viễn `vm.max_map_count=1048576`.
 - Tạo `docker-compose.prod.yml`:
   - Elasticsearch, PostgreSQL dùng named volume;
-  - chỉ Caddy publish port public;
+  - frontend và backend chỉ bind loopback để Nginx trên host gọi;
   - có healthcheck;
   - container app có restart policy.
-- Tạo Caddyfile reverse proxy frontend và `/api`.
+- Cài Nginx trên host EC2 và tạo server block reverse proxy frontend cùng `/api`.
 - Deploy thủ công lên EC2 và seed dataset.
 
 **Điều kiện hoàn thành:**
@@ -369,7 +369,7 @@ Việc cần làm:
 Việc cần làm:
 
 - Trỏ DNS record `A` của domain hoặc subdomain về Elastic IP.
-- Chạy Caddy để lấy HTTPS tự động.
+- Cài Certbot với Nginx plugin để lấy SSL certificate từ Let's Encrypt.
 - Bảo vệ website demo bằng password tại reverse proxy hoặc cơ chế demo tương đương.
 - Kiểm tra HTTPS, redirect HTTP -> HTTPS và API qua domain.
 - Chạy seed data trên VPS.
@@ -474,7 +474,7 @@ Việc cần làm:
 - Chạy toàn bộ test và smoke test.
 - Kiểm tra không lộ secret bằng `git grep`, lịch sử commit và GitHub Actions log.
 - Kiểm tra container restart, volume, timeout và error message.
-- Kiểm tra Caddy HTTPS và port exposure.
+- Kiểm tra Nginx HTTPS và port exposure.
 - Hoàn thiện README:
   - mục tiêu;
   - kiến trúc;
@@ -580,7 +580,7 @@ Vector search và hybrid search để sprint sau. Đây là hướng mở rộng
 - [ ] `vm.max_map_count=1048576`.
 - [ ] Docker và Compose plugin đã cài.
 - [ ] DNS record `A` trỏ domain về Elastic IP.
-- [ ] Caddy cấp HTTPS thành công.
+- [ ] Certbot cấp SSL certificate cho Nginx thành công.
 - [ ] Elasticsearch `9200` không public.
 - [ ] PostgreSQL `5432` không public.
 - [ ] Runtime secrets chỉ nằm trong `.env.prod` trên VPS.
@@ -610,5 +610,5 @@ AWS khuyến nghị dùng Elastic IP để địa chỉ EC2 không đổi khi tr
 - [GitHub Container Registry](https://docs.github.com/packages/working-with-a-github-packages-registry/working-with-the-container-registry)
 - [AWS Route 53 domain registration](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/registrar.html)
 - [AWS Route 53 routing domain to EC2](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/routing-to-ec2-instance.html)
-- [Caddy automatic HTTPS](https://caddyserver.com/docs/automatic-https)
-- [Caddy reverse proxy](https://caddyserver.com/docs/caddyfile/directives/reverse_proxy)
+- [NGINX reverse proxy](https://docs.nginx.com/nginx/admin-guide/web-server/reverse-proxy/)
+- [Certbot instructions for Nginx](https://certbot.eff.org/instructions?ws=nginx&os=snap)

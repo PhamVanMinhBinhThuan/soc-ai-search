@@ -17,6 +17,7 @@ Mục tiêu của giai đoạn MVP là xây dựng một hệ thống có thể:
 
 | Thành phần | Công nghệ | Trạng thái | Vai trò |
 | --- | --- | --- | --- |
+| Architecture | Modular Monolith | Đã chọn | Một Spring Boot application, phân module nội bộ rõ ràng và deploy như một đơn vị |
 | Frontend | React + TypeScript | Đã chọn | Search box, bảng kết quả, event detail, chart, query history |
 | Backend | Java 21 + Spring Boot 3 | Đã chọn | REST API, business logic, validation, audit log, tích hợp Elasticsearch và LLM |
 | Search Engine | Elasticsearch Basic self-managed | Đã chọn | Full-text search, filter, aggregation và lưu event |
@@ -25,6 +26,7 @@ Mục tiêu của giai đoạn MVP là xây dựng một hệ thống có thể:
 | Deployment | Docker Compose | Đã chọn | Chạy local và deploy trên một VPS |
 | CI/CD | GitHub Actions | Đã chọn | Test, build Docker image và deploy |
 | Hosting | AWS EC2 VPS + domain + HTTPS | Đã chọn | Host bản demo cho mentor truy cập |
+| Reverse Proxy | Nginx + Certbot | Đã chọn | Reverse proxy, SSL certificate và HTTPS |
 | AI | Cloud LLM API hoặc Local LLM qua API | Chưa chốt | Chuyển natural language thành `SearchPlan`, hỗ trợ summary |
 | Auth | Spring Security JWT hoặc Keycloak/OIDC | Chưa chốt | Xác thực người dùng và ghi nhận danh tính trong audit log |
 
@@ -285,7 +287,8 @@ Tài liệu tham khảo: [Keycloak documentation](https://www.keycloak.org/docum
 - Docker Compose.
 - AWS EC2 VPS.
 - Domain trỏ bằng DNS record `A`.
-- Caddy hoặc Nginx làm reverse proxy.
+- Nginx làm reverse proxy.
+- Certbot và Let's Encrypt để cấp, gia hạn SSL certificate.
 - HTTPS.
 - GitHub Actions CI/CD.
 - GitHub Container Registry (`ghcr.io`) hoặc Docker Hub.
@@ -342,6 +345,7 @@ Secrets như database password, Elasticsearch password, JWT secret và LLM API k
 
 | Hạng mục | Quyết định MVP |
 | --- | --- |
+| Architecture | Modular Monolith |
 | Frontend | React + TypeScript |
 | Backend | Java 21 + Spring Boot 3 |
 | Search | Elasticsearch Basic self-managed |
@@ -349,7 +353,7 @@ Secrets như database password, Elasticsearch password, JWT secret và LLM API k
 | API docs | Springdoc OpenAPI + Swagger UI |
 | AI | Interface `LlmClient`; Cloud API với dữ liệu synthetic hoặc đã ẩn danh; sẵn đường chuyển Local LLM |
 | Auth | Spring Security JWT tối giản; nâng cấp Keycloak/OIDC sau MVP nếu cần |
-| Deploy | Docker Compose + GitHub Actions + AWS EC2 + domain HTTPS |
+| Deploy | Docker Compose + GitHub Actions + AWS EC2 + Nginx + domain HTTPS |
 
 ## 13. Việc cần xác nhận với mentor
 
