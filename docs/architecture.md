@@ -185,13 +185,13 @@ Schema tối thiểu:
 
 PostgreSQL lưu application data, không lưu toàn bộ event.
 
-Các bảng MVP dự kiến:
+MVP chỉ cần một bảng:
 
 | Table | Purpose |
 | --- | --- |
-| `query_history` | Lưu truy vấn gần đây để hiển thị trên UI |
-| `audit_logs` | Lưu dấu vết truy vấn phục vụ minh bạch và kiểm tra |
-| `app_users` | Tùy chọn nếu MVP dùng demo user nội bộ |
+| `search_query_logs` | Lưu recent history, application audit log và dữ liệu cần để export lại theo `query_id` |
+
+Nếu sau MVP cần auth đầy đủ hoặc audit bất biến nghiêm ngặt hơn, có thể bổ sung `app_users` và tách bảng history khỏi audit log.
 
 Audit log tối thiểu:
 

@@ -132,8 +132,7 @@ Schema event tối thiểu:
 
 ### Dữ liệu lưu trong PostgreSQL
 
-- Query history.
-- Application audit log.
+- Bảng `search_query_logs` cho query history, application audit log và export lại theo `query_id`.
 - Thông tin user nếu MVP dùng auth nội bộ.
 - Metadata của saved query nếu bổ sung sau MVP.
 

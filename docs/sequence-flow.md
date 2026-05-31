@@ -452,15 +452,13 @@ sequenceDiagram
 
     alt Search thành công
         Search->>Audit: saveSuccess(user, question, plan, DSL, count, latency)
-        Audit->>PG: INSERT query_history
+        Audit->>PG: INSERT search_query_logs status=SUCCESS
         PG-->>Audit: queryId
-        Audit->>PG: INSERT audit_logs status=SUCCESS
-        PG-->>Audit: auditId
         Audit-->>Search: queryId
     else Search thất bại
         Search->>Audit: saveFailure(user, question, plan?, DSL?, latency, error)
-        Audit->>PG: INSERT audit_logs status=FAILED
-        PG-->>Audit: auditId
+        Audit->>PG: INSERT search_query_logs status=FAILED
+        PG-->>Audit: queryId
     end
 
     alt PostgreSQL lỗi khi ghi audit
@@ -512,7 +510,7 @@ sequenceDiagram
     User->>FE: Chọn Export CSV
     FE->>API: GET /api/v1/search/{queryId}/export.csv
     API->>Export: export(queryId, userIdentity)
-    Export->>PG: Load query history by queryId
+    Export->>PG: Load search query log by queryId
     PG-->>Export: Saved SearchPlan and ownership metadata
     Export->>Export: Check user permission
     Export->>Guard: Re-validate saved SearchPlan
