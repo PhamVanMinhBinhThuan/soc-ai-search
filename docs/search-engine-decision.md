@@ -4,7 +4,7 @@
 
 Chọn **Elasticsearch self-managed** với gói **Basic miễn phí** làm search engine duy nhất cho MVP và dùng **Elasticsearch Query DSL** làm query thực thi.
 
-Ở thời điểm đánh giá ngày **31/05/2026**, nên pin image Docker ở phiên bản `docker.elastic.co/elasticsearch/elasticsearch:9.4.1` thay vì dùng tag `latest`. Elasticsearch `9.4.1` được phát hành ngày `12/05/2026` theo [danh sách release chính thức](https://www.elastic.co/downloads/past-releases?product=elasticsearch). Nếu dùng Kibana trong môi trường phát triển, nên pin cùng phiên bản `9.4.1`.
+Ở thời điểm đánh giá ngày **31/05/2026**, nên pin image Docker ở phiên bản `docker.elastic.co/elasticsearch/elasticsearch:9.4.2` thay vì dùng tag `latest`. Elasticsearch `9.4.2` được phát hành ngày `28/05/2026` theo [danh sách release chính thức](https://www.elastic.co/downloads/past-releases?product=elasticsearch) và bao gồm các bản vá bảo mật quan trọng so với `9.4.1`. Nếu dùng Kibana trong môi trường phát triển, nên pin cùng phiên bản `9.4.2`.
 
 Không nên triển khai đồng thời Elasticsearch, OpenSearch và ClickHouse trong MVP. Một engine đã đáp ứng đủ phạm vi bắt buộc trong [requirement.md](./requirement.md); thêm engine thứ hai làm tăng khối lượng ingest, đồng bộ dữ liệu, test và xử lý lỗi nhưng chưa tạo thêm giá trị rõ ràng cho bản demo.
 
@@ -69,7 +69,7 @@ Cần phân biệt hai loại audit log:
 | Native RRF hybrid search của Elasticsearch | Không | `RRF` tích hợp sẵn thuộc gói Enterprise theo [subscription matrix](https://www.elastic.co/subscriptions) |
 | Phát hiện bất thường tự viết | Có | Dùng rule, z-score, clustering hoặc thư viện ngoài |
 | Native Elastic ML anomaly detection | Không | Thuộc gói Platinum hoặc Enterprise |
-| Multi-tenant bằng index riêng | Có | Mỗi tenant dùng index và role riêng |
+| Multi-tenant bằng index riêng + RBAC | Có | Mỗi tenant dùng index riêng; RBAC (role-based access control) đã miễn phí trong Basic từ 2021, có thể gán role giới hạn theo index |
 | Multi-tenant trong cùng index bằng document-level security | Không | Field-level và document-level security thuộc gói Platinum hoặc Enterprise |
 
 Như vậy, Elasticsearch Basic không giới hạn việc hoàn thành MVP. Các tính năng trả phí chỉ trở thành vấn đề khi chọn dùng trực tiếp khả năng nâng cao tích hợp sẵn của Elastic thay vì tự triển khai ở backend.
@@ -79,7 +79,7 @@ Như vậy, Elasticsearch Basic không giới hạn việc hoàn thành MVP. Cá
 | Phương án | Điểm mạnh | Điểm cần cân nhắc | Kết luận cho MVP |
 | --- | --- | --- | --- |
 | **Elasticsearch Basic** | Phổ biến, nhiều tài liệu, search-first, full-text và aggregation tốt, REST API, vector search miễn phí | Bản phân phối mặc định theo Elastic License; một số tính năng nâng cao cần subscription | **Chọn** |
-| **OpenSearch** | Search-first, full-text và aggregation tốt, Apache License 2.0, vector và hybrid search có sẵn | Hệ sinh thái và tài liệu phù hợp nhưng không tạo lợi thế đủ lớn so với Elastic trong bối cảnh đồ án này | Phương án thay thế tốt |
+| **OpenSearch** | Search-first, full-text và aggregation tốt, Apache License 2.0, **native RRF hybrid search miễn phí** (không cần trả phí như Elasticsearch), vector search có sẵn | Hệ sinh thái và tài liệu phù hợp nhưng không tạo lợi thế đủ lớn so với Elastic trong bối cảnh đồ án này | Phương án thay thế tốt |
 | **ClickHouse** | SQL dễ đọc, aggregation rất mạnh, phù hợp log cực lớn và workload analytics nặng | Search là hướng phát triển mới hơn; cần chấp nhận thêm rủi ro tích hợp và kiểm thử relevance cho MVP search-first | Benchmark sau MVP nếu có nhu cầu |
 
 Elasticsearch và OpenSearch đều đủ năng lực kỹ thuật cho phần bắt buộc. Quyết định chọn Elasticsearch ưu tiên tính phổ biến, tài liệu và khả năng tìm hỗ trợ khi phát triển. [FAQ license của Elastic](https://www.elastic.co/pricing/faq/licensing/) cần được đọc lại nếu hệ thống chuyển từ đồ án sang sản phẩm thực tế hoặc cung cấp như một dịch vụ.
@@ -98,7 +98,7 @@ Backend REST API
    |-- Validator + compiler: SearchPlan -> Elasticsearch Query DSL
    |-- Audit log + query history
    |
-Elasticsearch 9.4.1 Basic
+Elasticsearch 9.4.2 Basic
 ```
 
 Chỉ dùng Elasticsearch làm kho event. Backend tự phân loại:
