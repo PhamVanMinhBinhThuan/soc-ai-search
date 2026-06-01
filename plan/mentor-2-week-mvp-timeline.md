@@ -58,12 +58,12 @@ Chưa cần bảng user riêng vì auth đầy đủ không thuộc phạm vi MV
 
 | Ngày | Công việc trọng tâm | Kết quả cần đạt |
 | --- | --- | --- |
-| Ngày 1 | Chốt kiến trúc monolith, thiết kế Elasticsearch mapping và bảng PostgreSQL; tạo skeleton Spring Boot, React và Docker Compose | Project chạy local, health API và Swagger hoạt động |
+| Ngày 1 | Chốt kiến trúc monolith, thiết kế Elasticsearch mapping và bảng PostgreSQL; tạo skeleton Spring Boot, React, Tailwind CSS, shadcn/ui và Docker Compose | Project chạy local, health API và Swagger hoạt động |
 | Ngày 2 | Hoàn thiện mapping, migration PostgreSQL, pipeline ingest và script sinh tối thiểu (10.000 - vài triệu event) event mẫu | Có dataset demo và ingest API |
 | Ngày 3 | Xây dựng search API: filter thời gian, severity, event type, user, host, IP; pagination và event detail … (tùy vào schema thiết kế) | Search cơ bản chạy đúng trên Elasticsearch |
 | Ngày 4 | Tích hợp LLM: natural language -> `SearchPlan` -> validate -> Elasticsearch DSL | Tìm kiếm bằng câu hỏi Việt/Anh, hiển thị DSL đã sinh |
 | Ngày 5 | Xây dựng aggregation API: `COUNT`, `GROUP BY`, `TOP N`, time bucket phút/giờ/ngày | Các truy vấn thống kê trả đúng dữ liệu |
-| Ngày 6 | Xây dựng frontend: search box, bảng kết quả, pagination, event detail, bảng thống kê và biểu đồ | Demo được search và aggregation trên giao diện |
+| Ngày 6 | Xây dựng frontend bằng Tailwind CSS và shadcn/ui: search box, bảng kết quả, pagination, event detail, bảng thống kê và biểu đồ | Demo được search và aggregation trên giao diện |
 | Ngày 7 | Bổ sung AI summary, query history, audit log và export CSV; tích hợp toàn bộ luồng local | MVP chạy end-to-end trên máy local |
 
 ### Tuần 2 - Testing, Deployment và Hoàn thiện Demo

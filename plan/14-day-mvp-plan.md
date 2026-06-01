@@ -51,7 +51,7 @@ Các chức năng này có giá trị, nhưng làm sớm sẽ đẩy rủi ro sa
 | Validation | Bean Validation + Jackson | Khai báo `SearchPlan`, parse JSON và chặn query LLM không hợp lệ |
 | App database | PostgreSQL | Lưu query history và audit log, tách khỏi kho event |
 | Search engine | Elasticsearch `9.4.1` Basic | Theo quyết định tại [search-engine-decision.md](../docs/search-engine-decision.md) |
-| Frontend | React + TypeScript + Vite | Làm giao diện dashboard nhanh, dễ dùng chart library |
+| Frontend | React + TypeScript + Vite + Tailwind CSS + shadcn/ui | Làm giao diện dashboard nhanh, dùng component có thể chỉnh sửa và dễ kết hợp chart library |
 | Chart | Recharts hoặc Apache ECharts | Hỗ trợ bar, pie và time-series line chart |
 | Reverse proxy và TLS | Nginx + Certbot | Reverse proxy trên host EC2, cấp và gia hạn HTTPS với Let's Encrypt |
 | Đóng gói | Docker Compose | Đúng yêu cầu MVP và phù hợp một VPS |
@@ -224,6 +224,7 @@ Việc cần làm:
   - `.github/workflows/`
 - Khởi tạo Java 21 + Spring Boot 3, endpoint `/api/v1/health/live`, cấu hình Maven hoặc Gradle, lint và test.
 - Khởi tạo React TypeScript, tạo trang placeholder và gọi health API.
+- Tích hợp Tailwind CSS và shadcn/ui foundation; chỉ thêm component tối thiểu để kiểm tra cấu hình.
 - Tạo Dockerfile cho backend và frontend.
 - Tạo `docker-compose.yml` cho local gồm backend, frontend, Elasticsearch và PostgreSQL.
 - Pin image Elasticsearch `9.4.1`, không dùng tag `latest`.
@@ -347,6 +348,7 @@ Việc cần làm:
 Việc cần làm:
 
 - Làm search box và trạng thái loading/error.
+- Dùng Tailwind CSS và các component shadcn/ui phù hợp để giữ giao diện nhất quán; chỉ thêm component khi màn hình thực sự cần.
 - Hiển thị DSL đã compile trong panel có thể thu gọn.
 - Làm bảng event với pagination.
 - Làm modal hoặc trang event detail hiển thị raw log.

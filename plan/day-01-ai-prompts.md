@@ -2,7 +2,7 @@
 
 ## 1. Cách sử dụng
 
-Ngày 1 nên chia thành **7 prompt cho AI coding agent** và **2 checklist thao tác thủ công**.
+Ngày 1 nên chia thành **8 prompt cho AI coding agent** và **2 checklist thao tác thủ công**.
 
 Không gửi toàn bộ task ngày 1 trong một prompt lớn. Sau mỗi prompt:
 
@@ -18,7 +18,7 @@ Các prompt dưới đây dành cho AI coding agent có quyền đọc và sửa
 
 Kết quả cần đạt cuối ngày:
 
-- Có skeleton monolith gồm Spring Boot backend và React frontend.
+- Có skeleton monolith gồm Spring Boot backend và React frontend với Tailwind CSS + shadcn/ui foundation.
 - Có PostgreSQL, Elasticsearch, backend và frontend chạy local bằng Docker Compose.
 - Có endpoint `GET /api/v1/health/live`.
 - Frontend gọi health API và hiển thị trạng thái backend.
@@ -56,7 +56,7 @@ Hãy đọc trước các file:
 Kiến trúc đã chốt:
 - Modular monolith, không dùng microservices.
 - Backend: Java 21 + Spring Boot 3.
-- Frontend: React + TypeScript + Vite.
+- Frontend: React + TypeScript + Vite; tích hợp Tailwind CSS + shadcn/ui tại Prompt 4.
 - Search engine: Elasticsearch Basic self-managed.
 - Database: PostgreSQL.
 - Local deployment: Docker Compose.
@@ -172,7 +172,55 @@ Kiểm tra:
 - Trang hiển thị `Backend connected` khi backend đang chạy.
 - Khi tắt backend, trang hiển thị `Backend unavailable`.
 
-## 6. Prompt 4 - Thiết kế Elasticsearch mapping
+Bạn đã hoàn thành Prompt 1-3. Do frontend đã được chốt bổ sung Tailwind CSS + shadcn/ui sau khi scaffold React, hãy tiếp tục từ Prompt 4 dưới đây; không cần chạy lại các prompt trước.
+
+## 6. Prompt 4 - Tích hợp Tailwind CSS và shadcn/ui foundation
+
+**Mục tiêu:** bổ sung UI foundation cho frontend Vite hiện có trước khi phát triển màn hình nghiệp vụ.
+
+```text
+Tiếp tục triển khai ngày 1 cho SOC AI Search MVP.
+
+Frontend React + TypeScript + Vite đã được khởi tạo trong thư mục frontend/. Hãy tích hợp Tailwind CSS và shadcn/ui theo hướng dẫn hiện hành dành cho existing Vite project.
+
+Tài liệu chính thức:
+- https://tailwindcss.com/docs/installation
+- https://ui.shadcn.com/docs/installation/vite
+
+Yêu cầu:
+1. Kiểm tra trạng thái repository và đọc cấu hình frontend hiện có trước khi sửa.
+2. Cài đặt Tailwind CSS cho Vite bằng dependency phù hợp với hướng dẫn hiện hành, ví dụ tailwindcss và @tailwindcss/vite. Giữ nguyên React plugin và Vite dev proxy /api tới http://localhost:8080.
+3. Cấu hình alias @/* trỏ tới frontend/src trong tsconfig.json, tsconfig.app.json và vite.config.ts để shadcn/ui import component rõ ràng.
+4. Chạy shadcn CLI init cho existing project để tạo cấu hình cần thiết như components.json và utility cn. Không dùng cấu hình Tailwind CSS v3 cũ nếu toolchain hiện hành không cần.
+5. Chỉ thêm component shadcn/ui tối thiểu cần để kiểm tra foundation, ví dụ Card và Badge. Không sinh hàng loạt component chưa sử dụng.
+6. Cập nhật trang placeholder "SOC AI Event Search" để dùng Tailwind CSS và component shadcn/ui vừa thêm. Giữ nguyên hành vi gọi GET /api/v1/health/live và ba trạng thái:
+   - Backend connected
+   - Backend unavailable
+   - Loading
+7. Không thêm chart, search box nghiệp vụ, routing, state management library hoặc sửa backend.
+8. Chạy npm install nếu cần, npm run lint và npm run build.
+9. Báo lệnh verify, kết quả và danh sách file đã tạo hoặc sửa.
+
+Giữ thay đổi nhỏ gọn. shadcn/ui cung cấp source code component để chỉnh sửa trong frontend; chỉ thêm component khi có nhu cầu thực tế.
+```
+
+**Checkpoint:**
+
+```bash
+cd frontend
+npm run lint
+npm run build
+npm run dev
+```
+
+Kiểm tra:
+
+- Tailwind CSS class có hiệu lực.
+- Có `components.json`, utility `cn` và component shadcn/ui tối thiểu.
+- Vite proxy `/api` vẫn hoạt động.
+- Trang vẫn hiển thị đúng trạng thái backend.
+
+## 7. Prompt 5 - Thiết kế Elasticsearch mapping
 
 **Mục tiêu:** chốt cấu trúc document event cho MVP.
 
@@ -211,7 +259,7 @@ Yêu cầu:
 - `raw` dùng `type: text`, `index: false`.
 - Không có script seed 10.000 event trong bước này.
 
-## 7. Prompt 5 - PostgreSQL migration cho bảng MVP
+## 8. Prompt 6 - PostgreSQL migration cho bảng MVP
 
 **Mục tiêu:** tạo đúng một bảng PostgreSQL cần thiết cho MVP.
 
@@ -259,7 +307,7 @@ Giải thích ngắn vì sao một bảng search_query_logs đủ cho recent his
 - Password chỉ lấy từ environment variable.
 - Chỉ có một bảng PostgreSQL cho MVP.
 
-## 8. Prompt 6 - Dockerfile, Docker Compose và env
+## 9. Prompt 7 - Dockerfile, Docker Compose và env
 
 **Mục tiêu:** chạy toàn bộ skeleton local bằng một lệnh.
 
@@ -270,7 +318,7 @@ Hãy tạo cấu hình Docker local hoàn chỉnh.
 
 Yêu cầu:
 1. Tạo Dockerfile multi-stage cho backend Spring Boot.
-2. Tạo Dockerfile multi-stage cho frontend React:
+2. Tạo Dockerfile multi-stage cho frontend React + Tailwind CSS + shadcn/ui:
    - build bằng Node
    - serve static files bằng Nginx trong container frontend
 3. Tạo docker-compose.yml ở root gồm:
@@ -316,7 +364,7 @@ Kiểm tra:
 - Elasticsearch health phản hồi.
 - PostgreSQL healthy.
 
-## 9. Prompt 7 - Verify Ngày 1 và cập nhật README
+## 10. Prompt 8 - Verify Ngày 1 và cập nhật README
 
 **Mục tiêu:** kiểm tra end-to-end skeleton và ghi hướng dẫn chạy local.
 
@@ -335,12 +383,13 @@ Kiểm tra:
 3. GET /api/v1/health/live trả status UP.
 4. Swagger UI mở được.
 5. React frontend hiển thị trạng thái backend.
-6. docker compose config hợp lệ.
-7. docker compose up -d --build chạy được nếu môi trường có Docker.
-8. Elasticsearch pin đúng phiên bản 9.4.1.
-9. Có mapping soc-events-v1.
-10. Có Flyway migration tạo đúng một PostgreSQL table search_query_logs.
-11. Không có secret thật trong Git-tracked files.
+6. Tailwind CSS + shadcn/ui foundation đã được cấu hình; frontend lint và build thành công.
+7. docker compose config hợp lệ.
+8. docker compose up -d --build chạy được nếu môi trường có Docker.
+9. Elasticsearch pin đúng phiên bản 9.4.1.
+10. Có mapping soc-events-v1.
+11. Có Flyway migration tạo đúng một PostgreSQL table search_query_logs.
+12. Không có secret thật trong Git-tracked files.
 
 Sau đó:
 1. Sửa lỗi nhỏ nếu phát hiện.
@@ -364,7 +413,7 @@ Sau đó:
 - Mapping và migration đã tồn tại.
 - README đủ để chạy local.
 
-## 10. Checklist thủ công A - Domain
+## 11. Checklist thủ công A - Domain
 
 AI coding agent không thể tự mua domain nếu bạn chưa cung cấp tài khoản và quyền truy cập. Bạn tự thực hiện:
 
@@ -385,7 +434,7 @@ Ngày hết hạn: _______________________
 
 Không commit credential nhà cung cấp domain vào repository.
 
-## 11. Checklist thủ công B - GitHub Repository
+## 12. Checklist thủ công B - GitHub Repository
 
 Nếu AI coding agent chưa có quyền GitHub, bạn tự thực hiện:
 
@@ -409,7 +458,7 @@ git push -u origin main
 
 Nếu repository đã có remote, không chạy lại `git remote add origin`.
 
-## 12. Cách hỏi AI khi một checkpoint lỗi
+## 13. Cách hỏi AI khi một checkpoint lỗi
 
 Không gửi lại toàn bộ prompt từ đầu. Dùng mẫu:
 
@@ -429,7 +478,7 @@ Hãy:
 4. Chạy lại verify và báo file đã sửa.
 ```
 
-## 13. Lưu ý về phạm vi
+## 14. Lưu ý về phạm vi
 
 - Prompt ngày 1 chỉ tạo foundation chạy được.
 - Không yêu cầu AI xây toàn bộ MVP ngay trong ngày đầu.

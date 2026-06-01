@@ -18,7 +18,7 @@ Mục tiêu của giai đoạn MVP là xây dựng một hệ thống có thể:
 | Thành phần | Công nghệ | Trạng thái | Vai trò |
 | --- | --- | --- | --- |
 | Architecture | Modular Monolith | Đã chọn | Một Spring Boot application, phân module nội bộ rõ ràng và deploy như một đơn vị |
-| Frontend | React + TypeScript | Đã chọn | Search box, bảng kết quả, event detail, chart, query history |
+| Frontend | React + TypeScript + Vite + Tailwind CSS + shadcn/ui | Đã chọn | Search box, bảng kết quả, event detail, chart, query history |
 | Backend | Java 21 + Spring Boot 3 | Đã chọn | REST API, business logic, validation, audit log, tích hợp Elasticsearch và LLM |
 | Search Engine | Elasticsearch Basic self-managed | Đã chọn | Full-text search, filter, aggregation và lưu event |
 | Database | PostgreSQL | Đã chọn | Lưu query history, application audit log và dữ liệu ứng dụng |
@@ -39,7 +39,13 @@ Quyết định chi tiết về Elasticsearch được ghi tại [search-engine-
 - React.
 - TypeScript.
 - Vite.
+- Tailwind CSS để styling nhanh và nhất quán.
+- shadcn/ui để dùng các component UI có thể chỉnh sửa trực tiếp trong source code.
 - Recharts hoặc Apache ECharts cho bar chart, pie chart và time-series line chart.
+
+shadcn/ui không phải một UI library đóng gói cần import toàn bộ vào ứng dụng. CLI thêm source code của từng component cần dùng vào frontend. Trong MVP chỉ thêm component phục vụ màn hình thực tế, ví dụ `Button`, `Card`, `Badge`, `Input`, `Table`, `Dialog` và `Pagination`; không sinh hàng loạt component chưa dùng.
+
+Tài liệu cài đặt: [Tailwind CSS với Vite](https://tailwindcss.com/docs/installation) và [shadcn/ui cho existing Vite project](https://ui.shadcn.com/docs/installation/vite).
 
 ### Trách nhiệm
 
@@ -345,7 +351,7 @@ Secrets như database password, Elasticsearch password, JWT secret và LLM API k
 | Hạng mục | Quyết định MVP |
 | --- | --- |
 | Architecture | Modular Monolith |
-| Frontend | React + TypeScript |
+| Frontend | React + TypeScript + Vite + Tailwind CSS + shadcn/ui |
 | Backend | Java 21 + Spring Boot 3 |
 | Search | Elasticsearch Basic self-managed |
 | Database | PostgreSQL |

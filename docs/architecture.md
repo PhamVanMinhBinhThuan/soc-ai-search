@@ -55,7 +55,7 @@ Elasticsearch, PostgreSQL, Nginx và LLM không phải các microservice do hệ
 
 | Layer | Technology |
 | --- | --- |
-| Frontend | React + TypeScript |
+| Frontend | React + TypeScript + Vite + Tailwind CSS + shadcn/ui |
 | Backend | Java 21 + Spring Boot 3 |
 | Search Engine | Elasticsearch Basic self-managed |
 | Application Database | PostgreSQL |
@@ -101,7 +101,7 @@ flowchart LR
 ```mermaid
 flowchart TB
     subgraph Client["Client Layer"]
-        UI["React + TypeScript SPA"]
+        UI["React + TypeScript SPA<br/>Tailwind CSS + shadcn/ui"]
     end
 
     subgraph Monolith["Spring Boot 3 Monolith"]
