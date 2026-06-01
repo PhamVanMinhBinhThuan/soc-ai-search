@@ -1,0 +1,73 @@
+:root {
+  font-family:
+    Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #e2e8f0;
+  background: #0f172a;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+}
+
+.page-shell {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: 24px;
+}
+
+.status-card {
+  width: min(100%, 520px);
+  padding: 36px;
+  border: 1px solid #334155;
+  border-radius: 16px;
+  background: #1e293b;
+  box-shadow: 0 16px 48px rgb(0 0 0 / 20%);
+}
+
+.eyebrow {
+  margin: 0 0 8px;
+  color: #94a3b8;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+h1 {
+  margin: 0;
+  font-size: clamp(2rem, 8vw, 3rem);
+  line-height: 1.1;
+}
+
+.connection-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 28px 0 0;
+  color: #cbd5e1;
+  font-weight: 700;
+}
+
+.status-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #f59e0b;
+}
+
+.connection-status--connected .status-dot {
+  background: #22c55e;
+}
+
+.connection-status--unavailable .status-dot {
+  background: #ef4444;
+}
