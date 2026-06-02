@@ -4,14 +4,14 @@
 
 ## Trạng thái
 
-Repository đang ở giai đoạn **scaffold ngày 1**. Backend Spring Boot và frontend React đã được khởi tạo. Các phần Tailwind CSS + shadcn/ui, Elasticsearch, PostgreSQL, Docker Compose và CI/CD chưa được tích hợp.
+Repository đang ở giai đoạn **scaffold ngày 1**. Backend Spring Boot và frontend React với Tailwind CSS + shadcn/ui foundation đã được khởi tạo. Các phần Elasticsearch, PostgreSQL, Docker Compose và CI/CD chưa được tích hợp.
 
 ## Kiến trúc
 
 Hệ thống được triển khai theo **Modular Monolith**:
 
 - Backend là một ứng dụng Java 21 + Spring Boot 3 duy nhất.
-- Frontend dùng React + TypeScript + Vite; Tailwind CSS + shadcn/ui là UI foundation đã chọn và sẽ được tích hợp trong bước tiếp theo.
+- Frontend dùng React + TypeScript + Vite với Tailwind CSS + shadcn/ui foundation.
 - Elasticsearch lưu event SOC để search và aggregation.
 - PostgreSQL lưu metadata truy vấn, query history và application audit log.
 - Docker Compose được dùng cho môi trường local và deploy MVP.
