@@ -58,6 +58,15 @@ docker compose --profile tools up -d kibana
 
 Kibana mở tại `http://localhost:5601`. Các cổng quản trị local chỉ bind vào `127.0.0.1`.
 
+### Kiểm tra service
+
+```powershell
+docker compose config
+docker compose --profile tools config
+docker compose ps
+Invoke-RestMethod -Uri http://localhost:8081/api/v1/health/live
+```
+
 ### Lưu ý về PostgreSQL password
 
 Tạo `.env` trước lần chạy Docker đầu tiên. PostgreSQL chỉ dùng `POSTGRES_PASSWORD` để khởi tạo role khi named volume chưa có dữ liệu. Nếu đổi password trong `.env` sau đó, password bên trong database không tự thay đổi.
