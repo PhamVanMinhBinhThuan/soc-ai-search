@@ -57,8 +57,9 @@ Elasticsearch, PostgreSQL, Nginx và LLM không phải các microservice do hệ
 | --- | --- |
 | Frontend | React + TypeScript + Vite + Tailwind CSS + shadcn/ui |
 | Backend | Java 21 + Spring Boot 3 |
-| Search Engine | Elasticsearch Basic self-managed |
-| Application Database | PostgreSQL |
+| Search Engine | Elasticsearch `9.4.2` Basic self-managed |
+| Application Database | PostgreSQL self-managed + Flyway |
+| Local Data Tools | pgAdmin Desktop + Kibana `9.4.2` qua Docker Compose profile `tools` |
 | AI | Gemini, OpenAI hoặc Local LLM qua API |
 | API Documentation | Swagger/OpenAPI |
 | Packaging | Docker Compose |
@@ -204,6 +205,15 @@ Audit log tối thiểu:
 - Result count.
 - Latency.
 - Status và error message nếu thất bại.
+
+### 6.3. Local Data Tools
+
+pgAdmin Desktop và Kibana chỉ là công cụ hỗ trợ phát triển, không tham gia luồng runtime nghiệp vụ:
+
+- Dùng pgAdmin Desktop trên máy cá nhân để xem PostgreSQL schema, table và chạy SQL khi cần. Không deploy pgAdmin public trên VPS.
+- Dùng Kibana `9.4.2` qua Docker Compose profile `tools` để xem document trong `soc-events-v1`, kiểm tra mapping và thử Elasticsearch DSL bằng Dev Tools.
+- Kibana phải pin cùng version với Elasticsearch. Không bật Kibana mặc định trên VPS để tiết kiệm RAM; chỉ bật tạm khi cần debug và không expose `5601` public.
+- Frontend React vẫn là giao diện demo sản phẩm. Kibana không thay thế frontend.
 
 ## 7. Main Data Flows
 
@@ -386,6 +396,7 @@ flowchart TB
 | Spring Boot internal port | Không | Chỉ Nginx gọi qua loopback binding |
 | `9200` | Không | Elasticsearch internal |
 | `5432` | Không | PostgreSQL internal |
+| `5601` | Không | Kibana optional local tool; không public trên VPS |
 
 ### 10.3. Docker Compose Services
 
@@ -395,8 +406,9 @@ flowchart TB
 | `backend` | Chạy Spring Boot monolith |
 | `elasticsearch` | Event store |
 | `postgres` | Application database |
+| `kibana` | Optional local debug UI cho Elasticsearch, chỉ chạy qua profile `tools` |
 
-Nginx và Certbot chạy trên host EC2, bên ngoài Docker Compose network. Frontend và backend chỉ bind vào loopback để Nginx gọi; Elasticsearch và PostgreSQL chỉ nằm trong Docker network. Với MVP trên một EC2 Ubuntu, cài Certbot trên host và dùng Nginx plugin là cách dễ vận hành. Certbot có thể cấu hình HTTPS cho Nginx và kiểm tra auto-renew bằng `certbot renew --dry-run`.
+Nginx và Certbot chạy trên host EC2, bên ngoài Docker Compose network. Frontend và backend chỉ bind vào loopback để Nginx gọi; Elasticsearch và PostgreSQL chỉ nằm trong Docker network. Kibana không chạy mặc định trên VPS. Với MVP trên một EC2 Ubuntu, cài Certbot trên host và dùng Nginx plugin là cách dễ vận hành. Certbot có thể cấu hình HTTPS cho Nginx và kiểm tra auto-renew bằng `certbot renew --dry-run`.
 
 ## 11. CI/CD Architecture
 
@@ -424,6 +436,7 @@ Deploy image bằng commit SHA để rollback về phiên bản trước khi smo
 
 - Đặt `vm.max_map_count=1048576` trên VPS cho Elasticsearch.
 - Dùng named volume cho Elasticsearch và PostgreSQL.
+- Chỉ bật Kibana profile `tools` khi debug local hoặc khi cần kiểm tra tạm thời; không expose `5601` public.
 - Pin image version, không dùng tag `latest` cho dependency production.
 - Lưu secret runtime trong `.env.prod` trên VPS hoặc secret store phù hợp.
 - Chỉ dùng dữ liệu synthetic hoặc đã ẩn danh khi demo qua Cloud LLM.

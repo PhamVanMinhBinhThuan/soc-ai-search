@@ -52,6 +52,11 @@ Thông tin chính được lưu:
 
 Chưa cần bảng user riêng vì auth đầy đủ không thuộc phạm vi MVP.
 
+### Công cụ hỗ trợ local
+
+- PostgreSQL chạy self-managed trong Docker Compose và quản lý schema bằng Flyway. Dùng pgAdmin Desktop khi cần xem database; không thêm pgAdmin vào stack mặc định.
+- Kibana `9.4.2` chỉ là công cụ debug Elasticsearch tùy chọn qua Docker Compose profile `tools`. Kibana không thay thế frontend React và không bật public trên VPS.
+
 ## 3. Timeline 2 Tuần
 
 ### Tuần 1 - Data Model, Backend Core và Frontend MVP

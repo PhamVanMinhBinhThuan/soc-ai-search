@@ -13,8 +13,10 @@ Hệ thống được triển khai theo **Modular Monolith**:
 - Backend là một ứng dụng Java 21 + Spring Boot 3 duy nhất.
 - Frontend dùng React + TypeScript + Vite với Tailwind CSS + shadcn/ui foundation.
 - Elasticsearch lưu event SOC để search và aggregation.
-- PostgreSQL lưu metadata truy vấn, query history và application audit log.
+- PostgreSQL self-managed lưu metadata truy vấn, query history và application audit log; Flyway quản lý migration.
 - Docker Compose được dùng cho môi trường local và deploy MVP.
+
+Khi phát triển local, có thể dùng pgAdmin Desktop để xem PostgreSQL và bật Kibana tùy chọn qua Docker Compose profile `tools` để debug Elasticsearch. Hai công cụ này không thay thế frontend React và không được expose public trên VPS.
 
 ## Cấu trúc Repository
 

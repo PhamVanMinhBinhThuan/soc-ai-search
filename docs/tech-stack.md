@@ -20,8 +20,9 @@ Mục tiêu của giai đoạn MVP là xây dựng một hệ thống có thể:
 | Architecture | Modular Monolith | Đã chọn | Một Spring Boot application, phân module nội bộ rõ ràng và deploy như một đơn vị |
 | Frontend | React + TypeScript + Vite + Tailwind CSS + shadcn/ui | Đã chọn | Search box, bảng kết quả, event detail, chart, query history |
 | Backend | Java 21 + Spring Boot 3 | Đã chọn | REST API, business logic, validation, audit log, tích hợp Elasticsearch và LLM |
-| Search Engine | Elasticsearch Basic self-managed | Đã chọn | Full-text search, filter, aggregation và lưu event |
-| Database | PostgreSQL | Đã chọn | Lưu query history, application audit log và dữ liệu ứng dụng |
+| Search Engine | Elasticsearch `9.4.2` Basic self-managed | Đã chọn | Full-text search, filter, aggregation và lưu event |
+| Database | PostgreSQL self-managed + Flyway | Đã chọn | Lưu query history, application audit log và dữ liệu ứng dụng |
+| Local Data Tools | pgAdmin Desktop + Kibana `9.4.2` | Tùy chọn khi phát triển | Xem PostgreSQL và debug Elasticsearch; không thay thế frontend |
 | API Docs | Swagger/OpenAPI | Đã chọn | Sinh tài liệu và thử REST API |
 | Deployment | Docker Compose | Đã chọn | Chạy local và deploy trên một VPS |
 | CI/CD | GitHub Actions | Đã chọn | Test, build Docker image và deploy |
@@ -71,7 +72,7 @@ Frontend không gọi trực tiếp Elasticsearch hoặc LLM API. Mọi request 
 - Spring Data Elasticsearch hoặc Elasticsearch Java API Client.
 - Spring Data JPA.
 - PostgreSQL Driver.
-- Flyway hoặc Liquibase cho database migration.
+- Flyway cho database migration.
 - Springdoc OpenAPI để sinh Swagger UI.
 - JUnit 5, Mockito và Testcontainers cho test.
 
@@ -107,6 +108,7 @@ Elasticsearch
 
 - Elasticsearch Basic self-managed.
 - Elasticsearch Query DSL.
+- Kibana `9.4.2` chạy tùy chọn bằng Docker Compose profile `tools` khi cần debug local.
 
 ### Vai trò
 
@@ -135,6 +137,7 @@ Schema event tối thiểu:
 ### Công nghệ
 
 - PostgreSQL.
+- Flyway.
 
 ### Dữ liệu lưu trong PostgreSQL
 
@@ -155,6 +158,16 @@ Audit log ứng dụng tối thiểu gồm:
 - Trạng thái thành công hoặc thất bại.
 
 Không dùng PostgreSQL để lưu toàn bộ event SOC. Event thuộc về Elasticsearch.
+
+### Công cụ quan sát local
+
+- Dùng pgAdmin Desktop trên máy cá nhân khi cần xem schema, table hoặc chạy SQL. Không thêm pgAdmin vào Docker Compose mặc định và không deploy pgAdmin public trên VPS.
+- Với import dữ liệu PostgreSQL số lượng lớn, ưu tiên lệnh [`COPY`](https://www.postgresql.org/docs/current/sql-copy.html) thay vì thao tác tay qua UI.
+- Dữ liệu event SOC số lượng lớn không đi vào PostgreSQL; dùng Elasticsearch Bulk API để seed vào `soc-events-v1`.
+
+### Quyết định MVP
+
+MVP dùng PostgreSQL self-managed trong Docker Compose cùng Flyway. Không dùng Supabase trong giai đoạn này vì chỉ cần một bảng ứng dụng và muốn giữ local, VPS, CI/CD cùng một cách chạy. Có thể đánh giá PostgreSQL managed, AWS RDS hoặc Supabase managed sau MVP nếu cần giảm công vận hành.
 
 ## 7. Swagger/OpenAPI
 
@@ -325,6 +338,7 @@ Không expose trực tiếp:
 
 - Elasticsearch `9200`.
 - PostgreSQL `5432`.
+- Kibana `5601`.
 - Local LLM API nếu có.
 
 Secrets như database password, Elasticsearch password, JWT secret và LLM API key không được commit vào Git. Dùng `.env` trên VPS và GitHub Actions secrets cho pipeline.
@@ -353,8 +367,8 @@ Secrets như database password, Elasticsearch password, JWT secret và LLM API k
 | Architecture | Modular Monolith |
 | Frontend | React + TypeScript + Vite + Tailwind CSS + shadcn/ui |
 | Backend | Java 21 + Spring Boot 3 |
-| Search | Elasticsearch Basic self-managed |
-| Database | PostgreSQL |
+| Search | Elasticsearch `9.4.2` Basic self-managed; Kibana `9.4.2` tùy chọn cho local debug |
+| Database | PostgreSQL self-managed + Flyway; pgAdmin Desktop tùy chọn cho local debug |
 | API docs | Springdoc OpenAPI + Swagger UI |
 | AI | Interface `LlmClient`; Cloud API với dữ liệu synthetic hoặc đã ẩn danh; sẵn đường chuyển Local LLM |
 | Auth | Spring Security JWT tối giản; nâng cấp Keycloak/OIDC sau MVP nếu cần |

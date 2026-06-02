@@ -4,7 +4,7 @@
 
 Chọn **Elasticsearch self-managed** với gói **Basic miễn phí** làm search engine duy nhất cho MVP và dùng **Elasticsearch Query DSL** làm query thực thi.
 
-Ở thời điểm đánh giá ngày **31/05/2026**, nên pin image Docker ở phiên bản `docker.elastic.co/elasticsearch/elasticsearch:9.4.2` thay vì dùng tag `latest`. Elasticsearch `9.4.2` được phát hành ngày `28/05/2026` theo [danh sách release chính thức](https://www.elastic.co/downloads/past-releases?product=elasticsearch) và bao gồm các bản vá bảo mật quan trọng so với `9.4.1`. Nếu dùng Kibana trong môi trường phát triển, nên pin cùng phiên bản `9.4.2`.
+Ở thời điểm đánh giá ngày **31/05/2026**, nên pin image Docker ở phiên bản `docker.elastic.co/elasticsearch/elasticsearch:9.4.2` thay vì dùng tag `latest`. Elasticsearch `9.4.2` được phát hành ngày `28/05/2026` theo [danh sách release chính thức](https://www.elastic.co/downloads/past-releases?product=elasticsearch) và bao gồm các bản vá bảo mật quan trọng so với `9.4.1`. Nếu dùng Kibana trong môi trường phát triển, nên pin cùng phiên bản `9.4.2`, chỉ bật tùy chọn qua Docker Compose profile `tools`, không dùng để thay thế frontend React và không expose public trên VPS.
 
 Không nên triển khai đồng thời Elasticsearch, OpenSearch và ClickHouse trong MVP. Một engine đã đáp ứng đủ phạm vi bắt buộc trong [requirement.md](./requirement.md); thêm engine thứ hai làm tăng khối lượng ingest, đồng bộ dữ liệu, test và xử lý lỗi nhưng chưa tạo thêm giá trị rõ ràng cho bản demo.
 

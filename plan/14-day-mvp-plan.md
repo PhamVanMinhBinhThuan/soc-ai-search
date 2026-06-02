@@ -49,8 +49,10 @@ Các chức năng này có giá trị, nhưng làm sớm sẽ đẩy rủi ro sa
 | --- | --- | --- |
 | Backend | Java 21 + Spring Boot 3 | Phù hợp stack đã chọn, có hệ sinh thái REST API, validation, test và OpenAPI tốt |
 | Validation | Bean Validation + Jackson | Khai báo `SearchPlan`, parse JSON và chặn query LLM không hợp lệ |
-| App database | PostgreSQL | Lưu query history và audit log, tách khỏi kho event |
-| Search engine | Elasticsearch `9.4.1` Basic | Theo quyết định tại [search-engine-decision.md](../docs/search-engine-decision.md) |
+| App database | PostgreSQL self-managed + Flyway | Lưu query history và audit log, tách khỏi kho event |
+| Search engine | Elasticsearch `9.4.2` Basic | Theo quyết định tại [search-engine-decision.md](../docs/search-engine-decision.md) |
+| Local PostgreSQL UI | pgAdmin Desktop, tùy chọn | Xem schema, table và chạy SQL khi phát triển |
+| Local Elasticsearch UI | Kibana `9.4.2`, tùy chọn qua Docker Compose profile `tools` | Kiểm tra mapping, document và DSL; không thay thế frontend React |
 | Frontend | React + TypeScript + Vite + Tailwind CSS + shadcn/ui | Làm giao diện dashboard nhanh, dùng component có thể chỉnh sửa và dễ kết hợp chart library |
 | Chart | Recharts hoặc Apache ECharts | Hỗ trợ bar, pie và time-series line chart |
 | Reverse proxy và TLS | Nginx + Certbot | Reverse proxy trên host EC2, cấp và gia hạn HTTPS với Let's Encrypt |
@@ -78,14 +80,14 @@ Spring Boot backend
    |-- Elasticsearch: event search + aggregation
    |-- PostgreSQL: query history + application audit log
    |
-Elasticsearch 9.4.1 Basic
+Elasticsearch 9.4.2 Basic
 ```
 
 Chỉ publish `80`, `443` và `22` ra internet:
 
 - `80` và `443`: cho Nginx.
 - `22`: SSH, giới hạn theo IP cá nhân nếu có thể.
-- Không publish Elasticsearch `9200`, PostgreSQL `5432` hoặc backend port trực tiếp ra internet.
+- Không publish Elasticsearch `9200`, PostgreSQL `5432`, Kibana `5601` hoặc backend port trực tiếp ra internet.
 
 Trên VPS, cần đặt `vm.max_map_count=1048576` theo [tài liệu Elastic](https://www.elastic.co/docs/deploy-manage/deploy/self-managed/vm-max-map-count).
 
@@ -227,9 +229,11 @@ Việc cần làm:
 - Tích hợp Tailwind CSS và shadcn/ui foundation; chỉ thêm component tối thiểu để kiểm tra cấu hình.
 - Tạo Dockerfile cho backend và frontend.
 - Tạo `docker-compose.yml` cho local gồm backend, frontend, Elasticsearch và PostgreSQL.
-- Pin image Elasticsearch `9.4.1`, không dùng tag `latest`.
+- Thêm Kibana `9.4.2` trong Docker Compose profile `tools` để bật khi cần debug Elasticsearch; không chạy mặc định.
+- Pin image Elasticsearch `9.4.2`; nếu dùng Kibana thì pin cùng version. Không dùng tag `latest`.
 - Chốt Elasticsearch index `soc-events-v1`, mapping event và PostgreSQL table `search_query_logs`.
-- Tạo migration PostgreSQL ban đầu bằng Flyway hoặc Liquibase.
+- Tạo migration PostgreSQL ban đầu bằng Flyway.
+- Cài pgAdmin Desktop trên máy cá nhân nếu cần xem schema hoặc chạy SQL; không thêm pgAdmin container vào stack mặc định.
 - Tạo `.env.example`, `.gitignore`; tuyệt đối không commit API key hoặc password.
 - Mua domain qua Route 53 hoặc nhà cung cấp tùy chọn. Nếu mua qua Route 53, hoàn tất email xác minh ngay.
 - Tạo GitHub repository và push skeleton.
@@ -237,6 +241,7 @@ Việc cần làm:
 **Điều kiện hoàn thành:**
 
 - Chạy được `docker compose up -d`.
+- Chạy được `docker compose --profile tools up -d kibana` khi cần kiểm tra Elasticsearch bằng Kibana.
 - Mở frontend thấy trạng thái backend sống.
 - Swagger mở được.
 - Domain đã được đặt mua hoặc có domain sẵn sàng sử dụng.
@@ -261,6 +266,7 @@ Việc cần làm:
   - severity phân bố `low`, `medium`, `high`, `critical`;
   - dữ liệu trải qua ít nhất 30 ngày.
 - Viết script seed bằng Elasticsearch Bulk API.
+- Có thể dùng Kibana Discover và Dev Tools để kiểm tra mapping, document và DSL trong môi trường local.
 - Cài API `POST /api/v1/events` và `/api/v1/events/bulk`.
 - Viết integration test cho mapping và ingest.
 
@@ -408,6 +414,7 @@ Việc cần làm:
   - frontend và backend chỉ bind loopback để Nginx trên host gọi;
   - có healthcheck;
   - container app có restart policy.
+- Không bật Kibana mặc định trên VPS; profile `tools` chỉ dùng tạm khi debug và không expose public cổng `5601`.
 - Cài Nginx trên host EC2 và tạo server block reverse proxy frontend cùng `/api`.
 - Deploy thủ công lên EC2 và seed dataset.
 
@@ -623,6 +630,7 @@ GitHub Actions có thể dùng `GITHUB_TOKEN` để publish package gắn với 
 - [ ] Certbot cấp SSL certificate cho Nginx thành công.
 - [ ] Elasticsearch `9200` không public.
 - [ ] PostgreSQL `5432` không public.
+- [ ] Kibana `5601` không public.
 - [ ] Runtime secrets chỉ nằm trong `.env.prod` trên VPS.
 - [ ] Volume PostgreSQL và Elasticsearch tồn tại sau restart.
 - [ ] Có backup tối thiểu của `.env.prod` ở nơi bảo mật và có script seed lại dữ liệu demo.
@@ -635,7 +643,7 @@ AWS khuyến nghị dùng Elastic IP để địa chỉ EC2 không đổi khi tr
 | --- | --- | --- |
 | LLM sinh query không đúng | Kết quả rỗng hoặc sai filter | Dùng `SearchPlan`, validator, prompt examples và regression cases |
 | LLM API lỗi hoặc hết quota | Search trả lỗi | Timeout, retry giới hạn, mock và summary fallback deterministic |
-| VPS thiếu RAM | Elasticsearch restart hoặc OOM | Giới hạn container, giảm service không cần thiết hoặc nâng instance |
+| VPS thiếu RAM | Elasticsearch restart hoặc OOM | Giới hạn container, không bật Kibana mặc định hoặc nâng instance |
 | Domain chưa active | Không lấy được HTTPS | Mua domain ngày 1, vẫn test qua Elastic IP trước |
 | CI integration test chậm | Workflow timeout | Seed dataset nhỏ hơn cho CI, dataset 10.000 chỉ dùng demo |
 | Deploy lỗi sát deadline | Website down | Deploy thủ công ngày 8, CD ngày 12, giữ tag SHA trước để rollback |
@@ -646,6 +654,9 @@ AWS khuyến nghị dùng Elastic IP để địa chỉ EC2 không đổi khi tr
 
 - [Elasticsearch Docker Compose](https://www.elastic.co/docs/deploy-manage/deploy/self-managed/install-elasticsearch-docker-compose)
 - [Elasticsearch Docker production recommendations](https://www.elastic.co/docs/deploy-manage/deploy/self-managed/install-elasticsearch-docker-prod)
+- [Kibana Discover](https://www.elastic.co/guide/en/kibana/current/discover.html)
+- [Kibana Console](https://www.elastic.co/docs/explore-analyze/query-filter/tools/console)
+- [PostgreSQL COPY](https://www.postgresql.org/docs/current/sql-copy.html)
 - [GitHub Actions publishing Docker images](https://docs.github.com/actions/tutorials/publish-packages/publish-docker-images)
 - [GitHub Container Registry](https://docs.github.com/packages/working-with-a-github-packages-registry/working-with-the-container-registry)
 - [AWS Route 53 domain registration](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/registrar.html)

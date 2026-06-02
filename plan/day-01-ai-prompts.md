@@ -20,6 +20,7 @@ Kết quả cần đạt cuối ngày:
 
 - Có skeleton monolith gồm Spring Boot backend và React frontend với Tailwind CSS + shadcn/ui foundation.
 - Có PostgreSQL, Elasticsearch, backend và frontend chạy local bằng Docker Compose.
+- Có thể bật Kibana tùy chọn bằng Docker Compose profile `tools` khi cần debug Elasticsearch.
 - Có endpoint `GET /api/v1/health/live`.
 - Frontend gọi health API và hiển thị trạng thái backend.
 - Swagger UI mở được.
@@ -57,8 +58,9 @@ Kiến trúc đã chốt:
 - Modular monolith, không dùng microservices.
 - Backend: Java 21 + Spring Boot 3.
 - Frontend: React + TypeScript + Vite; tích hợp Tailwind CSS + shadcn/ui tại Prompt 4.
-- Search engine: Elasticsearch Basic self-managed.
-- Database: PostgreSQL.
+- Search engine: Elasticsearch `9.4.2` Basic self-managed.
+- Database: PostgreSQL self-managed + Flyway.
+- Local tooling: pgAdmin Desktop tùy chọn; Kibana `9.4.2` tùy chọn qua Docker Compose profile `tools`.
 - Local deployment: Docker Compose.
 
 Task hiện tại chỉ là scaffold cấu trúc repository:
@@ -269,6 +271,7 @@ Tiếp tục triển khai ngày 1 cho SOC AI Search MVP.
 Hãy tích hợp PostgreSQL và Flyway vào backend monolith.
 
 MVP chỉ cần một bảng PostgreSQL: search_query_logs.
+Sử dụng PostgreSQL self-managed trong Docker Compose. Không tích hợp Supabase trong giai đoạn MVP.
 
 Yêu cầu:
 1. Thêm dependency:
@@ -326,23 +329,27 @@ Yêu cầu:
    - elasticsearch
    - backend
    - frontend
-4. Pin Elasticsearch chính xác:
-   docker.elastic.co/elasticsearch/elasticsearch:9.4.1
-5. Elasticsearch local chạy single-node và dùng named volume.
-6. PostgreSQL dùng named volume.
-7. Backend chờ hoặc retry hợp lý khi PostgreSQL chưa ready.
-8. Frontend gọi backend qua /api.
-9. Tạo healthcheck phù hợp cho PostgreSQL, Elasticsearch và backend nếu khả thi.
-10. Tạo hoặc cập nhật .env.example với placeholder, không ghi secret thật.
-11. Tạo hoặc cập nhật .gitignore để bỏ qua .env, build artifacts, IDE files và node_modules.
-12. Tạo script bootstrap Elasticsearch hoặc hướng dẫn rõ cách apply mapping soc-events-v1 khi Elasticsearch đã ready.
-13. Chạy docker compose config và nếu môi trường cho phép thì chạy docker compose up -d, kiểm tra health và Swagger.
-14. Báo lại:
+4. Thêm service kibana tùy chọn với profile tools. Không khởi động Kibana trong lệnh docker compose up mặc định.
+5. Pin Elasticsearch và Kibana chính xác cùng version:
+   docker.elastic.co/elasticsearch/elasticsearch:9.4.2
+   docker.elastic.co/kibana/kibana:9.4.2
+6. Elasticsearch local chạy single-node và dùng named volume.
+7. PostgreSQL dùng named volume.
+8. Không thêm pgAdmin container. pgAdmin Desktop là công cụ tùy chọn chạy trên máy cá nhân. Nếu publish cổng quản trị local `5432`, `9200` hoặc `5601`, chỉ bind vào `127.0.0.1`, không bind public.
+9. Backend chờ hoặc retry hợp lý khi PostgreSQL chưa ready.
+10. Frontend gọi backend qua /api.
+11. Tạo healthcheck phù hợp cho PostgreSQL, Elasticsearch và backend nếu khả thi.
+12. Tạo hoặc cập nhật .env.example với placeholder, không ghi secret thật.
+13. Tạo hoặc cập nhật .gitignore để bỏ qua .env, build artifacts, IDE files và node_modules.
+14. Tạo script bootstrap Elasticsearch hoặc hướng dẫn rõ cách apply mapping soc-events-v1 khi Elasticsearch đã ready.
+15. Chạy docker compose config và docker compose --profile tools config. Nếu môi trường cho phép thì chạy docker compose up -d, kiểm tra health và Swagger. Bật Kibana riêng bằng docker compose --profile tools up -d kibana để kiểm tra cấu hình tùy chọn.
+16. Báo lại:
    - lệnh đã chạy
    - service nào healthy
    - URL frontend
    - URL health API
    - URL Swagger
+   - URL Kibana local tùy chọn
    - file đã tạo hoặc sửa
 
 Không thêm Nginx host production, domain, SSL, auth, ingest API hoặc LLM.
@@ -354,6 +361,8 @@ Không thêm Nginx host production, domain, SSL, auth, ingest API hoặc LLM.
 docker compose config
 docker compose up -d --build
 docker compose ps
+docker compose --profile tools config
+docker compose --profile tools up -d kibana
 ```
 
 Kiểm tra:
@@ -363,6 +372,7 @@ Kiểm tra:
 - Swagger UI: `http://localhost:<backend-port>/swagger-ui.html`
 - Elasticsearch health phản hồi.
 - PostgreSQL healthy.
+- Kibana tùy chọn mở tại `http://localhost:5601` khi bật profile `tools`.
 
 ## 10. Prompt 8 - Verify Ngày 1 và cập nhật README
 
@@ -386,10 +396,12 @@ Kiểm tra:
 6. Tailwind CSS + shadcn/ui foundation đã được cấu hình; frontend lint và build thành công.
 7. docker compose config hợp lệ.
 8. docker compose up -d --build chạy được nếu môi trường có Docker.
-9. Elasticsearch pin đúng phiên bản 9.4.1.
-10. Có mapping soc-events-v1.
-11. Có Flyway migration tạo đúng một PostgreSQL table search_query_logs.
-12. Không có secret thật trong Git-tracked files.
+9. Elasticsearch pin đúng phiên bản 9.4.2.
+10. Kibana tùy chọn nằm trong profile tools và pin cùng phiên bản 9.4.2.
+11. Không có pgAdmin container trong stack mặc định.
+12. Có mapping soc-events-v1.
+13. Có Flyway migration tạo đúng một PostgreSQL table search_query_logs.
+14. Không có secret thật trong Git-tracked files.
 
 Sau đó:
 1. Sửa lỗi nhỏ nếu phát hiện.
@@ -397,6 +409,7 @@ Sau đó:
    - prerequisites
    - cách tạo .env từ .env.example
    - cách chạy docker compose
+   - cách bật Kibana tùy chọn bằng profile tools khi cần debug Elasticsearch
    - URL frontend, health API và Swagger
    - cách kiểm tra service
    - ghi rõ đây mới là skeleton ngày 1
