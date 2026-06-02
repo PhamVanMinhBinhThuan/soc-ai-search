@@ -357,22 +357,63 @@ Không thêm Nginx host production, domain, SSL, auth, ingest API hoặc LLM.
 
 **Checkpoint:**
 
-```bash
+Lần chạy đầu tiên hoặc sau khi thay đổi Dockerfile, dependency:
+
+```powershell
+Copy-Item .env.example .env
 docker compose config
-docker compose up -d --build
-docker compose ps
 docker compose --profile tools config
-docker compose --profile tools up -d kibana
+docker compose up -d --build
+.\scripts\bootstrap-elasticsearch.ps1
+docker compose ps
 ```
 
-Kiểm tra:
+Những lần chạy tiếp theo khi không thay đổi Dockerfile hoặc dependency:
 
-- Frontend: `http://localhost:<frontend-port>`
-- Health API: `http://localhost:<backend-port>/api/v1/health/live`
-- Swagger UI: `http://localhost:<backend-port>/swagger-ui.html`
-- Elasticsearch health phản hồi.
-- PostgreSQL healthy.
+```powershell
+docker compose up -d
+.\scripts\bootstrap-elasticsearch.ps1
+docker compose ps
+```
+
+Kiểm tra trực tiếp các URL đã cấu hình:
+
+```powershell
+Invoke-RestMethod http://localhost:8081/api/v1/health/live
+Invoke-RestMethod http://localhost:3000/api/v1/health/live
+Invoke-WebRequest http://localhost:8081/swagger-ui.html -UseBasicParsing
+Invoke-RestMethod http://localhost:9200/_cluster/health
+```
+
+Kiểm tra Flyway đã tạo PostgreSQL table:
+
+```powershell
+docker compose exec -T postgres psql -U soc_ai_search -d soc_ai_search -c "\dt"
+docker compose exec -T postgres psql -U soc_ai_search -d soc_ai_search -c "SELECT installed_rank, version, description, success FROM flyway_schema_history ORDER BY installed_rank;"
+```
+
+Chỉ bật Kibana khi cần debug Elasticsearch:
+
+```powershell
+docker compose --profile tools up -d kibana
+docker compose --profile tools ps
+```
+
+Mở trình duyệt:
+
+- Frontend React: `http://localhost:3000`
+- Health API trực tiếp: `http://localhost:8081/api/v1/health/live`
+- Health API qua Nginx frontend proxy: `http://localhost:3000/api/v1/health/live`
+- Swagger UI: `http://localhost:8081/swagger-ui.html`
+- Elasticsearch: `http://localhost:9200`
+- PostgreSQL cho pgAdmin Desktop: `localhost:5433`
 - Kibana tùy chọn mở tại `http://localhost:5601` khi bật profile `tools`.
+
+Lưu ý:
+
+- Bên trong Docker network, backend vẫn chạy cổng `8080` và PostgreSQL vẫn chạy cổng `5432`.
+- Cổng host local dùng `8081` cho backend và `5433` cho PostgreSQL để tránh xung đột với service khác đang chạy trên máy.
+- Dùng `docker compose down` để dừng stack. Không thêm `-v` nếu muốn giữ dữ liệu PostgreSQL và Elasticsearch trong named volume.
 
 ## 10. Prompt 8 - Verify Ngày 1 và cập nhật README
 

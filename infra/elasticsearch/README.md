@@ -32,7 +32,7 @@ Nếu sau này cần lưu raw log dạng JSON object, hãy đánh giá chuyển 
 
 ## Kiểm tra bằng Kibana
 
-Kibana `9.4.2` là công cụ tùy chọn để debug Elasticsearch trong môi trường local. Khi Docker Compose profile `tools` đã được bổ sung, có thể bật Kibana và tạo Data View:
+Kibana `9.4.2` là công cụ tùy chọn để debug Elasticsearch trong môi trường local. Bật Kibana bằng Docker Compose profile `tools`, sau đó tạo Data View:
 
 ```text
 soc-events-v1
