@@ -4,7 +4,7 @@
 
 ## Trạng thái
 
-Repository đang ở giai đoạn **scaffold ngày 1**. Backend Spring Boot và frontend React với Tailwind CSS + shadcn/ui foundation đã được khởi tạo. Các phần Elasticsearch, PostgreSQL, Docker Compose và CI/CD chưa được tích hợp.
+Repository đang ở giai đoạn **scaffold ngày 1**. Backend Spring Boot, frontend React với Tailwind CSS + shadcn/ui foundation, Elasticsearch mapping và PostgreSQL/Flyway foundation đã được khởi tạo. Docker Compose và CI/CD chưa được tích hợp.
 
 ## Kiến trúc
 
