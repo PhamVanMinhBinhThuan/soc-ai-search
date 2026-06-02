@@ -16,7 +16,7 @@ Không nên triển khai đồng thời Elasticsearch, OpenSearch và ClickHouse
 - Thống kê `COUNT`, `GROUP BY`, `TOP N`, time bucket.
 - Trả kết quả qua REST API, pagination và export CSV.
 - Có đường mở rộng sang semantic search, kNN và hybrid search nếu còn thời gian.
-- Đóng gói bằng Docker Compose và dễ demo với dataset từ 10.000 event.
+- Đóng gói bằng Docker Compose, phát triển nhẹ với dataset local từ `10.000` event document và có thể seed vài triệu document trước buổi bảo vệ hội đồng.
 
 Elasticsearch phù hợp vì đây là search và analytics engine phổ biến, có nhiều tài liệu, ví dụ và client library. Điều này thuận lợi cho sinh viên khi cần tự học, xử lý lỗi và hoàn thành MVP trong thời gian giới hạn.
 
@@ -175,7 +175,7 @@ Elasticsearch Basic đáp ứng đầy đủ MVP nhưng native RRF hybrid search
 
 ### 2. Elasticsearch tốn RAM hơn ClickHouse
 
-Elasticsearch chạy trên JVM và search index có overhead. Với MVP 10.000 event, đổi lại ta có luồng full-text, filter và aggregation dễ hoàn thiện hơn. Chạy single-node trong Docker Compose là đủ cho demo.
+Elasticsearch chạy trên JVM và search index có overhead. Với dataset local mặc định `10.000` event document, single-node trong Docker Compose đủ để phát triển MVP. Trước buổi bảo vệ hội đồng, cần seed vài triệu document theo batch và benchmark lại disk, RAM cùng latency trên môi trường demo; nếu thiếu tài nguyên thì tăng cấu hình VPS hoặc điều chỉnh heap thay vì giả định kết quả từ dataset nhỏ.
 
 ### 3. Query DSL khó sinh hơn SQL
 

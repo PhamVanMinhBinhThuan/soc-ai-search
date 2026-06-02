@@ -163,13 +163,13 @@ sequenceDiagram
 
 ### 4.3. Bulk Ingest for Demo Dataset
 
-Dataset demo từ 10.000 event trở lên nên dùng:
+Dataset local mặc định `10.000` event document và dataset vài triệu document dùng khi chuẩn bị bảo vệ hội đồng đều nên dùng:
 
 ```text
 POST /api/v1/events/bulk
 ```
 
-hoặc seed script nội bộ. Backend validate batch, chuyển thành bulk request và gọi Elasticsearch Bulk API. Không gửi từng event bằng 10.000 HTTP request riêng lẻ từ frontend.
+hoặc seed script nội bộ có tham số số lượng. Backend validate từng batch, chuyển thành bulk request và gọi Elasticsearch Bulk API. Không gửi từng event bằng hàng nghìn hoặc hàng triệu HTTP request riêng lẻ từ frontend.
 
 ## 5. Flow 2 - Natural Language Search
 

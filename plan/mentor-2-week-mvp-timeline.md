@@ -64,7 +64,7 @@ Chưa cần bảng user riêng vì auth đầy đủ không thuộc phạm vi MV
 | Ngày | Công việc trọng tâm | Kết quả cần đạt |
 | --- | --- | --- |
 | Ngày 1 | Chốt kiến trúc monolith, thiết kế Elasticsearch mapping và bảng PostgreSQL; tạo skeleton Spring Boot, React, Tailwind CSS, shadcn/ui và Docker Compose | Project chạy local, health API và Swagger hoạt động |
-| Ngày 2 | Hoàn thiện mapping, migration PostgreSQL, pipeline ingest và script sinh tối thiểu (10.000 - vài triệu event) event mẫu | Có dataset demo và ingest API |
+| Ngày 2 | Hoàn thiện mapping, migration PostgreSQL, pipeline ingest và script sinh event có tham số số lượng; seed mặc định 10.000 event local | Có dataset local nhẹ máy và ingest API |
 | Ngày 3 | Xây dựng search API: filter thời gian, severity, event type, user, host, IP; pagination và event detail … (tùy vào schema thiết kế) | Search cơ bản chạy đúng trên Elasticsearch |
 | Ngày 4 | Tích hợp LLM: natural language -> `SearchPlan` -> validate -> Elasticsearch DSL | Tìm kiếm bằng câu hỏi Việt/Anh, hiển thị DSL đã sinh |
 | Ngày 5 | Xây dựng aggregation API: `COUNT`, `GROUP BY`, `TOP N`, time bucket phút/giờ/ngày | Các truy vấn thống kê trả đúng dữ liệu |
@@ -76,7 +76,7 @@ Chưa cần bảng user riêng vì auth đầy đủ không thuộc phạm vi MV
 | Ngày | Công việc trọng tâm | Kết quả cần đạt |
 | --- | --- | --- |
 | Ngày 8 | Tạo cấu hình production Docker Compose; chuẩn bị EC2 Ubuntu, Nginx và volume dữ liệu | Deploy thủ công được lên VPS |
-| Ngày 9 | Trỏ domain, cấu hình SSL bằng Certbot, seed dataset và chạy smoke test | Website HTTPS truy cập được |
+| Ngày 9 | Trỏ domain, cấu hình SSL bằng Certbot, seed dataset với số lượng phù hợp môi trường mentor và chạy smoke test | Website HTTPS truy cập được |
 | Ngày 10 | Viết unit test và integration test cho ingest, search, aggregation, audit và export | Coverage backend đạt tối thiểu 50% |
 | Ngày 11 | Hoàn thiện Swagger/OpenAPI, README và GitHub Actions CI | Push code chạy test và build tự động |
 | Ngày 12 | Cấu hình GitHub Actions CD deploy lên EC2 | Push `main` có thể cập nhật bản demo |
@@ -87,7 +87,8 @@ Chưa cần bảng user riêng vì auth đầy đủ không thuộc phạm vi MV
 
 - Source code trên GitHub.
 - Website demo qua domain HTTPS.
-- Dataset mẫu từ 10.000 event.
+- Dataset local và demo mentor từ `10.000` event document.
+- Script seed có tham số số lượng để nạp vài triệu event document trước buổi bảo vệ hội đồng.
 - Swagger/OpenAPI.
 - Docker Compose local và production.
 - GitHub Actions CI/CD.

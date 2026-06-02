@@ -28,7 +28,8 @@ Elasticsearch, PostgreSQL, Nginx và LLM không phải các microservice do hệ
 ### 2.1. In Scope for MVP
 
 - Ingest event qua REST API.
-- Lưu trữ ít nhất 10.000 event demo trong Elasticsearch.
+- Lưu trữ tối thiểu `10.000` event document trong Elasticsearch cho phát triển local và demo MVP.
+- Hỗ trợ seed vài triệu event document trước buổi bảo vệ hội đồng bằng script có tham số số lượng.
 - Tìm kiếm full-text và filter theo field.
 - Thống kê `COUNT`, `GROUP BY`, `TOP N`, time bucket.
 - Chuyển natural language thành `SearchPlan`, sau đó compile thành Elasticsearch Query DSL.
@@ -233,7 +234,7 @@ flowchart LR
     API -->|"201 Created"| Producer
 ```
 
-Event được validate tại backend trước khi index. Dataset demo từ 10.000 event trở lên nên dùng endpoint bulk hoặc seed script gọi Elasticsearch Bulk API thông qua backend hoặc tooling nội bộ.
+Event được validate tại backend trước khi index. Dataset local mặc định là `10.000` event document để nhẹ máy. Khi chuẩn bị bảo vệ hội đồng, dùng cùng script có tham số số lượng để seed vài triệu document theo batch qua Elasticsearch Bulk API thông qua backend hoặc tooling nội bộ. Event không được lưu thành row trong PostgreSQL.
 
 ### 7.2. Natural-Language Search
 

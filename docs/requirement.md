@@ -15,6 +15,8 @@ Mô tả
   - Schema event tối thiểu: `timestamp`, `source`, `severity`, `event_type`, `user`, `host`, `ip`, `message`, `raw`.
   - Có **sample dataset** (≥ 10.000 event) để demo end-to-end.
   - API ingest event qua REST.
+
+  > **Ghi chú triển khai nội bộ:** `10.000` event là mức tối thiểu của MVP và là mặc định phù hợp khi phát triển local để nhẹ máy. Trước buổi bảo vệ hội đồng, dùng script có tham số số lượng và Elasticsearch Bulk API để seed vài triệu event synthetic theo batch. Event trong Elasticsearch là document, không phải row của PostgreSQL.
   
   ### 2. Tìm kiếm và Thống kê bằng ngôn ngữ tự nhiên (NL → Query)
   - Nhận câu hỏi tự nhiên (tiếng Việt hoặc tiếng Anh) cho cả 2 dạng:

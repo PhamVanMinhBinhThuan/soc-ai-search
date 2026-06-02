@@ -15,7 +15,8 @@ Kết quả cuối kỳ phải có:
 - Repository GitHub có README, tài liệu kiến trúc và hướng dẫn chạy local.
 - Website truy cập được bằng domain HTTPS.
 - Pipeline GitHub Actions chạy test, build image và deploy lên VPS.
-- Dataset synthetic từ 10.000 event trở lên.
+- Dataset synthetic local và demo mentor từ `10.000` event document trở lên.
+- Script seed có tham số số lượng để nạp vài triệu event document trước buổi bảo vệ hội đồng.
 - Data model Elasticsearch và PostgreSQL được mô tả rõ ràng.
 - Demo được tìm kiếm, thống kê, biểu đồ, tóm tắt LLM, export CSV, lịch sử và audit log.
 - OpenAPI/Swagger hoạt động.
@@ -42,6 +43,15 @@ Không triển khai trong 14 ngày đầu:
 - Kiến trúc nhiều search engine.
 
 Các chức năng này có giá trị, nhưng làm sớm sẽ đẩy rủi ro sang phần MVP.
+
+### 2.1. Chiến lược dataset theo giai đoạn
+
+- **Local development:** script seed mặc định `10.000` event document để chạy nhẹ máy và phát triển nhanh.
+- **CI:** dùng fixture nhỏ hơn để workflow không timeout.
+- **Demo mentor sau 2 tuần:** dùng tối thiểu `10.000` event document để kiểm tra đầy đủ luồng MVP.
+- **Bảo vệ hội đồng:** trước buổi demo, chạy cùng script với tham số số lượng để seed vài triệu event document theo batch và benchmark lại disk, RAM cùng latency.
+
+Event SOC được lưu dưới dạng document trong Elasticsearch, không phải row trong PostgreSQL. PostgreSQL chỉ lưu dữ liệu ứng dụng như query history và audit log.
 
 ## 3. Stack đề xuất
 
@@ -144,10 +154,10 @@ Nếu sau MVP cần auth đầy đủ hoặc audit bất biến nghiêm ngặt h
 
 - Schema tối thiểu: `timestamp`, `source`, `severity`, `event_type`, `user`, `host`, `ip`, `message`, `raw`.
 - Bổ sung `country_code` để demo truy vấn theo quốc gia.
-- Script sinh dữ liệu synthetic có seed cố định, tạo ít nhất 10.000 event.
+- Script sinh dữ liệu synthetic có seed cố định, nhận tham số số lượng và mặc định tạo `10.000` event document khi chạy local.
 - Có pattern dễ quan sát: burst login thất bại, IP gây nhiều alert, severity khác nhau và event trải theo thời gian.
 - REST API ingest một event.
-- Endpoint bulk ingest hoặc script seed gọi Elasticsearch Bulk API để nạp dataset demo nhanh.
+- Endpoint bulk ingest hoặc script seed gọi Elasticsearch Bulk API theo batch để nạp nhanh cả dataset local và dataset vài triệu document trước buổi bảo vệ.
 
 ### 5.3. Natural language thành query
 
@@ -248,7 +258,7 @@ Việc cần làm:
 
 ### Ngày 2 - Thứ Ba, 02/06: Mapping, ingest pipeline và dataset demo
 
-**Mục tiêu:** có kho event thật để phát triển mọi luồng sau đó.
+**Mục tiêu:** có kho event local đủ dùng để phát triển mọi luồng sau đó và script có thể scale khi chuẩn bị bảo vệ.
 
 Việc cần làm:
 
@@ -259,7 +269,7 @@ Việc cần làm:
   - `raw`: không index
   - field filter: `keyword`
   - `ip`: `ip`
-- Viết script sinh ít nhất 10.000 event synthetic với seed cố định.
+- Viết script sinh event synthetic với seed cố định, nhận tham số số lượng và mặc định tạo `10.000` document local.
 - Đảm bảo event có pattern demo:
   - login thất bại từ `CN` trong 24 giờ gần nhất;
   - một số IP tạo nhiều alert;
@@ -272,7 +282,8 @@ Việc cần làm:
 
 **Điều kiện hoàn thành:**
 
-- Elasticsearch chứa ít nhất 10.000 event.
+- Elasticsearch local chứa ít nhất `10.000` event document.
+- Script seed có tham số số lượng để dùng lại khi nạp vài triệu document trước buổi bảo vệ hội đồng.
 - Có thể ingest thêm event qua Swagger.
 - Query trực tiếp Elasticsearch trả đúng pattern đã seed.
 
@@ -434,7 +445,7 @@ Việc cần làm:
 - Cài Certbot với Nginx plugin để lấy SSL certificate từ Let's Encrypt.
 - Bảo vệ website demo bằng password tại reverse proxy hoặc cơ chế demo tương đương.
 - Kiểm tra HTTPS, redirect HTTP -> HTTPS và API qua domain.
-- Chạy seed data trên VPS.
+- Chạy seed data trên VPS với số lượng phù hợp cho demo mentor; giữ tham số để seed vài triệu document khi chuẩn bị bảo vệ hội đồng.
 - Viết script smoke test:
   - health live;
   - health ready;
@@ -604,9 +615,9 @@ SSH into EC2
 
 GitHub Actions có thể dùng `GITHUB_TOKEN` để publish package gắn với repository theo [GitHub Container Registry docs](https://docs.github.com/packages/working-with-a-github-packages-registry/working-with-the-container-registry). Secrets nên đặt trong GitHub Environment hoặc repository secrets theo [GitHub Actions secrets docs](https://docs.github.com/actions/security-for-github-actions/security-guides/using-secrets-in-github-actions).
 
-## 9. Kịch bản demo mentor 7-10 phút
+## 9. Kịch bản demo mentor hoặc hội đồng 7-10 phút
 
-1. Mở website HTTPS và giới thiệu schema event cùng dataset trên 10.000 dòng.
+1. Mở website HTTPS và giới thiệu schema event cùng quy mô dataset: tối thiểu `10.000` document cho demo mentor, vài triệu document cho buổi bảo vệ hội đồng.
 2. Search tiếng Anh: `"Show me failed login attempts from China in the last 24h"`.
 3. Chỉ DSL được sinh, bảng kết quả, pagination và raw event detail.
 4. Search tiếng Việt: `"Tìm alert critical trong 7 ngày qua"`.
@@ -645,7 +656,7 @@ AWS khuyến nghị dùng Elastic IP để địa chỉ EC2 không đổi khi tr
 | LLM API lỗi hoặc hết quota | Search trả lỗi | Timeout, retry giới hạn, mock và summary fallback deterministic |
 | VPS thiếu RAM | Elasticsearch restart hoặc OOM | Giới hạn container, không bật Kibana mặc định hoặc nâng instance |
 | Domain chưa active | Không lấy được HTTPS | Mua domain ngày 1, vẫn test qua Elastic IP trước |
-| CI integration test chậm | Workflow timeout | Seed dataset nhỏ hơn cho CI, dataset 10.000 chỉ dùng demo |
+| CI integration test chậm | Workflow timeout | Dùng fixture nhỏ cho CI, seed mặc định `10.000` document khi phát triển local và chỉ seed vài triệu document riêng cho môi trường bảo vệ |
 | Deploy lỗi sát deadline | Website down | Deploy thủ công ngày 8, CD ngày 12, giữ tag SHA trước để rollback |
 | Lộ API key | Key xuất hiện trong Git hoặc log | `.env.example`, GitHub secrets, kiểm tra log và rotate key ngay nếu lộ |
 | Scope phình | MVP chưa xong nhưng bắt đầu vector hoặc K8S | Không triển khai chức năng khuyến khích trong timeline 2 tuần |

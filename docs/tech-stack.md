@@ -117,6 +117,13 @@ Elasticsearch
 - Filter theo thời gian, severity, event type, user, host, IP và country code.
 - Aggregation: `COUNT`, `GROUP BY`, `TOP N`, bucket theo phút, giờ và ngày.
 
+### Quy mô dataset
+
+- Khi phát triển local, seed mặc định `10.000` event document để chạy nhẹ máy.
+- Script sinh dữ liệu phải nhận tham số số lượng và seed theo batch bằng Elasticsearch Bulk API.
+- Trước buổi bảo vệ hội đồng, seed vài triệu event document trên môi trường demo và đo lại disk, RAM cùng latency truy vấn.
+- PostgreSQL không lưu các event này; PostgreSQL chỉ lưu metadata ứng dụng như query history và audit log.
+
 Schema event tối thiểu:
 
 | Field | Kiểu Elasticsearch |

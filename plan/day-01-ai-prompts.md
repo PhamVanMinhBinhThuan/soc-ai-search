@@ -32,7 +32,7 @@ Kết quả cần đạt cuối ngày:
 Không làm trong ngày 1:
 
 - Ingest API.
-- Script seed 10.000 event.
+- Script seed event có mặc định `10.000` document local và tham số để scale lên vài triệu document trước buổi bảo vệ.
 - LLM integration.
 - Search API.
 - Auth.
@@ -259,7 +259,7 @@ Yêu cầu:
 
 - Có file mapping rõ ràng.
 - `raw` dùng `type: text`, `index: false`.
-- Không có script seed 10.000 event trong bước này.
+- Không có script seed event trong bước này. Script sẽ được làm ở ngày 2 với mặc định `10.000` document local và tham số số lượng để scale trước buổi bảo vệ.
 
 ## 8. Prompt 6 - PostgreSQL migration cho bảng MVP
 
