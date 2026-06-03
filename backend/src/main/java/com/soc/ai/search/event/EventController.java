@@ -28,4 +28,15 @@ public class EventController {
                 .status(HttpStatus.CREATED)
                 .body(eventIngestService.ingest(request));
     }
+
+    @PostMapping("/bulk")
+    @Operation(
+            summary = "Bulk ingest SOC events into Elasticsearch",
+            description = "Request body format: { \"events\": [ ... ] }. Maximum 1000 events per request.")
+    public ResponseEntity<BulkIngestEventsResponse> ingestBulk(
+            @Valid @RequestBody BulkIngestEventsRequest request) {
+        var response = eventIngestService.ingestBulk(request);
+        var status = response.hasFailures() ? HttpStatus.MULTI_STATUS : HttpStatus.CREATED;
+        return ResponseEntity.status(status).body(response);
+    }
 }
