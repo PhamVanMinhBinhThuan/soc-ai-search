@@ -293,7 +293,8 @@ Việc cần làm:
 
 Việc cần làm:
 
-- Định nghĩa Java record hoặc class `SearchPlan` với Bean Validation.
+- Định nghĩa `SearchPlan` và các DTO con bằng Java `record` với Bean Validation để giữ dữ liệu truy vấn bất biến, dễ parse từ JSON và dễ test.
+- Dùng `class` hoặc Spring `@Service` cho phần có logic xử lý như validator, compiler và executor; không nhồi business logic vào record.
 - Hỗ trợ filter thời gian, severity, event type, user, host, IP và country code.
 - Compile `SearchPlan` thành Query DSL:
   - `bool.filter`
