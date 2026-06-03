@@ -325,7 +325,7 @@ Invoke-RestMethod `
 
 ## 8. Prompt 5 - Viết script generate và seed event synthetic
 
-**Mục tiêu:** tạo dataset local mặc định `10.000` document, có thể scale số lượng khi cần.
+**Mục tiêu:** tạo dataset local mặc định `10.000` document, có pattern SOC rõ để demo search/aggregation, có thể scale số lượng khi cần.
 
 ```text
 Tiếp tục triển khai ngày 2 cho SOC AI Search MVP.
@@ -340,30 +340,78 @@ Yêu cầu:
    - Count, mặc định 10000.
    - BatchSize, mặc định 1000.
    - Seed, mặc định cố định để dữ liệu reproducible.
+   - BaseTimeUtc, optional, mặc định là thời điểm UTC hiện tại để các truy vấn "last 24h" luôn có dữ liệu; nếu truyền vào thì dataset có thể tái lập chính xác theo thời gian đó.
    - ElasticsearchUrl, mặc định http://localhost:9200.
    - Index, mặc định soc-events-v1.
+   - GenerateOnly, switch optional: chỉ sinh file NDJSON, không gọi Elasticsearch.
+   - OutputPath, mặc định generated-data/events.ndjson, dùng khi GenerateOnly hoặc khi cần ghi file để debug.
+   - SeedFromFile, optional: đọc NDJSON đã sinh sẵn và bulk vào Elasticsearch.
 4. Script seed trực tiếp vào Elasticsearch bằng Bulk API để nhanh.
-5. Không tạo file dataset vài triệu document trong repo.
-6. Nếu script có mode ghi file tạm, ghi vào thư mục ignored như .tmp/ hoặc generated-data/ và cập nhật .gitignore.
-7. Dữ liệu phải có pattern demo:
-   - failed login từ country_code CN trong 24 giờ gần nhất;
-   - một vài IP có nhiều event bất thường;
-   - severity phân bố low, medium, high, critical;
+5. Khi dùng `GenerateOnly`, script sinh `generated-data/events.ndjson` theo format NDJSON phù hợp Elasticsearch Bulk API:
+   - mỗi document gồm 2 dòng: metadata action `index` và source document;
+   - metadata có `_index` và `_id` deterministic;
+   - file dùng để xem/debug hoặc seed lại khi Elasticsearch volume bị mất.
+6. Khi dùng `SeedFromFile`, script đọc NDJSON theo batch và gọi Elasticsearch Bulk API, không cần generate lại data.
+7. Dùng `_id` deterministic cho document, ví dụ `seed-{Seed}-{i}`, để chạy lại cùng Count/Seed không nhân đôi dữ liệu mà ghi đè cùng document.
+8. Không tạo file dataset vài triệu document trong repo.
+9. `generated-data/`, `.tmp/` hoặc thư mục output tương tự phải nằm trong `.gitignore`; không commit dataset sinh ra.
+10. Nếu vừa generate vừa seed trong một lần chạy là optional; mặc định ưu tiên seed trực tiếp nhanh, còn `GenerateOnly` dùng khi muốn inspect/backup local.
+11. Tất cả document phải khớp mapping `soc-events-v1` và validation hiện tại của `IngestEventRequest`:
+   - timestamp ISO-8601;
+   - severity chỉ gồm low, medium, high, critical;
+   - ip hợp lệ;
+   - không sinh field ngoài mapping vì index đang kiểm soát dynamic mapping.
+12. Dữ liệu không được là random rác. Phải có các nhóm scenario SOC có thể demo:
+   - Authentication attack: nhiều `failed_login` từ `country_code = CN` trong 24 giờ gần nhất, tập trung vào một vài user như `admin`, `vpn.user`, `finance.user`.
+   - Brute-force source IP: một vài IP cố định sinh nhiều event bất thường để demo "Top IP có nhiều alert nhất".
+   - Malware outbreak: `malware_detected` severity `high`/`critical` trên một nhóm host endpoint trong 7 ngày gần nhất.
+   - Suspicious outbound hoặc data exfiltration: `suspicious_outbound`, `large_transfer` hoặc `data_exfiltration` với message đủ rõ để full-text search.
+   - Firewall/SIEM block: `firewall_block` từ `firewall`, có source IP, country_code và message thể hiện connection bị chặn.
+   - Privilege escalation: `privilege_escalation` từ `windows-auth` hoặc `edr`, severity `high`/`critical`, liên quan user đặc quyền như `admin` hoặc `svc.backup`.
+   - Account lockout: `account_lockout` từ `windows-auth` hoặc `vpn`, thường đi cùng failed login/brute-force để demo chuỗi điều tra.
+   - Normal/background noise: `successful_login`, `dns_query`, `process_start`, `file_access` với severity `low`/`medium` trải đều 30 ngày để dataset không bị quá một màu.
+13. Phân bố dữ liệu cần hợp lý cho demo:
    - event trải qua ít nhất 30 ngày;
-   - message có text đủ để full-text search.
-8. Script phải in progress theo batch và summary cuối:
+   - luôn có dữ liệu trong 24 giờ gần nhất;
+   - severity có đủ `low`, `medium`, `high`, `critical`, ví dụ gần đúng low 40-50%, medium 25-35%, high 15-25%, critical 5-10%;
+   - source đa dạng, ví dụ `windows-auth`, `vpn`, `edr`, `firewall`, `proxy`, `dns`;
+   - country_code đa dạng, ví dụ `VN`, `CN`, `US`, `RU`, `SG`, `DE`, nhưng scenario chính vẫn phải có CN.
+14. Với Count nhỏ như 100, vẫn phải bảo đảm có tối thiểu một số "anchor events" cho các query demo chính:
+   - failed login từ CN trong 24h;
+   - ít nhất một critical malware event;
+   - ít nhất một `firewall_block`, một `privilege_escalation` và một `account_lockout`;
+   - ít nhất một IP lặp lại nhiều lần;
+   - ít nhất một message chứa từ khóa `brute force`, `malware detected`, `suspicious outbound`, `firewall block`, `privilege escalation`, `account lockout`.
+15. Message và raw phải có giá trị demo:
+   - `message` là câu ngắn dễ đọc, có keyword phục vụ full-text search.
+   - `raw` là chuỗi raw log giả lập có format tương đối thật, chứa timestamp, source, user, host, ip, severity, event_type; không dùng lorem ipsum.
+   - Không dùng dữ liệu SOC thật, không dùng thông tin cá nhân thật, không dùng API key/password thật.
+16. Script phải in progress theo batch và summary cuối:
    - requested_count
    - indexed_count
    - failed_count
    - elapsed_ms
-9. Script cần kiểm tra index tồn tại; nếu chưa có, hướng dẫn chạy .\scripts\bootstrap-elasticsearch.ps1 hoặc tự gọi bootstrap nếu hợp lý.
-10. Chỉ verify local với Count 100 hoặc 1000 trước, sau đó Count 10000 nếu máy ổn. Không chạy vài triệu document trong prompt này.
-11. Cập nhật README hoặc infra/elasticsearch/README ngắn gọn cách dùng script.
-12. Báo file đã tạo hoặc sửa và lệnh verify.
+   - output_file nếu có GenerateOnly;
+   - scenario counters, ví dụ failed_login_cn_24h, malware_critical, repeated_attacker_ip_events.
+17. Script cần kiểm tra index tồn tại; nếu chưa có, hướng dẫn chạy .\scripts\bootstrap-elasticsearch.ps1 hoặc tự gọi bootstrap nếu hợp lý.
+18. Chỉ verify local với Count 100 hoặc 1000 trước, sau đó Count 10000 nếu máy ổn. Không chạy vài triệu document trong prompt này.
+19. Cập nhật README hoặc infra/elasticsearch/README ngắn gọn cách dùng script và ghi rõ dataset là synthetic demo data:
+   - seed trực tiếp;
+   - generate NDJSON để xem/debug;
+   - seed lại từ file NDJSON khi Elasticsearch volume bị mất;
+   - cảnh báo không commit `generated-data/`.
+20. Bổ sung một vài lệnh query Elasticsearch để chứng minh dữ liệu demo có pattern:
+   - count tổng document;
+   - filter failed login từ CN trong 24h;
+   - aggregation severity;
+   - top IP có nhiều event nhất;
+   - full-text search message chứa `malware detected` hoặc `suspicious outbound`.
+21. Báo file đã tạo hoặc sửa và lệnh verify.
 
 Lưu ý quan trọng:
 - Event trong Elasticsearch là document, không phải PostgreSQL row.
 - Script phải scale được lên vài triệu document trước buổi bảo vệ, nhưng local development mặc định vẫn là 10000 để nhẹ máy.
+- Dataset dùng để demo nghiệp vụ SOC, nên ưu tiên pattern có thể giải thích được hơn là random hoàn toàn.
 - Không dùng dữ liệu SOC thật.
 ```
 
@@ -371,6 +419,9 @@ Lưu ý quan trọng:
 
 ```powershell
 .\scripts\bootstrap-elasticsearch.ps1
+.\scripts\seed-events.ps1 -Count 100 -GenerateOnly
+Get-Content .\generated-data\events.ndjson -TotalCount 6
+.\scripts\seed-events.ps1 -SeedFromFile .\generated-data\events.ndjson -BatchSize 50
 .\scripts\seed-events.ps1 -Count 100 -BatchSize 50
 Invoke-RestMethod "http://localhost:9200/soc-events-v1/_count"
 ```

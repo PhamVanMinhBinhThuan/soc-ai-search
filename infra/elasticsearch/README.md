@@ -41,3 +41,52 @@ soc-events-v1
 Chọn `timestamp` làm time field để xem document trong Discover. Có thể dùng Dev Tools Console để kiểm tra mapping và thử Query DSL.
 
 Kibana phải pin cùng version `9.4.2` với Elasticsearch. Kibana không thay thế frontend React của đồ án và không nên expose cổng `5601` public trên VPS.
+
+## Seed dữ liệu synthetic
+
+Dữ liệu demo được sinh bằng [scripts/seed-events.ps1](../../scripts/seed-events.ps1). Đây là dữ liệu synthetic, không phải dữ liệu SOC thật. Dataset có các pattern phục vụ demo như failed login từ CN trong 24 giờ gần nhất, IP brute-force lặp lại, malware critical, firewall block, privilege escalation và account lockout.
+
+Seed trực tiếp vào Elasticsearch bằng Bulk API:
+
+```powershell
+.\scripts\seed-events.ps1 -Count 10000 -BatchSize 1000
+```
+
+Sinh file NDJSON để xem/debug mà không gọi Elasticsearch:
+
+```powershell
+.\scripts\seed-events.ps1 -Count 100 -GenerateOnly
+Get-Content .\generated-data\events.ndjson -TotalCount 6
+```
+
+Seed lại từ file NDJSON nếu Elasticsearch volume bị mất:
+
+```powershell
+.\scripts\seed-events.ps1 -SeedFromFile .\generated-data\events.ndjson -BatchSize 1000
+```
+
+`generated-data/` được ignore bởi Git. Không commit dataset sinh ra, đặc biệt khi scale lên hàng trăm nghìn hoặc vài triệu document.
+
+Một số lệnh kiểm tra pattern:
+
+```powershell
+Invoke-RestMethod "http://localhost:9200/soc-events-v1/_count"
+
+$query = @{
+  query = @{
+    bool = @{
+      filter = @(
+        @{ term = @{ event_type = "failed_login" } },
+        @{ term = @{ country_code = "CN" } },
+        @{ range = @{ timestamp = @{ gte = "now-24h" } } }
+      )
+    }
+  }
+} | ConvertTo-Json -Depth 10
+
+Invoke-RestMethod `
+  -Method Post `
+  -Uri "http://localhost:9200/soc-events-v1/_search?pretty" `
+  -ContentType "application/json" `
+  -Body $query
+```

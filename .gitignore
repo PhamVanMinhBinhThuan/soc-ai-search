@@ -6,6 +6,9 @@ backend/target/
 frontend/node_modules/
 frontend/dist/
 
+generated-data/
+.tmp/
+
 .idea/
 .vscode/
 *.iml
