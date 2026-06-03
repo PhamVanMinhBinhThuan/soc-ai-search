@@ -74,7 +74,7 @@ Frontend không gọi trực tiếp Elasticsearch hoặc LLM API. Mọi request 
 - PostgreSQL Driver.
 - Flyway cho database migration.
 - Springdoc OpenAPI để sinh Swagger UI.
-- JUnit 5, Mockito và Testcontainers cho test.
+- JUnit 5, Mockito, MockMvc và smoke script PowerShell cho test/checkpoint MVP.
 
 ### Trách nhiệm
 
@@ -356,16 +356,19 @@ Secrets như database password, Elasticsearch password, JWT secret và LLM API k
 
 - JUnit 5.
 - Mockito.
-- Testcontainers.
+- MockMvc.
+- Smoke script PowerShell chạy trên Docker Compose local.
 - JaCoCo.
 
 ### Mục tiêu
 
 - Unit test cho `SearchPlan` validator và compiler.
-- Integration test cho PostgreSQL và Elasticsearch.
+- Smoke/integration-style test cho PostgreSQL và Elasticsearch thông qua Docker Compose local trong MVP.
 - Mock LLM trong test.
 - Test API ingest, search, aggregation, history và CSV export.
 - Coverage tối thiểu 50% theo yêu cầu MVP; đặt mục tiêu 60% để có khoảng an toàn.
+
+MVP ưu tiên unit test, controller test và smoke script trên Docker Compose local để giữ phạm vi test gọn, dễ chạy trên máy phát triển và phù hợp timeline 2 tuần.
 
 ## 12. Quyết định MVP tóm tắt
 

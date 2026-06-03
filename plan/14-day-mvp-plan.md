@@ -278,7 +278,7 @@ Việc cần làm:
 - Viết script seed bằng Elasticsearch Bulk API.
 - Có thể dùng Kibana Discover và Dev Tools để kiểm tra mapping, document và DSL trong môi trường local.
 - Cài API `POST /api/v1/events` và `/api/v1/events/bulk`.
-- Viết integration test cho mapping và ingest.
+- Viết smoke test PowerShell cho mapping, ingest và dataset pattern bằng Docker Compose local.
 
 **Điều kiện hoàn thành:**
 

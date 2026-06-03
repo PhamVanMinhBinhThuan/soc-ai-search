@@ -4,7 +4,7 @@
 
 ## Trạng thái
 
-Repository đang ở giai đoạn **scaffold ngày 1**. Backend Spring Boot, frontend React với Tailwind CSS + shadcn/ui foundation, Elasticsearch mapping, PostgreSQL/Flyway foundation và Docker Compose local đã được khởi tạo. CI/CD chưa được tích hợp.
+Repository đã hoàn thành foundation **ngày 2** cho MVP: backend/frontend scaffold, Docker Compose local, Elasticsearch mapping/bootstrap, PostgreSQL/Flyway, API ingest single/bulk event, script seed synthetic dataset và smoke test ngày 2. CI/CD, search bằng natural language và LLM chưa được tích hợp.
 
 ## Kiến trúc
 
@@ -66,6 +66,42 @@ docker compose --profile tools config
 docker compose ps
 Invoke-RestMethod -Uri http://localhost:8081/api/v1/health/live
 ```
+
+### Seed dữ liệu demo ngày 2
+
+Seed nhanh 100 event để kiểm tra local:
+
+```powershell
+.\scripts\bootstrap-elasticsearch.ps1
+.\scripts\seed-events.ps1 -Count 100 -BatchSize 50
+```
+
+Seed dataset local mặc định cho MVP:
+
+```powershell
+.\scripts\seed-events.ps1 -Count 10000 -BatchSize 1000
+```
+
+Không seed vài triệu document trên máy local khi chưa cần. Khi chuẩn bị bảo vệ hội đồng, dùng cùng script với tham số số lượng trên môi trường đủ tài nguyên.
+
+Sinh file NDJSON để xem/debug mà không gọi Elasticsearch:
+
+```powershell
+.\scripts\seed-events.ps1 -Count 100 -GenerateOnly
+Get-Content .\generated-data\events.ndjson -TotalCount 6
+```
+
+`generated-data/` được Git ignore và không được commit.
+
+### Smoke test ngày 2
+
+Sau khi Docker Compose đang chạy và đã seed dữ liệu:
+
+```powershell
+.\scripts\smoke-test-day-02.ps1
+```
+
+Smoke test kiểm tra Elasticsearch health, mapping, dataset pattern, single ingest, bulk ingest và validation lỗi `400`.
 
 ### Lưu ý về PostgreSQL password
 

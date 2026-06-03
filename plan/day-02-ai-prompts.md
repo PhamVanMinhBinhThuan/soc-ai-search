@@ -448,7 +448,7 @@ Yêu cầu:
 1. Đọc script seed, API ingest và mapping hiện có.
 2. Tạo script smoke test PowerShell trong scripts/, ví dụ `scripts/smoke-test-day-02.ps1`, vì môi trường local là Windows.
    - Script giả định Docker Compose local đang chạy.
-   - Không thêm Testcontainers vì requirement MVP không yêu cầu công nghệ test này.
+   - Không thêm công nghệ test/container test ngoài phạm vi MVP.
    - Không mở thêm phạm vi test ngoài smoke test cần thiết cho ngày 2.
 3. Kiểm tra các case Elasticsearch trực tiếp:
    - count tổng document trong soc-events-v1;
@@ -479,7 +479,7 @@ Yêu cầu:
 9. Chạy verify phù hợp và báo kết quả.
 
 Mục tiêu là có bằng chứng để ngày 3 bắt đầu search/filter trên dữ liệu thật.
-Trade-off: ngày 2 dùng smoke script với Docker Compose và Elasticsearch thật để kiểm chứng end-to-end nhẹ. MVP yêu cầu có test và bằng chứng kiểm tra, nhưng không yêu cầu Testcontainers, nên không triển khai Testcontainers để tránh mở rộng phạm vi không cần thiết.
+Trade-off: ngày 2 dùng smoke script với Docker Compose và Elasticsearch thật để kiểm chứng end-to-end nhẹ. MVP yêu cầu có test và bằng chứng kiểm tra, nên không mở rộng thêm công nghệ test ngoài phạm vi cần thiết.
 ```
 
 **Checkpoint:**

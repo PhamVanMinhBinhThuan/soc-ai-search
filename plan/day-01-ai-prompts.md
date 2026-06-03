@@ -297,7 +297,7 @@ Yêu cầu:
    - (user_identity, created_at DESC)
 4. Cấu hình datasource qua environment variables, không hardcode password.
 5. Tạo .env.example ở root nếu chưa có hoặc bổ sung biến PostgreSQL cần thiết.
-6. Đảm bảo test backend hiện có vẫn chạy được sau khi thêm datasource. Dùng test profile hoặc Testcontainers nếu cần; không hardcode database password và không làm repository hoặc business service chưa cần thiết.
+6. Đảm bảo test backend hiện có vẫn chạy được sau khi thêm datasource. Dùng test profile hoặc MockMvc nếu cần; không hardcode database password và không làm repository hoặc business service chưa cần thiết.
 7. Không tạo bảng users, roles, sessions hoặc saved_queries.
 8. Chạy test phù hợp và liệt kê file đã tạo hoặc sửa.
 
