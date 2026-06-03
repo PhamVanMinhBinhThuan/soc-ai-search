@@ -90,3 +90,13 @@ Invoke-RestMethod `
   -ContentType "application/json" `
   -Body $query
 ```
+
+## Smoke test ngày 2
+
+Sau khi Docker Compose, backend và Elasticsearch đang chạy, có thể kiểm tra nhanh toàn bộ phần ngày 2:
+
+```powershell
+.\scripts\smoke-test-day-02.ps1
+```
+
+Script này kiểm tra Elasticsearch health, mapping/index, dataset pattern, single ingest API, bulk ingest API và request invalid trả `400`. Đây là smoke test nhẹ dùng Docker Compose và Elasticsearch thật; MVP không dùng Testcontainers vì requirement không bắt buộc công nghệ test đó.

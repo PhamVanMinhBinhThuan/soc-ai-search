@@ -442,26 +442,44 @@ Không chạy vài triệu document ở local trong ngày 2.
 ```text
 Tiếp tục triển khai ngày 2 cho SOC AI Search MVP.
 
-Hãy bổ sung verify cho mapping, ingest API và dataset pattern.
+Hãy bổ sung smoke test nhẹ cho mapping, ingest API và dataset pattern.
 
 Yêu cầu:
 1. Đọc script seed, API ingest và mapping hiện có.
-2. Tạo script smoke test hoặc tài liệu lệnh kiểm tra trong scripts/ hoặc README, ưu tiên PowerShell vì môi trường local là Windows.
+2. Tạo script smoke test PowerShell trong scripts/, ví dụ `scripts/smoke-test-day-02.ps1`, vì môi trường local là Windows.
+   - Script giả định Docker Compose local đang chạy.
+   - Không thêm Testcontainers vì requirement MVP không yêu cầu công nghệ test này.
+   - Không mở thêm phạm vi test ngoài smoke test cần thiết cho ngày 2.
 3. Kiểm tra các case Elasticsearch trực tiếp:
    - count tổng document trong soc-events-v1;
    - filter failed login từ CN trong 24 giờ gần nhất;
    - aggregation severity;
    - top IP có nhiều event;
-   - query message full-text.
+   - query message full-text;
+   - các scenario SIEM quan trọng như `firewall_block`, `privilege_escalation`, `account_lockout`.
 4. Kiểm tra ingest API:
    - POST /api/v1/events với event hợp lệ;
    - POST /api/v1/events/bulk với batch nhỏ;
    - request invalid trả 400.
-5. Nếu phù hợp, thêm integration test backend với Testcontainers hoặc test tập trung cho service/controller. Nếu Testcontainers làm quá nặng trong ngày 2, tạo smoke script rõ ràng và giải thích trade-off.
-6. Không triển khai SearchPlan, search API hoặc LLM.
-7. Chạy verify phù hợp và báo kết quả.
+5. Smoke script phải fail rõ ràng nếu một checkpoint không đạt, ví dụ count bằng 0, thiếu pattern demo hoặc ingest API không trả status mong đợi.
+6. `scripts/smoke-test-day-02.ps1` phải chạy toàn bộ verify tự động:
+   - kiểm tra Elasticsearch health;
+   - kiểm tra index `soc-events-v1` tồn tại;
+   - kiểm tra count tổng document;
+   - kiểm tra failed_login từ CN trong 24h;
+   - kiểm tra aggregation severity;
+   - kiểm tra top IP;
+   - kiểm tra full-text search message;
+   - kiểm tra các scenario `firewall_block`, `privilege_escalation`, `account_lockout`;
+   - kiểm tra `POST /api/v1/events` với event hợp lệ;
+   - kiểm tra `POST /api/v1/events/bulk` với batch nhỏ;
+   - kiểm tra request invalid trả 400.
+7. Cập nhật README hoặc infra/elasticsearch/README ngắn gọn cách chạy smoke test.
+8. Không triển khai SearchPlan, search API hoặc LLM.
+9. Chạy verify phù hợp và báo kết quả.
 
 Mục tiêu là có bằng chứng để ngày 3 bắt đầu search/filter trên dữ liệu thật.
+Trade-off: ngày 2 dùng smoke script với Docker Compose và Elasticsearch thật để kiểm chứng end-to-end nhẹ. MVP yêu cầu có test và bằng chứng kiểm tra, nhưng không yêu cầu Testcontainers, nên không triển khai Testcontainers để tránh mở rộng phạm vi không cần thiết.
 ```
 
 **Checkpoint:**
@@ -488,6 +506,8 @@ Invoke-RestMethod `
   -Uri "http://localhost:9200/soc-events-v1/_search?pretty" `
   -ContentType "application/json" `
   -Body $query
+
+.\scripts\smoke-test-day-02.ps1
 ```
 
 ## 10. Prompt 7 - Review Ngày 2 và cập nhật tài liệu chạy
