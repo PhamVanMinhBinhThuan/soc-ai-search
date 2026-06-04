@@ -37,6 +37,7 @@ Kết quả cần đạt cuối ngày:
   - `GET /api/v1/events/{event_id}`
 - Có unit test table-driven cho validator/compiler.
 - Có smoke test ngày 3 kiểm tra search và event detail trên dataset thật.
+- Prompt 1-2 ưu tiên filter search trên các field có mapping `keyword`/`date`/`ip`; `message_query` full-text trên field `message` chỉ bổ sung từ Prompt 3 khi triển khai compiler.
 
 Không làm trong ngày 3:
 
@@ -75,7 +76,7 @@ Invoke-WebRequest http://localhost:8081/swagger-ui.html -UseBasicParsing
 
 ## 4. Prompt 1 - Tạo SearchPlan records và contract JSON
 
-**Mục tiêu:** định nghĩa contract có cấu trúc để backend validate/compile, chưa gọi Elasticsearch.
+**Mục tiêu:** định nghĩa contract filter-first có cấu trúc để backend validate/compile, chưa gọi Elasticsearch.
 
 ```text
 Tiếp tục triển khai ngày 3 cho SOC AI Search MVP.
@@ -103,7 +104,7 @@ Yêu cầu:
    {
      "mode": "search",
      "filters": {
-       "timestamp": { "gte": "now-24h", "lte": "now" },
+       "timestamp": { "from": "now-24h", "to": "now" },
        "severity": ["high", "critical"],
        "event_type": ["failed_login"],
        "user": "admin",
@@ -111,7 +112,6 @@ Yêu cầu:
        "ip": "203.0.113.45",
        "country_code": ["CN"]
      },
-     "message_query": "malware detected",
      "page": 0,
      "size": 20
    }
@@ -120,19 +120,29 @@ Yêu cầu:
    - SearchMode
    - SearchFilters
    - TimeRange
-7. Dùng `@JsonProperty` cho field snake_case:
-   - event_type
-   - country_code
-   - message_query
-8. Dùng Bean Validation mức cơ bản:
+7. `SearchMode` dùng Java enum. Ngày 3 chỉ định nghĩa và hỗ trợ `SEARCH`; chưa thêm `AGGREGATION` trong ngày 3. Thiết kế enum để ngày 5 có thể mở rộng thêm aggregation.
+8. JSON contract vẫn dùng lowercase `"mode": "search"` để thân thiện với API/LLM; backend map vào `SearchMode.SEARCH`.
+9. Dùng `@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)` trên các record DTO search để Java dùng camelCase còn JSON dùng snake_case. Không cần annotate từng field bằng `@JsonProperty` trừ khi có field đặc biệt không theo quy tắc. Tối thiểu phải map đúng:
+   - eventType <-> event_type
+   - countryCode <-> country_code
+10. `TimeRange` dùng `from`/`to` theo business representation, không dùng `gte`/`lte` trong SearchPlan. Compiler sẽ dịch `from` -> Elasticsearch `gte` và `to` -> Elasticsearch `lte`.
+11. Chưa đưa `message_query` vào Prompt 1. Full-text search trên field `message` sẽ được bổ sung ở Prompt 3 khi triển khai compiler `match` query.
+12. Dùng Bean Validation mức cơ bản:
    - mode not null;
    - page >= 0;
    - size từ 1 đến 100;
    - string nếu có thì không blank;
-   - list nếu có thì không chứa blank.
-9. Chưa implement validator nghiệp vụ sâu, compiler, executor hoặc controller trong prompt này.
-10. Thêm unit test nhỏ cho deserialize/serialize contract nếu hữu ích.
-11. Chạy backend test và báo file đã tạo hoặc sửa.
+   - list nếu có thì không chứa blank;
+   - severity nếu có chỉ nhận low, medium, high, critical bằng Bean Validation trên từng phần tử list, ví dụ `List<@Pattern(regexp = "low|medium|high|critical") String> severity`;
+   - country_code nếu có phải là ISO alpha-2 uppercase, regex `^[A-Z]{2}$`, bằng Bean Validation trên từng phần tử list;
+   - chưa viết validator service trong Prompt 1; Prompt 2 mới xử lý guardrail nghiệp vụ sâu.
+13. Chưa implement validator nghiệp vụ sâu, compiler, executor hoặc controller trong prompt này.
+14. Bắt buộc thêm Jackson contract test:
+   - ít nhất 1 test deserialize JSON snake_case thành Java record camelCase;
+   - ít nhất 1 test serialize Java record camelCase thành JSON snake_case;
+   - test phải verify tối thiểu `event_type`, `country_code`;
+   - chưa test `message_query` trong Prompt 1 vì field này chưa thuộc filter contract ban đầu.
+15. Chạy backend test và báo file đã tạo hoặc sửa.
 
 Không triển khai natural language, LLM, aggregation, audit log, CSV hoặc frontend.
 ```
@@ -173,7 +183,6 @@ Yêu cầu:
    - host
    - ip
    - country_code
-   - message/message_query
 4. Ngày 3 chỉ hỗ trợ `mode = search`.
    - Nếu mode khác search, trả lỗi rõ.
    - Không triển khai aggregation trong prompt này.
@@ -182,7 +191,8 @@ Yêu cầu:
    - country_code là ISO alpha-2 uppercase;
    - ip là IPv4 hợp lệ;
    - event_type/user/host không blank nếu xuất hiện;
-   - timestamp.gte/lte hỗ trợ ISO-8601 hoặc relative time đơn giản: now, now-24h, now-7d, now-30d;
+   - timestamp.from/to hỗ trợ ISO-8601 hoặc relative time đơn giản: now, now-24h, now-7d, now-30d;
+   - nếu cả from và to đều có thì from không được lớn hơn to với ISO-8601 tuyệt đối;
    - page >= 0;
    - size từ 1 đến 100.
 6. Reject input nguy hiểm hoặc không thuộc MVP:
@@ -228,29 +238,38 @@ Hãy triển khai compiler chuyển SearchPlan đã validate thành Elasticsearc
 
 Yêu cầu:
 1. Đọc SearchPlan records, SearchPlanValidator và mapping Elasticsearch trước khi sửa.
-2. Tạo class/service compiler, ví dụ:
+2. Bổ sung optional `messageQuery` vào `SearchPlan` nếu Prompt 1 chưa có field này.
+   - Java vẫn dùng camelCase `messageQuery`;
+   - JSON dùng snake_case `message_query` thông qua `@JsonNaming`;
+   - đây là full-text query trên field Elasticsearch `message`, không phải keyword filter.
+3. Cập nhật Jackson contract test để verify thêm `message_query`.
+4. Cập nhật Bean Validation/SearchPlanValidator cho `messageQuery` nếu có:
+   - nếu xuất hiện thì không được blank;
+   - giới hạn độ dài hợp lý cho MVP, ví dụ tối đa 200 ký tự;
+   - không cho phép wildcard/script hoặc cú pháp query tùy ý.
+5. Tạo class/service compiler, ví dụ:
    - SearchPlanCompiler
    - CompiledSearchQuery
-3. Compiler nhận SearchPlan hợp lệ và sinh DSL dạng object/map/json có thể trả về API để đảm bảo transparency.
-4. DSL tối thiểu:
+6. Compiler nhận SearchPlan hợp lệ và sinh DSL dạng object/map/json có thể trả về API để đảm bảo transparency.
+7. DSL tối thiểu:
    - bool.filter cho filter chính xác;
    - terms hoặc term cho severity, event_type, country_code;
    - term cho user, host, ip;
    - range cho timestamp;
-   - match hoặc match_phrase cho message_query;
+   - nếu có `messageQuery`, compile thành `match` hoặc `match_phrase` trên field `message` và đặt trong `bool.must`, không đặt trong `bool.filter`;
    - from = page * size;
    - size = size;
    - sort timestamp desc;
    - timeout phù hợp, ví dụ 3s;
    - track_total_hits = true nếu dễ thực hiện.
-5. Compiler không được sinh script query, wildcard query hoặc query ngoài phạm vi MVP.
-6. Giữ output DSL dễ đọc để ngày sau UI có thể hiển thị.
-7. Thêm unit test table-driven cho DSL shape:
+8. Compiler không được sinh script query, wildcard query hoặc query ngoài phạm vi MVP.
+9. Giữ output DSL dễ đọc để ngày sau UI có thể hiển thị.
+10. Thêm unit test table-driven cho DSL shape:
    - failed_login từ CN trong 24h;
    - critical trong 7 ngày;
-   - message_query malware detected;
+   - message_query malware detected tạo `match`/`match_phrase` trên field `message`;
    - pagination page 2 size 20 => from 40.
-8. Chạy backend test.
+11. Chạy backend test.
 
 Không execute Elasticsearch trong prompt này. Không triển khai aggregation.
 ```
@@ -292,6 +311,7 @@ Yêu cầu:
    - Bean Validation;
    - SearchPlanValidator;
    - SearchPlanCompiler;
+   - nếu có `message_query`, dùng DSL full-text trên field `message` do compiler sinh;
    - execute DSL trên Elasticsearch index `soc-events-v1`;
    - trả response đã chuẩn hóa.
 4. Response tối thiểu:
@@ -307,6 +327,7 @@ Yêu cầu:
 7. Endpoint có Swagger/OpenAPI annotation hữu ích.
 8. Thêm controller test hoặc service test tối thiểu:
    - SearchPlan hợp lệ trả response;
+   - SearchPlan có `message_query` hợp lệ vẫn trả response;
    - size > 100 trả 400;
    - unsupported mode trả 400.
 9. Nếu Docker đang chạy và đã seed data, test thật endpoint bằng Invoke-RestMethod.
@@ -326,8 +347,8 @@ $body = @{
   mode = "search"
   filters = @{
     timestamp = @{
-      gte = "now-24h"
-      lte = "now"
+      from = "now-24h"
+      to = "now"
     }
     event_type = @("failed_login")
     country_code = @("CN")
@@ -426,7 +447,7 @@ Yêu cầu:
    - OpenAPI có `/api/v1/search/plan`;
    - OpenAPI có `/api/v1/events/{event_id}` hoặc endpoint detail tương đương;
    - search failed_login từ CN trong 24h trả total > 0;
-   - search message_query `malware detected` trả total > 0;
+   - search full-text với `message_query = malware detected` trên field `message` trả total > 0;
    - size = 5 thì events trả về không vượt quá 5;
    - request invalid size > 100 trả 400;
    - lấy event_id từ search response và gọi GET detail, response có raw.
@@ -473,7 +494,7 @@ Kiểm tra:
    - bool.filter;
    - term/terms;
    - range timestamp;
-   - match message_query;
+   - match/match_phrase trên field `message` khi có `message_query`;
    - pagination;
    - sort timestamp desc.
 7. `POST /api/v1/search/plan` hoạt động và có trong Swagger.
@@ -525,6 +546,7 @@ Kết quả cần có:
 
 - Ngày 3 là search core kỹ thuật, chưa phải natural language search.
 - `POST /api/v1/search/plan` là endpoint để kiểm thử SearchPlan core; ngày 4 mới thêm LLM/NL flow.
+- `message_query` nếu được bổ sung từ Prompt 3 chỉ là full-text query kỹ thuật trên field `message`, không phải natural language search hay LLM.
 - Không triển khai aggregation trong ngày 3 dù MVP có yêu cầu thống kê; phần đó thuộc ngày 5.
 - Không gửi raw log vào LLM vì ngày 3 chưa có LLM.
 - Không thêm microservices.
