@@ -1,9 +1,11 @@
 package com.soc.ai.search.search.plan;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.List;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 
@@ -59,5 +61,22 @@ class SearchPlanJacksonTest {
         assertThat(root.path("filters").path("event_type").get(0).asText()).isEqualTo("failed_login");
         assertThat(root.path("filters").path("country_code").get(0).asText()).isEqualTo("CN");
         assertThat(root.path("message_query").isMissingNode()).isTrue();
+    }
+
+    @Test
+    void rejectsInvalidModeValueDuringDeserialization() {
+        var json = """
+                {
+                  "mode": "aggregate",
+                  "filters": {},
+                  "page": 0,
+                  "size": 20
+                }
+                """;
+
+        assertThatThrownBy(() -> objectMapper.readValue(json, SearchPlan.class))
+                .isInstanceOf(JsonProcessingException.class)
+                .hasRootCauseInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Unsupported search mode");
     }
 }

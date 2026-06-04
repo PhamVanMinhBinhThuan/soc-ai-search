@@ -175,30 +175,25 @@ Yêu cầu:
 2. Tạo class/service validator, ví dụ:
    - SearchPlanValidator
    - SearchPlanValidationException
-3. Validator phải áp dụng allowlist field theo mapping MVP:
-   - timestamp
-   - severity
-   - event_type
-   - user
-   - host
-   - ip
-   - country_code
+3. `SearchPlan` hiện là DTO cố định bằng Java record, nên validator không cần quét dynamic field lạ. Validator chỉ kiểm tra các field đã khai báo trong `SearchFilters`; compiler ở Prompt 3 chỉ được compile DSL từ các field này.
 4. Ngày 3 chỉ hỗ trợ `mode = search`.
-   - Nếu mode khác search, trả lỗi rõ.
-   - Không triển khai aggregation trong prompt này.
-5. Validate filter:
+   - Nếu mode null hoặc parse không hợp lệ, trả lỗi rõ ở tầng Bean Validation/Jackson/controller khi có endpoint.
+   - Vì `SearchMode` hiện chỉ có `SEARCH`, JSON `"mode": "aggregate"` có thể fail deserialize trước khi tới validator; chưa triển khai aggregation trong prompt này.
+5. Validate filter và pagination:
    - severity chỉ gồm low, medium, high, critical;
    - country_code là ISO alpha-2 uppercase;
-   - ip là IPv4 hợp lệ;
+   - ip là IPv4 hợp lệ; ưu tiên dùng helper/library đáng tin cậy hoặc Bean Validation đã có, nếu dùng regex thì giữ đơn giản và phải có test;
    - event_type/user/host không blank nếu xuất hiện;
    - timestamp.from/to hỗ trợ ISO-8601 hoặc relative time đơn giản: now, now-24h, now-7d, now-30d;
+   - Prompt 2 chỉ kiểm tra format thời gian hợp lệ, chưa convert relative time sang Instant/ZonedDateTime;
+   - việc dịch `from`/`to` thành Elasticsearch `gte`/`lte` để Prompt 3 xử lý trong compiler;
    - nếu cả from và to đều có thì from không được lớn hơn to với ISO-8601 tuyệt đối;
    - page >= 0;
    - size từ 1 đến 100.
 6. Reject input nguy hiểm hoặc không thuộc MVP:
    - wildcard tùy ý;
    - script query;
-   - field ngoài allowlist;
+   - cú pháp query tùy ý không nằm trong DTO cố định;
    - size > 100.
 7. Error message phải đủ rõ để debug qua Swagger, nhưng không lộ stack trace.
 8. Thêm unit test table-driven cho các case:
@@ -208,7 +203,8 @@ Yêu cầu:
    - invalid IP;
    - invalid country_code;
    - invalid size > 100;
-   - unsupported mode aggregate.
+   - mode null;
+   - invalid mode value nếu test được ở tầng Jackson deserialize.
 9. Chạy backend test và báo kết quả.
 
 Không gọi Elasticsearch, không tạo endpoint search, không tích hợp LLM.
