@@ -90,6 +90,7 @@ function Assert-SearchResponse {
     )
 
     Assert-True -Condition ($null -ne $Response.generated_dsl) -Message "$ScenarioName response contains generated_dsl"
+    Assert-True -Condition ($Response.generated_dsl -isnot [string]) -Message "$ScenarioName generated_dsl is a JSON object, not a string"
     Assert-True -Condition ($null -ne $Response.total_pages -and [long]$Response.total_pages -ge 0) -Message "$ScenarioName response has total_pages >= 0"
 
     $events = @($Response.events)

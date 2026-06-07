@@ -4,7 +4,7 @@
 
 ## Trạng thái
 
-Repository đã hoàn thành foundation **ngày 2** cho MVP: backend/frontend scaffold, Docker Compose local, Elasticsearch mapping/bootstrap, PostgreSQL/Flyway, API ingest single/bulk event, script seed synthetic dataset và smoke test ngày 2. CI/CD, search bằng natural language và LLM chưa được tích hợp.
+Repository đã hoàn thành foundation **ngày 3** cho MVP: backend/frontend scaffold, Docker Compose local, Elasticsearch mapping/bootstrap, PostgreSQL/Flyway, API ingest single/bulk event, script seed synthetic dataset, SearchPlan validator/compiler/executor, endpoint search kỹ thuật, event detail và smoke test ngày 3. CI/CD, search bằng natural language và LLM chưa được tích hợp.
 
 ## Kiến trúc
 
@@ -112,6 +112,46 @@ Sau khi Docker Compose đang chạy, backend đã được rebuild và dataset n
 ```
 
 Smoke test ngày 3 kiểm tra SearchPlan endpoint, `generated_dsl`, pagination, mapping Elasticsearch `_id` sang `event_id`, event detail endpoint và raw log.
+
+### SearchPlan endpoint ngày 3
+
+Endpoint kỹ thuật này dùng để kiểm tra lõi `SearchPlan -> validate -> compile DSL -> execute Elasticsearch` trước khi nối LLM:
+
+```text
+POST http://localhost:8081/api/v1/search/plan
+```
+
+Ví dụ request:
+
+```json
+{
+  "mode": "search",
+  "filters": {
+    "timestamp": {
+      "from": "now-24h",
+      "to": "now"
+    },
+    "event_type": ["failed_login"],
+    "country_code": ["CN"]
+  },
+  "page": 0,
+  "size": 5
+}
+```
+
+Response có `generated_dsl` dạng JSON object/map, `total`, `total_pages`, `latency_ms` và danh sách `events`. Mỗi event trong search result có `event_id` được map từ Elasticsearch `_id`.
+
+### Event detail endpoint ngày 3
+
+Sau khi lấy `event_id` từ search response, gọi:
+
+```text
+GET http://localhost:8081/api/v1/events/{event_id}
+```
+
+Endpoint detail trả đầy đủ field chính và `raw` log. Đây là luồng dùng để demo: search list trả gọn, mở detail để xem raw log.
+
+Natural language search và LLM integration sẽ được triển khai ở ngày 4. Endpoint `/api/v1/search/plan` hiện chưa phải endpoint natural language cuối cùng.
 
 ### Lưu ý về PostgreSQL password
 
