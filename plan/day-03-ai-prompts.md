@@ -395,9 +395,15 @@ Yêu cầu:
 1. Đọc EventController/EventIngestService hiện có và mapping Elasticsearch trước khi sửa.
 2. Tạo service lookup event theo id từ Elasticsearch index lấy từ `ElasticsearchProperties.indexEvents`, không hardcode `soc-events-v1`.
 3. `{event_id}` trong URL chính là Elasticsearch document `_id`; khi gọi Elasticsearch Get API, dùng giá trị này làm document id.
-4. Response tối thiểu:
+4. Validate path variable `event_id`:
+   - không null;
+   - không blank sau khi trim;
+   - trim khoảng trắng đầu/cuối trước khi gọi Elasticsearch;
+   - nếu `event_id` blank, trả 400 rõ ràng, không gọi Elasticsearch.
+5. Tạo DTO riêng cho detail, ví dụ `EventDetailResponse`. Không tái sử dụng DTO search list như `SearchEvent`, vì detail cần trả thêm `raw` và có contract riêng.
+6. Response tối thiểu:
    - event_id;
-   - index;
+   - index_name;
    - timestamp;
    - source;
    - severity;
@@ -408,16 +414,31 @@ Yêu cầu:
    - country_code;
    - message;
    - raw.
-5. Khi map response, lấy Elasticsearch `_id` làm `event_id`; các field event còn lại lấy từ `_source`, bao gồm `raw`.
-6. Nếu event không tồn tại, trả 404 rõ ràng.
-7. Không tạo bảng PostgreSQL mới.
-8. Không thêm auth, audit log, frontend hoặc LLM.
-9. Thêm test:
+7. Khi map response:
+   - lấy Elasticsearch `_id` làm `event_id`;
+   - lấy Elasticsearch `_index` làm `index_name`, hoặc dùng index từ `ElasticsearchProperties.indexEvents` nếu API client không trả `_index` rõ ràng;
+   - các field event còn lại lấy từ `_source`, bao gồm `raw`.
+8. Nếu document không tồn tại:
+   - trả HTTP 404;
+   - response body chứa message rõ ràng, ví dụ `{ "message": "Event not found: seed-42-999999" }`;
+   - không lộ exception/stack trace từ Elasticsearch.
+9. Nếu Elasticsearch hoặc hạ tầng search gặp lỗi:
+   - trả HTTP 503 có kiểm soát vì đây là lỗi dependency search engine;
+   - response body ngắn gọn, ví dụ `{ "message": "Event detail lookup failed" }`;
+   - không lộ stack trace, exception class hoặc thông tin nội bộ qua Swagger/API;
+   - có thể log lỗi ở backend để debug nội bộ.
+10. Không tạo bảng PostgreSQL mới.
+11. Không thêm auth, audit log, frontend hoặc LLM.
+12. Thêm test:
    - event tồn tại trả 200;
    - response map đúng Elasticsearch `_id` thành `event_id`;
-   - event không tồn tại trả 404.
-10. Nếu Docker đang chạy, lấy event_id từ `POST /api/v1/search/plan` rồi gọi thử detail endpoint.
-11. Chạy backend test và báo file đã tạo/sửa.
+   - response có `index_name` và `raw`;
+   - detail endpoint dùng DTO riêng, không tái sử dụng DTO search list;
+   - event không tồn tại trả 404 với body message rõ;
+   - `event_id` blank, ví dụ `%20`, trả 400;
+   - Elasticsearch lookup lỗi trả 503 có kiểm soát, không lộ stack trace.
+13. Nếu Docker đang chạy, lấy event_id từ `POST /api/v1/search/plan` rồi gọi thử detail endpoint.
+14. Chạy backend test và báo file đã tạo/sửa.
 ```
 
 **Checkpoint:**

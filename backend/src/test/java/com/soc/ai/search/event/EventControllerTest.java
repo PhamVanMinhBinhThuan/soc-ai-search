@@ -1,9 +1,11 @@
 package com.soc.ai.search.event;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -28,6 +30,9 @@ class EventControllerTest {
 
     @MockitoBean
     private EventIngestService eventIngestService;
+
+    @MockitoBean
+    private EventDetailService eventDetailService;
 
     @Test
     void ingestReturnsCreatedForValidEvent() throws Exception {
@@ -128,6 +133,65 @@ class EventControllerTest {
         verify(eventIngestService, never()).ingestBulk(any(BulkIngestEventsRequest.class));
     }
 
+    @Test
+    void detailReturnsEventWithRawForExistingEvent() throws Exception {
+        when(eventDetailService.findById("event-1")).thenReturn(eventDetailResponse("event-1"));
+
+        mockMvc.perform(get("/api/v1/events/event-1"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.event_id").value("event-1"))
+                .andExpect(jsonPath("$.index_name").value("soc-events-v1"))
+                .andExpect(jsonPath("$.event_type").value("failed_login"))
+                .andExpect(jsonPath("$.country_code").value("CN"))
+                .andExpect(jsonPath("$.raw").value("raw log line"));
+
+        verify(eventDetailService).findById("event-1");
+    }
+
+    @Test
+    void detailTrimsEventIdBeforeLookup() throws Exception {
+        when(eventDetailService.findById("event-1")).thenReturn(eventDetailResponse("event-1"));
+
+        mockMvc.perform(get("/api/v1/events/%20event-1%20"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.event_id").value("event-1"));
+
+        verify(eventDetailService).findById("event-1");
+    }
+
+    @Test
+    void detailRejectsBlankEventId() throws Exception {
+        mockMvc.perform(get("/api/v1/events/%20"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("event_id must not be blank"));
+
+        verify(eventDetailService, never()).findById(anyString());
+    }
+
+    @Test
+    void detailReturnsNotFoundForMissingEvent() throws Exception {
+        when(eventDetailService.findById("missing-event"))
+                .thenThrow(new EventDetailNotFoundException("missing-event"));
+
+        mockMvc.perform(get("/api/v1/events/missing-event"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Event not found: missing-event"));
+    }
+
+    @Test
+    void detailReturnsServiceUnavailableForElasticsearchLookupError() throws Exception {
+        when(eventDetailService.findById("event-1"))
+                .thenThrow(new EventDetailLookupException("Failed to lookup event detail from Elasticsearch",
+                        new RuntimeException("connection refused")));
+
+        mockMvc.perform(get("/api/v1/events/event-1"))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.message").value("Event detail lookup failed"))
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.not(
+                        org.hamcrest.Matchers.containsString("connection refused"))));
+    }
+
     private String validEventJson() {
         return """
                 {
@@ -183,5 +247,21 @@ class EventControllerTest {
                   ]
                 }
                 """;
+    }
+
+    private EventDetailResponse eventDetailResponse(String eventId) {
+        return new EventDetailResponse(
+                eventId,
+                "soc-events-v1",
+                "2026-06-03T10:00:00Z",
+                "windows-auth",
+                "high",
+                "failed_login",
+                "demo.user",
+                "host-001",
+                "203.0.113.10",
+                "CN",
+                "Failed login attempt from CN",
+                "raw log line");
     }
 }
