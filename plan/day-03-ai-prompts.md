@@ -306,7 +306,8 @@ Yêu cầu:
 2. Tạo search executor dùng Elasticsearch hiện có:
    - ưu tiên Elasticsearch Java client hoặc RestClient đã cấu hình;
    - không thêm search engine mới;
-   - không gọi PostgreSQL trong prompt này.
+   - không gọi PostgreSQL trong prompt này;
+   - lấy tên index event từ `ElasticsearchProperties.indexEvents`, không hardcode `soc-events-v1` trong service/executor.
 3. Flow xử lý:
    - nhận SearchPlan JSON;
    - Bean Validation;
@@ -316,26 +317,32 @@ Yêu cầu:
    - build Elasticsearch SearchRequest từ `CompiledSearchQuery`;
    - áp dụng timeout phù hợp, ví dụ 3s, ở tầng executor/SearchRequest;
    - bật `track_total_hits = true` ở tầng executor/SearchRequest để response pagination có tổng kết quả rõ;
-   - execute DSL trên Elasticsearch index `soc-events-v1`;
+   - execute DSL trên Elasticsearch index lấy từ cấu hình `ELASTICSEARCH_INDEX_EVENTS`;
    - trả response đã chuẩn hóa.
 4. Response tối thiểu:
    - mode;
-   - generated_dsl;
+   - generated_dsl dạng JSON object/map, không phải string, để frontend có thể render pretty JSON;
    - total;
    - page;
    - size;
-   - took_ms hoặc latency_ms;
-   - events: danh sách event gồm event_id và các field event.
+   - total_pages, tính bằng ceil(total / size), nếu total = 0 thì total_pages = 0;
+   - latency_ms, dùng tên này để đồng bộ với cột `search_query_logs.latency_ms` về sau;
+   - events: danh sách event gồm event_id và các field chính của MVP: timestamp, source, severity, event_type, user, host, ip, country_code, message;
+   - khi map Elasticsearch hit, lấy hit metadata `_id` làm `event_id`; các field event còn lại lấy từ `_source`;
+   - raw có thể không bắt buộc trong search list để response gọn; Prompt 5 event detail mới bắt buộc trả raw.
 5. Nếu SearchPlan không hợp lệ, trả 400 rõ ràng.
-6. Nếu Elasticsearch lỗi, trả lỗi có kiểm soát, không lộ stack trace.
-7. Endpoint có Swagger/OpenAPI annotation hữu ích.
-8. Thêm controller test hoặc service test tối thiểu:
+6. Nếu search không có kết quả, vẫn trả 200 với `total = 0`, `total_pages = 0` và `events = []`; không trả 404 cho no-result search.
+7. Nếu Elasticsearch lỗi, trả lỗi có kiểm soát, không lộ stack trace.
+8. Endpoint có Swagger/OpenAPI annotation hữu ích.
+9. Thêm controller test hoặc service test tối thiểu:
    - SearchPlan hợp lệ trả response;
    - SearchPlan có `message_query` hợp lệ vẫn trả response;
+   - response event map đúng `_id` của Elasticsearch hit thành `event_id`;
+   - search không có kết quả trả 200, total = 0 và events = [];
    - size > 100 trả 400;
    - unsupported mode trả 400.
-9. Nếu Docker đang chạy và đã seed data, test thật endpoint bằng Invoke-RestMethod.
-10. Không triển khai natural language, LLM, summary, audit log, aggregation hoặc frontend.
+10. Nếu Docker đang chạy và đã seed data, test thật endpoint bằng Invoke-RestMethod.
+11. Không triển khai natural language, LLM, summary, audit log, aggregation, frontend hoặc event detail endpoint trong prompt này. Event detail để riêng ở Prompt 5.
 
 Giữ endpoint phục vụ ngày 3 và có thể reuse khi ngày 4 thêm LLM.
 ```
@@ -386,8 +393,9 @@ GET /api/v1/events/{event_id}
 
 Yêu cầu:
 1. Đọc EventController/EventIngestService hiện có và mapping Elasticsearch trước khi sửa.
-2. Tạo service lookup event theo id từ Elasticsearch index `soc-events-v1`.
-3. Response tối thiểu:
+2. Tạo service lookup event theo id từ Elasticsearch index lấy từ `ElasticsearchProperties.indexEvents`, không hardcode `soc-events-v1`.
+3. `{event_id}` trong URL chính là Elasticsearch document `_id`; khi gọi Elasticsearch Get API, dùng giá trị này làm document id.
+4. Response tối thiểu:
    - event_id;
    - index;
    - timestamp;
@@ -400,14 +408,16 @@ Yêu cầu:
    - country_code;
    - message;
    - raw.
-4. Nếu event không tồn tại, trả 404 rõ ràng.
-5. Không tạo bảng PostgreSQL mới.
-6. Không thêm auth, audit log, frontend hoặc LLM.
-7. Thêm test:
+5. Khi map response, lấy Elasticsearch `_id` làm `event_id`; các field event còn lại lấy từ `_source`, bao gồm `raw`.
+6. Nếu event không tồn tại, trả 404 rõ ràng.
+7. Không tạo bảng PostgreSQL mới.
+8. Không thêm auth, audit log, frontend hoặc LLM.
+9. Thêm test:
    - event tồn tại trả 200;
+   - response map đúng Elasticsearch `_id` thành `event_id`;
    - event không tồn tại trả 404.
-8. Nếu Docker đang chạy, lấy event_id từ `POST /api/v1/search/plan` rồi gọi thử detail endpoint.
-9. Chạy backend test và báo file đã tạo/sửa.
+10. Nếu Docker đang chạy, lấy event_id từ `POST /api/v1/search/plan` rồi gọi thử detail endpoint.
+11. Chạy backend test và báo file đã tạo/sửa.
 ```
 
 **Checkpoint:**
