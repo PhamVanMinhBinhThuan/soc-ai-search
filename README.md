@@ -103,6 +103,16 @@ Sau khi Docker Compose đang chạy và đã seed dữ liệu:
 
 Smoke test kiểm tra Elasticsearch health, mapping, dataset pattern, single ingest, bulk ingest và validation lỗi `400`.
 
+### Smoke test ngày 3
+
+Sau khi Docker Compose đang chạy, backend đã được rebuild và dataset ngày 2 đã seed:
+
+```powershell
+.\scripts\smoke-test-day-03.ps1
+```
+
+Smoke test ngày 3 kiểm tra SearchPlan endpoint, `generated_dsl`, pagination, mapping Elasticsearch `_id` sang `event_id`, event detail endpoint và raw log.
+
 ### Lưu ý về PostgreSQL password
 
 Tạo `.env` trước lần chạy Docker đầu tiên. PostgreSQL chỉ dùng `POSTGRES_PASSWORD` để khởi tạo role khi named volume chưa có dữ liệu. Nếu đổi password trong `.env` sau đó, password bên trong database không tự thay đổi.

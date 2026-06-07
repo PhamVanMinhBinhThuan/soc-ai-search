@@ -483,7 +483,10 @@ Yêu cầu:
    - OpenAPI có `/api/v1/events/{event_id}` hoặc endpoint detail tương đương;
    - search failed_login từ CN trong 24h trả total > 0;
    - search full-text với `message_query = malware detected` trên field `message` trả total > 0;
+   - search response phải có `generated_dsl` để chứng minh compiler SearchPlan -> DSL hoạt động;
+   - search response phải có `total_pages >= 0`;
    - size = 5 thì events trả về không vượt quá 5;
+   - event đầu tiên trong search response phải có `event_id` không blank để chứng minh mapping Elasticsearch `_id` -> API `event_id`;
    - request invalid size > 100 trả 400;
    - lấy event_id từ search response và gọi GET detail, response có raw.
 5. Smoke script phải fail rõ ràng nếu checkpoint không đạt.
@@ -541,6 +544,9 @@ Kiểm tra:
 13. docker compose config hợp lệ và stack local vẫn healthy.
 14. Không có secret thật hoặc generated dataset lớn trong Git-tracked files.
 15. Không triển khai LLM, natural language endpoint, aggregation, frontend search UI, audit log hoặc CSV trong ngày 3.
+16. Search response trả `generated_dsl` dạng JSON object/map, không phải string.
+17. Search result map đúng Elasticsearch `_id` thành `event_id`.
+18. Search executor và event detail service dùng `ElasticsearchProperties.indexEvents`, không hardcode `soc-events-v1`.
 
 Sau đó:
 1. Sửa lỗi nhỏ nếu phát hiện.
