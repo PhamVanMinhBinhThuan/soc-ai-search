@@ -27,6 +27,7 @@ class SearchPlanJacksonTest {
                     "ip": "203.0.113.45",
                     "country_code": ["CN"]
                   },
+                  "message_query": "malware detected",
                   "page": 0,
                   "size": 20
                 }
@@ -38,6 +39,7 @@ class SearchPlanJacksonTest {
         assertThat(plan.filters().eventType()).containsExactly("failed_login");
         assertThat(plan.filters().countryCode()).containsExactly("CN");
         assertThat(plan.filters().timestamp().from()).isEqualTo("now-24h");
+        assertThat(plan.messageQuery()).isEqualTo("malware detected");
     }
 
     @Test
@@ -52,6 +54,7 @@ class SearchPlanJacksonTest {
                         "vpn-gw-01",
                         "203.0.113.45",
                         List.of("CN")),
+                "malware detected",
                 0,
                 20);
 
@@ -60,7 +63,7 @@ class SearchPlanJacksonTest {
         assertThat(root.path("mode").asText()).isEqualTo("search");
         assertThat(root.path("filters").path("event_type").get(0).asText()).isEqualTo("failed_login");
         assertThat(root.path("filters").path("country_code").get(0).asText()).isEqualTo("CN");
-        assertThat(root.path("message_query").isMissingNode()).isTrue();
+        assertThat(root.path("message_query").asText()).isEqualTo("malware detected");
     }
 
     @Test

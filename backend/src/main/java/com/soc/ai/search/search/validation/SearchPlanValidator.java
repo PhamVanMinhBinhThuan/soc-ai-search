@@ -42,6 +42,7 @@ public class SearchPlanValidator {
         collectBeanValidationErrors(plan, errors);
         validateMode(plan, errors);
         validateFilters(plan.filters(), errors);
+        rejectDangerousValue("message_query", plan.messageQuery(), errors);
 
         if (!errors.isEmpty()) {
             throw new SearchPlanValidationException(errors);

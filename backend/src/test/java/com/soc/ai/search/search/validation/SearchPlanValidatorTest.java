@@ -73,7 +73,11 @@ class SearchPlanValidatorTest {
                         "2026-06-04T10:00:00Z",
                         "2026-06-03T10:00:00Z")), "timestamp"),
                 Arguments.of("wildcard query syntax", withEventType(List.of("failed*login")), "wildcard"),
-                Arguments.of("script query syntax", withUser("painless script"), "script"));
+                Arguments.of("script query syntax", withUser("painless script"), "script"),
+                Arguments.of("blank message query", withMessageQuery(" "), "messageQuery"),
+                Arguments.of("message query too long", withMessageQuery("a".repeat(201)), "messageQuery"),
+                Arguments.of("message query wildcard", withMessageQuery("malware*"), "wildcard"),
+                Arguments.of("message query script syntax", withMessageQuery("painless script"), "script"));
     }
 
     private static SearchPlan validFailedLoginCnPlan() {
@@ -187,6 +191,15 @@ class SearchPlanValidatorTest {
                         filters.host(),
                         filters.ip(),
                         filters.countryCode()),
+                0,
+                20);
+    }
+
+    private static SearchPlan withMessageQuery(String messageQuery) {
+        return new SearchPlan(
+                SEARCH,
+                validFilters(),
+                messageQuery,
                 0,
                 20);
     }

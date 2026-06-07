@@ -246,26 +246,31 @@ Yêu cầu:
 5. Tạo class/service compiler, ví dụ:
    - SearchPlanCompiler
    - CompiledSearchQuery
-6. Compiler nhận SearchPlan hợp lệ và sinh DSL dạng object/map/json có thể trả về API để đảm bảo transparency.
+6. Compiler nhận SearchPlan hợp lệ và sinh Elasticsearch search spec dưới dạng Java structure, ví dụ `Map<String, Object>` hoặc object nội bộ `CompiledSearchQuery` tương thích với Elasticsearch Java Client. Không serialize thành JSON string trong compiler và không dùng `StringBuilder`/string concatenation để tạo DSL.
 7. DSL tối thiểu:
    - bool.filter cho filter chính xác;
-   - terms hoặc term cho severity, event_type, country_code;
-   - term cho user, host, ip;
-   - range cho timestamp;
-   - nếu có `messageQuery`, compile thành `match` hoặc `match_phrase` trên field `message` và đặt trong `bool.must`, không đặt trong `bool.filter`;
+   - luôn dùng `terms` cho các field dạng list: severity, event_type, country_code, kể cả khi list chỉ có một phần tử; không dùng `term` với array;
+   - dùng `term` cho field scalar: user, host, ip; không dùng `terms` cho scalar field trong MVP;
+   - range cho timestamp: `from` map sang Elasticsearch `gte`, `to` map sang Elasticsearch `lte`;
+   - giữ nguyên Elasticsearch date math string như `now`, `now-24h`, `now-7d`, `now-30d` trong range query; không convert relative time sang `Instant` trong compiler vì Elasticsearch tự hiểu date math;
+   - nếu có `messageQuery`, compile thành `match` trên field `message` và đặt trong `bool.must`, không dùng `match_phrase` trong MVP và không đặt full-text query trong `bool.filter`;
    - from = page * size;
    - size = size;
-   - sort timestamp desc;
-   - timeout phù hợp, ví dụ 3s;
-   - track_total_hits = true nếu dễ thực hiện.
+   - sort timestamp desc.
 8. Compiler không được sinh script query, wildcard query hoặc query ngoài phạm vi MVP.
-9. Giữ output DSL dễ đọc để ngày sau UI có thể hiển thị.
-10. Thêm unit test table-driven cho DSL shape:
+9. Timeout và `track_total_hits` không xử lý trong compiler; các cấu hình này thuộc tầng executor/SearchRequest ở Prompt 4.
+10. Giữ output DSL/search spec dễ đọc để ngày sau UI có thể hiển thị.
+11. Thêm unit test table-driven cho DSL shape:
    - failed_login từ CN trong 24h;
    - critical trong 7 ngày;
-   - message_query malware detected tạo `match`/`match_phrase` trên field `message`;
-   - pagination page 2 size 20 => from 40.
-11. Chạy backend test.
+   - severity=["high","critical"] sinh `terms` trên field `severity`, không sinh `term` với array;
+   - event_type và country_code là list nên cũng dùng `terms`;
+   - user/host/ip sinh `term`, không sinh `terms`;
+   - timestamp from=`now-24h`, to=`now` sinh range `{ "gte": "now-24h", "lte": "now" }` và giữ nguyên date math string;
+   - message_query malware detected tạo `match` trên field `message`;
+   - pagination page 2 size 20 => from 40;
+   - DSL/search spec luôn có sort timestamp desc.
+12. Chạy backend test.
 
 Không execute Elasticsearch trong prompt này. Không triển khai aggregation.
 ```
@@ -308,6 +313,9 @@ Yêu cầu:
    - SearchPlanValidator;
    - SearchPlanCompiler;
    - nếu có `message_query`, dùng DSL full-text trên field `message` do compiler sinh;
+   - build Elasticsearch SearchRequest từ `CompiledSearchQuery`;
+   - áp dụng timeout phù hợp, ví dụ 3s, ở tầng executor/SearchRequest;
+   - bật `track_total_hits = true` ở tầng executor/SearchRequest để response pagination có tổng kết quả rõ;
    - execute DSL trên Elasticsearch index `soc-events-v1`;
    - trả response đã chuẩn hóa.
 4. Response tối thiểu:
@@ -490,7 +498,7 @@ Kiểm tra:
    - bool.filter;
    - term/terms;
    - range timestamp;
-   - match/match_phrase trên field `message` khi có `message_query`;
+   - match trên field `message` khi có `message_query`;
    - pagination;
    - sort timestamp desc.
 7. `POST /api/v1/search/plan` hoạt động và có trong Swagger.
