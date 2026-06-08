@@ -178,7 +178,7 @@ Kết quả cần có:
 - Có mock provider chạy không cần API key.
 - `.env.example` có placeholder LLM nhưng không có secret thật.
 
-## 5. Prompt 2 - Prompt builder, structured output parser và repair guardrail
+## 5. Prompt 2 - Prompt builder và structured output parser
 
 **Mục tiêu:** đảm bảo LLM chỉ sinh JSON `SearchPlan` hợp lệ, không sinh DSL/prose/markdown.
 
@@ -192,14 +192,17 @@ Yêu cầu:
 2. Tạo service build prompt, ví dụ `SearchPlanPromptBuilder`.
 3. System prompt phải nói rõ:
    - nhiệm vụ duy nhất là chuyển natural language question thành JSON `SearchPlan`;
-   - output phải là JSON object thuần;
+   - output phải là duy nhất một JSON object thuần;
    - không markdown;
    - không prose;
    - không Elasticsearch DSL;
    - không field ngoài schema;
    - ngày 4 chỉ support `mode = "search"`;
-   - aggregation chưa support trong ngày 4.
-4. Prompt phải mô tả field allowlist:
+   - aggregation chưa support trong ngày 4;
+   - nếu câu hỏi yêu cầu aggregation/statistics/top-N thì không được sinh mode khác `search`; chỉ sinh SearchPlan search tối thiểu nếu có filter rõ ràng, còn lỗi nghiệp vụ sẽ do tầng orchestration xử lý ở prompt sau;
+   - nếu câu hỏi không nói rõ một filter nào đó thì không được tự suy diễn hoặc hallucinate giá trị filter đó.
+4. Prompt phải mô tả schema/field allowlist từ `SearchPlan` contract hiện tại hoặc từ cấu hình tập trung trong code. Không hardcode schema rải rác ở nhiều nơi gây lệch contract.
+5. Field allowlist gồm:
    - `timestamp.from`
    - `timestamp.to`
    - `severity`
@@ -211,44 +214,51 @@ Yêu cầu:
    - `message_query`
    - `page`
    - `size`
-5. Prompt phải mô tả format thời gian được hỗ trợ:
+6. Prompt phải mô tả format thời gian được hỗ trợ:
    - `now`
    - `now-24h`
    - `now-7d`
    - `now-30d`
    - ISO-8601 absolute time nếu cần.
-6. Prompt phải mô tả severity hợp lệ:
+7. Prompt phải mô tả severity hợp lệ:
    - `low`
    - `medium`
    - `high`
    - `critical`
-7. Prompt phải yêu cầu country code ISO alpha-2 uppercase, ví dụ `CN`, `VN`, `US`.
-8. Prompt không được chứa raw log, search result hoặc event document.
-9. Tạo repair prompt builder:
-   - input gồm output lỗi và lỗi parse/validation;
-   - yêu cầu LLM sửa thành JSON `SearchPlan` hợp lệ;
-   - vẫn cấm markdown/prose/DSL;
-   - không tự thêm field ngoài schema.
-10. Tạo parser service, ví dụ `SearchPlanJsonParser`:
+8. Prompt phải yêu cầu country code ISO alpha-2 uppercase, ví dụ `CN`, `VN`, `US`.
+9. Prompt không được chứa raw log, search result hoặc event document.
+10. Chưa tạo repair prompt builder trong Prompt 2. Repair/retry sẽ do tầng orchestration ở Prompt 4 xử lý bằng cách gọi lại `LlmClient.generateSearchPlan(...)` với prompt sửa JSON.
+11. Tạo parser service, ví dụ `SearchPlanJsonParser`:
    - nhận raw text từ LLM;
    - trim;
-   - parse bằng Jackson;
-   - chỉ chấp nhận root JSON object;
+   - parse bằng Jackson với cấu hình reject unknown field, ví dụ `FAIL_ON_UNKNOWN_PROPERTIES = true`;
+   - chỉ chấp nhận duy nhất một root JSON object;
+   - reject JSON array, scalar JSON value, nhiều JSON object liên tiếp, trailing text và leading text;
    - map sang `SearchPlan`;
    - validate bằng Bean Validation và `SearchPlanValidator`;
    - reject output có markdown/prose/code fence, không extract JSON từ text lẫn prose.
-11. Nếu parse/validate lỗi, parser phải trả lỗi rõ cho service phía trên, không lộ stack trace ra API.
-12. Chưa gọi LLM thật trong prompt này.
-13. Chưa tạo endpoint `/api/v1/search` trong prompt này.
-14. Thêm unit test:
+12. Parser không được tự repair, sửa chính tả, normalize hoặc tự suy đoán field. Parser chỉ parse và validate; nếu lỗi thì trả lỗi rõ cho service phía trên.
+13. Nếu parse/validate lỗi, parser phải trả lỗi rõ cho service phía trên, không lộ stack trace ra API.
+14. Chưa gọi LLM thật trong prompt này.
+15. Chưa tạo endpoint `/api/v1/search` trong prompt này.
+16. Thêm unit test:
    - prompt chứa schema/allowlist;
    - prompt cấm DSL/prose/markdown;
+   - prompt cấm hallucinate filter không có trong câu hỏi;
+   - prompt cấm aggregation mode ngoài `search`;
    - parser parse JSON SearchPlan hợp lệ;
    - parser reject markdown code fence;
-   - parser reject prose trước/sau JSON;
-   - parser reject field ngoài schema nếu Jackson/config hiện tại hỗ trợ, hoặc ít nhất validator/service không dùng field đó;
+   - parser reject prose trước JSON;
+   - parser reject prose sau JSON;
+   - parser reject trailing text;
+   - parser reject multiple JSON object;
+   - parser reject root JSON array;
+   - parser reject scalar JSON value;
+   - parser reject empty JSON `{}`;
+   - parser reject null mode;
+   - parser reject unknown field ngoài schema, ví dụ `admin`, `hack_field` hoặc field lạ trong `filters`;
    - parser reject invalid severity/size.
-15. Chạy backend test và báo file đã tạo hoặc sửa.
+17. Chạy backend test và báo file đã tạo hoặc sửa.
 
 Không triển khai aggregation, summary, audit log, CSV, frontend hoặc auth.
 ```
@@ -265,6 +275,7 @@ Kết quả cần có:
 
 - Parser nhận JSON thuần hợp lệ.
 - Parser từ chối markdown/prose.
+- Parser từ chối unknown field, root array, trailing text và empty JSON.
 - Prompt không đưa raw log hoặc event data vào LLM.
 
 ## 6. Prompt 3 - Hosted Gemini client sau cấu hình, mock vẫn là mặc định
