@@ -109,6 +109,7 @@ Yêu cầu:
    - `com.soc.ai.search.llm`
    - `com.soc.ai.search.llm.mock`
    - `com.soc.ai.search.llm.gemini`
+   - `com.soc.ai.search.llm.prompt` cho Prompt 2; Prompt 1 chưa cần tạo class prompt nếu chưa dùng.
 3. Tạo cấu hình LLM qua environment variables, không hardcode API key:
    - `LLM_PROVIDER`, mặc định `mock`;
    - `LLM_BASE_URL`, nullable;
@@ -116,30 +117,46 @@ Yêu cầu:
    - `LLM_MODEL`, nullable;
    - `LLM_TIMEOUT_MS`, mặc định `10000`;
    - `LLM_MAX_ATTEMPTS`, mặc định `2`.
-4. Tạo `LlmProperties` bằng `@ConfigurationProperties(prefix = "app.llm")`.
-5. Cập nhật `application.properties` để bind các biến trên.
-6. Cập nhật `.env.example` với placeholder LLM, tuyệt đối không ghi API key thật.
-7. Tạo interface `LlmClient` tối thiểu:
-   - method sinh SearchPlan JSON từ prompt ban đầu;
-   - method repair SearchPlan JSON từ output lỗi;
-   - return raw text/string từ LLM, chưa parse thành `SearchPlan` trong client.
-8. Tạo DTO nội bộ nếu cần, ví dụ:
+4. Tạo enum `LlmProvider`:
+   - `MOCK`;
+   - `GEMINI`.
+5. `LlmProperties` phải dùng `LlmProvider`, không dùng string literal xuyên suốt codebase. Environment value vẫn thân thiện dạng lowercase như `mock` hoặc `gemini`.
+6. Tạo `LlmProperties` bằng `@ConfigurationProperties(prefix = "app.llm")`.
+7. Cập nhật `application.properties` để bind các biến trên.
+8. Cập nhật `.env.example` với placeholder LLM, tuyệt đối không ghi API key thật.
+9. Tạo record response nội bộ cho LLM, ví dụ:
+   - `LlmResponse(String content, String model, long latencyMs)`.
+   - `content` là raw text từ LLM.
+   - `model` lấy từ cấu hình hoặc mock model name.
+   - `latencyMs` đo thời gian gọi provider/mock để sau này dùng cho log và audit.
+10. Tạo interface `LlmClient` tối thiểu:
+   - method `generateSearchPlan(...)`;
+   - return `LlmResponse`, không return `String` thuần;
+   - chưa parse JSON thành `SearchPlan` trong client;
+   - chưa gọi Elasticsearch hoặc PostgreSQL trong client;
+   - chưa tạo method repair riêng trong Prompt 1. Khi cần repair ở prompt sau, có thể gọi lại `generateSearchPlan(...)` với repair prompt.
+11. Tạo DTO nội bộ nếu cần, ví dụ:
    - `LlmSearchPlanRequest`
-   - `LlmRepairRequest`
-9. Tạo `MockLlmClient` là implementation mặc định khi `LLM_PROVIDER=mock`.
-10. `MockLlmClient` phải trả JSON SearchPlan thuần, không markdown/prose.
-11. Mock provider ban đầu hỗ trợ tối thiểu 3 câu demo:
+12. Tạo `MockLlmClient` là implementation mặc định khi `LLM_PROVIDER=mock`.
+13. `MockLlmClient` phải trả `LlmResponse` có `content` là JSON SearchPlan thuần, không markdown/prose.
+14. Mock provider ban đầu hỗ trợ tối thiểu 3 nhóm câu demo:
    - "Show me failed login attempts from China in the last 24h"
    - "Tìm alert critical trong 7 ngày qua"
    - "Tìm malware detected trong 7 ngày qua"
-12. Mock provider không gọi mạng, không gọi Elasticsearch và không gọi PostgreSQL.
-13. Không tạo endpoint `/api/v1/search` trong prompt này.
-14. Không tích hợp Gemini thật trong prompt này; Gemini để Prompt 3.
-15. Thêm unit test cho:
+15. Mock provider không so sánh exact string cứng. Hãy nhận diện keyword đơn giản để các biến thể gần nghĩa vẫn chạy được, ví dụ:
+   - `failed login` + `china` hoặc `cn`;
+   - `critical` + `7 day` hoặc `7 ngày`;
+   - `malware detected` hoặc `malware`.
+16. Mock provider không gọi mạng, không gọi Elasticsearch và không gọi PostgreSQL.
+17. Không tạo endpoint `/api/v1/search` trong prompt này.
+18. Không tích hợp Gemini thật trong prompt này; Gemini để Prompt 3.
+19. Thêm unit test cho:
    - `LlmProperties` bind/default nếu phù hợp;
-   - `MockLlmClient` trả JSON thuần;
-   - mock mapping 3 câu demo.
-16. Chạy backend test và báo file đã tạo hoặc sửa.
+   - `LlmProperties` dùng enum `LlmProvider`;
+   - `MockLlmClient` trả `LlmResponse`;
+   - `LlmResponse.content` là JSON thuần;
+   - mock mapping 3 nhóm câu demo bằng keyword, không phụ thuộc exact string.
+20. Chạy backend test và báo file đã tạo hoặc sửa.
 
 Không triển khai aggregation, summary, audit log, CSV, frontend hoặc auth.
 ```
@@ -156,6 +173,8 @@ Kết quả cần có:
 
 - Backend test pass.
 - Có `LlmClient`.
+- Có `LlmResponse` để giữ `content`, `model`, `latencyMs`.
+- Có `LlmProvider` enum, không dùng string literal xuyên suốt codebase.
 - Có mock provider chạy không cần API key.
 - `.env.example` có placeholder LLM nhưng không có secret thật.
 
@@ -644,4 +663,3 @@ Kết quả cần có:
 - Không commit API key thật.
 - Không thêm local LLM hosting trong sprint này.
 - Docs là working draft: chỉ cập nhật phần phản ánh đúng code đã triển khai.
-
