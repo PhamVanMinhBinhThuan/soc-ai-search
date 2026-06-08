@@ -320,10 +320,20 @@ Việc cần làm:
 
 - Chọn một hosted LLM API để giảm tải VPS. Không host model local trong sprint này.
 - Viết system prompt mô tả schema, field allowlist và JSON schema của `SearchPlan`.
+- Yêu cầu LLM sinh trực tiếp JSON `SearchPlan` thuần:
+  - không sinh Elasticsearch DSL;
+  - không sinh prose;
+  - không sinh markdown;
+  - không thêm field ngoài schema.
 - Tạo LLM client có timeout, retry giới hạn và mock implementation.
-- Parse JSON bằng Jackson và validate bằng Bean Validation; nếu sai schema, trả lỗi thân thiện hoặc repair tối đa một lần.
+- Parse JSON bằng Jackson và validate bằng Bean Validation cùng `SearchPlanValidator`.
+- Nếu JSON không parse được hoặc không khớp schema:
+  - cho phép retry/repair tối đa một lần bằng prompt sửa JSON;
+  - sau lần repair vẫn lỗi thì trả lỗi rõ ràng;
+  - không tự suy đoán field ngoài `SearchPlan` schema.
 - Tạo endpoint `POST /api/v1/search`.
-- Log câu hỏi gốc, `SearchPlan`, DSL và latency.
+- Ghi nhận câu hỏi gốc, generated `SearchPlan`, generated DSL và latency trong response hoặc application log để debug.
+- Chưa persist audit log vào PostgreSQL trong ngày 4; query history/audit log để ngày 7.
 - Kiểm thử tối thiểu 10 câu hỏi Việt/Anh:
   - "Show me failed login attempts from China in the last 24h"
   - "Tìm alert critical trong 7 ngày qua"
@@ -374,7 +384,7 @@ Việc cần làm:
   - time bucket -> line chart;
   - top N -> bar chart;
   - phân bố severity -> pie hoặc bar chart.
-- Thêm demo identity đơn giản để ghi audit, ví dụ `demo-analyst`.
+- Chuẩn bị demo identity đơn giản, ví dụ `demo-analyst`, để ngày 7 dùng khi ghi history/audit log.
 - Với bản host public, chuẩn bị một lớp bảo vệ bằng password ở reverse proxy; chưa cần RBAC production.
 
 **Điều kiện hoàn thành:**
