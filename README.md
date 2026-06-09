@@ -154,7 +154,7 @@ Ví dụ request:
 
 Response có `original_question`, `search_plan`, `generated_dsl`, `llm_latency_ms`, `search_latency_ms`, `latency_ms`, pagination và danh sách `events`. Backend luôn override `page`/`size` từ request, không để LLM tự quyết định pagination.
 
-Ngày 4 chưa persist audit log/query history vào PostgreSQL. `search_query_logs` sẽ dùng ở các ngày sau khi triển khai audit/history.
+Ngày 4 chưa persist audit log/query history vào PostgreSQL. `search_query_logs` sẽ dùng ở các ngày sau khi triển khai audit/history. Aggregation/statistics sẽ được triển khai ở ngày 5.
 
 ### Smoke test ngày 4
 

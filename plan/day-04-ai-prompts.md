@@ -699,6 +699,11 @@ Kiểm tra:
 19. docker compose config hợp lệ và stack local healthy.
 20. Không persist audit log vào PostgreSQL trong ngày 4.
 21. Không triển khai aggregation, summary, frontend search UI, CSV hoặc auth trong ngày 4.
+22. Backend override `page` và `size` từ request; LLM không được quyền quyết định pagination.
+23. Response có `llm_latency_ms`, `search_latency_ms`, `latency_ms` và các giá trị này `>= 0`.
+24. `generated_dsl` là JSON object/map, không phải JSON string escaped như `"{\"query\":...}"`.
+25. No-result search qua endpoint kỹ thuật `/api/v1/search/plan` trả HTTP 200, `total = 0`, `events = []`.
+26. Search result map đúng Elasticsearch `_id` thành `event_id`; nếu có result thì `event_id` không blank và dùng được cho event detail.
 
 Sau đó:
 1. Sửa lỗi nhỏ nếu phát hiện.
