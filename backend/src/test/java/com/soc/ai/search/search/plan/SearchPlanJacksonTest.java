@@ -40,6 +40,7 @@ class SearchPlanJacksonTest {
         assertThat(plan.filters().countryCode()).containsExactly("CN");
         assertThat(plan.filters().timestamp().from()).isEqualTo("now-24h");
         assertThat(plan.messageQuery()).isEqualTo("malware detected");
+        assertThat(plan.aggregation()).isNull();
     }
 
     @Test
@@ -64,6 +65,111 @@ class SearchPlanJacksonTest {
         assertThat(root.path("filters").path("event_type").get(0).asText()).isEqualTo("failed_login");
         assertThat(root.path("filters").path("country_code").get(0).asText()).isEqualTo("CN");
         assertThat(root.path("message_query").asText()).isEqualTo("malware detected");
+    }
+
+    @Test
+    void deserializesAggregationSearchPlanContract() throws Exception {
+        var json = """
+                {
+                  "mode": "aggregation",
+                  "filters": {
+                    "timestamp": { "from": "now-7d", "to": "now" },
+                    "event_type": ["failed_login"]
+                  },
+                  "aggregation": {
+                    "type": "top_n",
+                    "field": "user",
+                    "top_n": 10,
+                    "interval": "hour"
+                  },
+                  "page": 0,
+                  "size": 10
+                }
+                """;
+
+        var plan = objectMapper.readValue(json, SearchPlan.class);
+
+        assertThat(plan.mode()).isEqualTo(SearchMode.AGGREGATION);
+        assertThat(plan.aggregation()).isNotNull();
+        assertThat(plan.aggregation().type()).isEqualTo(AggregationType.TOP_N);
+        assertThat(plan.aggregation().field()).isEqualTo("user");
+        assertThat(plan.aggregation().topN()).isEqualTo(10);
+        assertThat(plan.aggregation().interval()).isEqualTo(HistogramInterval.HOUR);
+    }
+
+    @Test
+    void serializesAggregationSearchPlanContract() throws Exception {
+        var plan = new SearchPlan(
+                SearchMode.AGGREGATION,
+                new SearchFilters(
+                        new TimeRange("now-7d", "now"),
+                        null,
+                        List.of("failed_login"),
+                        null,
+                        null,
+                        null,
+                        null),
+                new AggregationPlan(AggregationType.TOP_N, "user", 10, HistogramInterval.HOUR),
+                null,
+                0,
+                10);
+
+        var root = objectMapper.readTree(objectMapper.writeValueAsString(plan));
+
+        assertThat(root.path("mode").asText()).isEqualTo("aggregation");
+        assertThat(root.path("aggregation").path("type").asText()).isEqualTo("top_n");
+        assertThat(root.path("aggregation").path("field").asText()).isEqualTo("user");
+        assertThat(root.path("aggregation").path("top_n").asInt()).isEqualTo(10);
+        assertThat(root.path("aggregation").path("interval").asText()).isEqualTo("hour");
+        assertThat(root.path("filters").path("event_type").get(0).asText()).isEqualTo("failed_login");
+    }
+
+    @Test
+    void deserializesCountAggregationWithoutOptionalFields() throws Exception {
+        var json = """
+                {
+                  "mode": "aggregation",
+                  "filters": {
+                    "timestamp": { "from": "now-7d", "to": "now" }
+                  },
+                  "aggregation": {
+                    "type": "count"
+                  },
+                  "page": 0,
+                  "size": 10
+                }
+                """;
+
+        var plan = objectMapper.readValue(json, SearchPlan.class);
+
+        assertThat(plan.aggregation().type()).isEqualTo(AggregationType.COUNT);
+        assertThat(plan.aggregation().field()).isNull();
+        assertThat(plan.aggregation().topN()).isNull();
+        assertThat(plan.aggregation().interval()).isNull();
+    }
+
+    @Test
+    void deserializesDateHistogramAggregationWithoutField() throws Exception {
+        var json = """
+                {
+                  "mode": "aggregation",
+                  "filters": {
+                    "timestamp": { "from": "now-24h", "to": "now" }
+                  },
+                  "aggregation": {
+                    "type": "date_histogram",
+                    "interval": "hour"
+                  },
+                  "page": 0,
+                  "size": 24
+                }
+                """;
+
+        var plan = objectMapper.readValue(json, SearchPlan.class);
+
+        assertThat(plan.aggregation().type()).isEqualTo(AggregationType.DATE_HISTOGRAM);
+        assertThat(plan.aggregation().field()).isNull();
+        assertThat(plan.aggregation().interval()).isEqualTo(HistogramInterval.HOUR);
     }
 
     @Test

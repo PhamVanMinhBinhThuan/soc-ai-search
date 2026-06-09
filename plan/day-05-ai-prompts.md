@@ -111,37 +111,58 @@ Yêu cầu:
    - `AggregationType`;
    - `HistogramInterval`;
    - nếu cần có `ChartType`, chỉ tạo enum đơn giản, chưa tạo frontend.
-5. `AggregationType` tối thiểu gồm:
+5. `AggregationType` dùng Java enum UPPERCASE, tối thiểu gồm:
    - `COUNT`;
    - `GROUP_BY`;
    - `TOP_N`;
    - `DATE_HISTOGRAM`.
-6. `HistogramInterval` tối thiểu gồm:
-   - `minute`;
-   - `hour`;
-   - `day`.
-7. `AggregationPlan` tối thiểu có:
-   - `type`;
-   - `field`;
-   - `top_n`;
-   - `interval`.
-8. Mở rộng `SearchPlan` để có optional `aggregation`.
+6. JSON contract của `AggregationType` dùng lowercase/snake_case giống `SearchMode`:
+   - `COUNT` <-> `"count"`;
+   - `GROUP_BY` <-> `"group_by"`;
+   - `TOP_N` <-> `"top_n"`;
+   - `DATE_HISTOGRAM` <-> `"date_histogram"`.
+7. `HistogramInterval` dùng Java enum UPPERCASE:
+   - `MINUTE`;
+   - `HOUR`;
+   - `DAY`.
+8. JSON contract của `HistogramInterval` dùng lowercase:
+   - `MINUTE` <-> `"minute"`;
+   - `HOUR` <-> `"hour"`;
+   - `DAY` <-> `"day"`.
+9. Dùng Jackson `@JsonValue`/`@JsonCreator` hoặc cách tương đương để map JSON lowercase/snake_case sang Java enum UPPERCASE.
+10. `AggregationPlan` nên có dạng tối thiểu:
+    `record AggregationPlan(AggregationType type, String field, Integer topN, HistogramInterval interval)`.
+11. Quy ước nullability trong contract:
+    - `type` bắt buộc;
+    - `field` nullable, validator ở Prompt 2 quyết định type nào cần field;
+    - `topN` nullable, chỉ dùng cho `TOP_N` và có thể dùng cho `GROUP_BY`;
+    - `interval` nullable, chỉ dùng cho `DATE_HISTOGRAM`.
+12. `AggregationPlan` là business representation, không chứa:
+    - Elasticsearch DSL;
+    - Elasticsearch-specific field như `es_field`;
+    - chart metadata;
+    - raw aggregation response;
+    - bucket result.
+13. Mở rộng `SearchPlan` để có optional `aggregation`.
    - Với `mode = search`, `aggregation` có thể null.
    - Với `mode = aggregation`, `aggregation` sẽ được validator kiểm tra ở Prompt 2.
-9. Tiếp tục dùng Java `record` cho DTO data model; không nhồi business logic vào record.
-10. Dùng `@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)` để JSON dùng snake_case:
+14. Tiếp tục dùng Java `record` cho DTO data model; không nhồi business logic vào record.
+15. Dùng `@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)` để JSON dùng snake_case:
     - `topN` <-> `top_n`;
     - `eventType` <-> `event_type`;
     - `countryCode` <-> `country_code`.
-11. Không sửa compiler, executor hoặc endpoint trong prompt này.
-12. Không thêm summary, audit log, CSV, frontend hoặc auth.
-13. Thêm Jackson contract test:
-    - deserialize SearchPlan aggregation `TOP_N` từ JSON snake_case;
+16. Không sửa compiler, executor hoặc endpoint trong prompt này.
+17. Không thêm summary, audit log, CSV, frontend hoặc auth.
+18. Thêm Jackson contract test:
+    - deserialize SearchPlan aggregation `"top_n"` thành `AggregationType.TOP_N`;
+    - deserialize `"hour"` thành `HistogramInterval.HOUR`;
     - serialize SearchPlan aggregation ra JSON snake_case;
     - verify `mode = "aggregation"`;
-    - verify `aggregation.type`, `aggregation.field`, `aggregation.top_n`, `aggregation.interval`;
+    - verify `aggregation.type = "top_n"`, `aggregation.field`, `aggregation.top_n`, `aggregation.interval = "hour"`;
+    - verify COUNT có thể deserialize mà không cần `field`, `top_n`, `interval`;
+    - verify DATE_HISTOGRAM có thể deserialize với `interval = "hour"` mà không cần `field`;
     - verify SearchPlan search ngày 4 vẫn serialize/deserialize như cũ.
-14. Chạy backend test và báo file đã tạo hoặc sửa.
+19. Chạy backend test và báo file đã tạo hoặc sửa.
 
 Giữ thay đổi nhỏ gọn. Đây chỉ là contract data model cho aggregation.
 ```
@@ -205,9 +226,10 @@ Yêu cầu:
    - `GROUP_BY`: cần `field` trong allowlist, `top_n` optional nhưng nếu có phải 1-100;
    - `TOP_N`: cần `field` trong allowlist, `top_n` bắt buộc 1-100;
    - `DATE_HISTOGRAM`: không dùng `field` tùy ý, luôn chạy trên `timestamp`; cần `interval` là `minute`, `hour` hoặc `day`.
-9. Không tự thêm `.keyword` vào field trong validator. Mapping MVP hiện tại đã định nghĩa `user`, `host`, `ip`, `severity`, `event_type`, `country_code`, `source` là keyword/ip trực tiếp.
-10. Error message phải rõ để debug qua Swagger, không lộ stack trace.
-11. Thêm unit test table-driven:
+9. Java enum trong code vẫn dùng UPPERCASE (`TOP_N`, `DATE_HISTOGRAM`, `HOUR`), nhưng JSON input/output dùng lowercase/snake_case (`"top_n"`, `"date_histogram"`, `"hour"`).
+10. Không tự thêm `.keyword` vào field trong validator. Mapping MVP hiện tại đã định nghĩa `user`, `host`, `ip`, `severity`, `event_type`, `country_code`, `source` là keyword/ip trực tiếp.
+11. Error message phải rõ để debug qua Swagger, không lộ stack trace.
+12. Thêm unit test table-driven:
     - valid COUNT với filter failed_login 7 ngày;
     - valid GROUP_BY user;
     - valid TOP_N ip top 10;
@@ -220,7 +242,7 @@ Yêu cầu:
     - invalid top_n > 100;
     - invalid DATE_HISTOGRAM interval;
     - invalid message_query trong aggregation.
-12. Chạy backend test và báo file đã tạo hoặc sửa.
+13. Chạy backend test và báo file đã tạo hoặc sửa.
 
 Không gọi Elasticsearch trong prompt này. Không triển khai LLM prompt, executor, summary, audit log, CSV hoặc frontend.
 ```
@@ -441,6 +463,7 @@ Yêu cầu:
    - mô tả mode `aggregation`;
    - mô tả `AggregationPlan` schema;
    - cho LLM sinh `COUNT`, `GROUP_BY`, `TOP_N`, `DATE_HISTOGRAM`;
+   - JSON phải dùng lowercase/snake_case cho enum: `count`, `group_by`, `top_n`, `date_histogram`, `minute`, `hour`, `day`;
    - nhắc lại LLM chỉ sinh JSON SearchPlan, không sinh Elasticsearch DSL;
    - nhắc lại field allowlist aggregation;
    - nhắc không dùng `.keyword`;

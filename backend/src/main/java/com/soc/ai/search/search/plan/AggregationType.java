@@ -5,13 +5,15 @@ import java.util.Arrays;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
-public enum SearchMode {
-    SEARCH("search"),
-    AGGREGATION("aggregation");
+public enum AggregationType {
+    COUNT("count"),
+    GROUP_BY("group_by"),
+    TOP_N("top_n"),
+    DATE_HISTOGRAM("date_histogram");
 
     private final String jsonValue;
 
-    SearchMode(String jsonValue) {
+    AggregationType(String jsonValue) {
         this.jsonValue = jsonValue;
     }
 
@@ -21,10 +23,10 @@ public enum SearchMode {
     }
 
     @JsonCreator(mode = JsonCreator.Mode.DELEGATING)
-    public static SearchMode fromJson(String value) {
+    public static AggregationType fromJson(String value) {
         return Arrays.stream(values())
-                .filter(mode -> mode.jsonValue.equalsIgnoreCase(value))
+                .filter(type -> type.jsonValue.equalsIgnoreCase(value))
                 .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Unsupported search mode: " + value));
+                .orElseThrow(() -> new IllegalArgumentException("Unsupported aggregation type: " + value));
     }
 }

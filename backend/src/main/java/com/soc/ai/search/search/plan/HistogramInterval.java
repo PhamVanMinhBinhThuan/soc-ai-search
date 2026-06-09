@@ -5,13 +5,14 @@ import java.util.Arrays;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
-public enum SearchMode {
-    SEARCH("search"),
-    AGGREGATION("aggregation");
+public enum HistogramInterval {
+    MINUTE("minute"),
+    HOUR("hour"),
+    DAY("day");
 
     private final String jsonValue;
 
-    SearchMode(String jsonValue) {
+    HistogramInterval(String jsonValue) {
         this.jsonValue = jsonValue;
     }
 
@@ -21,10 +22,10 @@ public enum SearchMode {
     }
 
     @JsonCreator(mode = JsonCreator.Mode.DELEGATING)
-    public static SearchMode fromJson(String value) {
+    public static HistogramInterval fromJson(String value) {
         return Arrays.stream(values())
-                .filter(mode -> mode.jsonValue.equalsIgnoreCase(value))
+                .filter(interval -> interval.jsonValue.equalsIgnoreCase(value))
                 .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Unsupported search mode: " + value));
+                .orElseThrow(() -> new IllegalArgumentException("Unsupported histogram interval: " + value));
     }
 }
