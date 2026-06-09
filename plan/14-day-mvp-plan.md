@@ -351,14 +351,50 @@ Việc cần làm:
 
 Việc cần làm:
 
-- Mở rộng `SearchPlan` cho aggregation:
-  - `count`
-  - `group_by`
-  - `top_n`
-  - `date_histogram`: minute, hour, day
-- Compile và execute DSL aggregation.
-- Chuẩn hóa response để frontend không phụ thuộc DSL.
-- Viết test cho compiler và executor aggregation.
+- Mở rộng `SearchMode` từ ngày 4:
+  - `SEARCH`;
+  - `AGGREGATION`.
+- Mở rộng `SearchPlan` cho aggregation bằng DTO rõ ràng, ví dụ `AggregationPlan`:
+  - `type`: `COUNT`, `GROUP_BY`, `TOP_N`, `DATE_HISTOGRAM`;
+  - `field`: field dùng để group/top nếu cần;
+  - `top_n`: giới hạn số bucket cho `TOP_N` hoặc `GROUP_BY`;
+  - `interval`: `minute`, `hour`, `day` cho `DATE_HISTOGRAM`.
+- Cập nhật prompt builder để LLM có thể sinh `SearchPlan` mode `aggregation`, nhưng vẫn giữ nguyên nguyên tắc:
+  - LLM chỉ sinh JSON `SearchPlan`;
+  - không sinh Elasticsearch DSL;
+  - không sinh prose/markdown;
+  - không thêm field ngoài schema.
+- Cập nhật validator cho aggregation:
+  - chỉ cho phép aggregation field trong allowlist: `source`, `severity`, `event_type`, `user`, `host`, `ip`, `country_code`;
+  - không cho group/top trên `message`, `raw`, `timestamp` hoặc field lạ như `password`;
+  - `top_n` phải có giới hạn an toàn, ví dụ 1-100;
+  - `DATE_HISTOGRAM` chỉ chạy trên `timestamp`;
+  - `COUNT` không cần `field`.
+- Compile và execute aggregation DSL:
+  - `COUNT`: dùng search request `size = 0` và lấy `hits.total`, không cần aggregation DSL riêng;
+  - `GROUP_BY` và `TOP_N`: dùng Elasticsearch `terms` aggregation;
+  - `DATE_HISTOGRAM`: dùng Elasticsearch `date_histogram` trên field `timestamp`;
+  - field trong aggregation dùng đúng mapping hiện tại như `user`, `host`, `ip`, `severity`, không tự thêm `.keyword` vì các field này đã là `keyword` trong mapping `soc-events-v1`.
+- Chuẩn hóa response để frontend không phụ thuộc DSL, ví dụ:
+  - `mode`;
+  - `aggregation_type`;
+  - `generated_dsl`;
+  - `total`;
+  - `aggregation_results`: danh sách `{ key, value }`;
+  - `chart_metadata`: `{ chart_type, x_axis_label, y_axis_label }`.
+- Gợi ý chart metadata:
+  - `TOP_N` hoặc `GROUP_BY` -> `BAR`;
+  - phân bố severity/country nếu có -> `PIE` hoặc `BAR`;
+  - `DATE_HISTOGRAM` -> `LINE`.
+- Tái sử dụng guardrail pagination/size từ ngày 4:
+  - request `size` hoặc `top_n` phải được giới hạn;
+  - không để LLM tự nâng số bucket quá giới hạn.
+- Viết test cho compiler và executor aggregation:
+  - `COUNT` dùng `hits.total`;
+  - `terms` aggregation cho `GROUP_BY`/`TOP_N`;
+  - `date_histogram` aggregation cho time bucket;
+  - reject field ngoài allowlist;
+  - response có `aggregation_results` và `chart_metadata`.
 - Demo các câu:
   - "Đếm số lần login thất bại theo từng user trong 7 ngày qua"
   - "Top 10 IP có nhiều alert nhất tháng này"
@@ -368,6 +404,8 @@ Việc cần làm:
 
 - Ba câu demo aggregation trả đúng table data và chart metadata.
 - DSL được hiển thị cho người dùng.
+- Frontend có thể render aggregation bằng `aggregation_results` và `chart_metadata` mà không cần hiểu Elasticsearch DSL.
+- Aggregation không dùng field ngoài allowlist và không dùng `.keyword` sai với mapping hiện tại.
 
 ### Ngày 6 - Thứ Bảy, 06/06: Frontend search, event detail và biểu đồ
 
