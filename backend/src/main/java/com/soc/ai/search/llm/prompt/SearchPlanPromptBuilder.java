@@ -52,6 +52,7 @@ public class SearchPlanPromptBuilder {
                 - Aggregation, statistics, top-N, and chart requests are not supported in Day 4. Do not invent another mode.
                 - If a requested aggregation also contains clear search filters, return the minimal search SearchPlan using only those filters.
                 - If the question does not specify a filter, omit that filter. Do not infer or hallucinate filter values.
+                - page and size may be omitted. Backend owns pagination and will override them from the API request.
                 - Never include raw logs, search results, event documents, API keys, passwords, or secrets.
 
                 SearchPlan schema:
@@ -88,6 +89,34 @@ public class SearchPlanPromptBuilder {
                 bulletList(ALLOWED_FIELDS),
                 bulletList(SUPPORTED_TIME_VALUES),
                 bulletList(SUPPORTED_SEVERITIES));
+    }
+
+    public LlmSearchPlanRequest buildRepairSearchPlanRequest(
+            String originalQuestion,
+            String invalidOutput,
+            List<String> errors) {
+        var repairInstructions = """
+                Repair the previous invalid SearchPlan JSON.
+
+                Original user question:
+                %s
+
+                Invalid LLM output:
+                %s
+
+                Parser or validation errors:
+                %s
+
+                Return exactly one corrected JSON SearchPlan object.
+                Do not return markdown, prose, Elasticsearch DSL, comments, or code fences.
+                Do not add fields outside the SearchPlan schema.
+                Do not add filters that are not present in the original user question.
+                """.formatted(
+                originalQuestion,
+                invalidOutput,
+                bulletList(errors));
+
+        return new LlmSearchPlanRequest(buildSystemPrompt(), repairInstructions);
     }
 
     private String bulletList(List<String> values) {

@@ -30,6 +30,38 @@ class SearchPlanJsonParserTest {
     }
 
     @Test
+    void parsesJsonWithoutPaginationWhenBackendOverridesPagination() {
+        var plan = parser.parseWithPaginationOverride("""
+                {
+                  "mode": "search",
+                  "filters": {
+                    "event_type": ["failed_login"],
+                    "country_code": ["CN"]
+                  }
+                }
+                """, 2, 5);
+
+        assertThat(plan.page()).isEqualTo(2);
+        assertThat(plan.size()).isEqualTo(5);
+        assertThat(plan.filters().eventType()).containsExactly("failed_login");
+    }
+
+    @Test
+    void backendPaginationOverrideWinsOverLlmPagination() {
+        var plan = parser.parseWithPaginationOverride("""
+                {
+                  "mode": "search",
+                  "filters": {},
+                  "page": 9,
+                  "size": 100
+                }
+                """, 0, 5);
+
+        assertThat(plan.page()).isZero();
+        assertThat(plan.size()).isEqualTo(5);
+    }
+
+    @Test
     void rejectsMarkdownCodeFence() {
         assertInvalid("""
                 ```json

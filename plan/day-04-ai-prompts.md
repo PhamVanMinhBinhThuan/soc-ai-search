@@ -406,10 +406,13 @@ Yêu cầu:
    - `mode`;
    - `search_plan` dạng JSON object, không phải string;
    - `generated_dsl` dạng JSON object/map, không phải string;
+   - tuyệt đối không trả `generated_dsl` dưới dạng JSON string escaped;
    - `total`;
    - `page`;
    - `size`;
    - `total_pages`;
+   - `llm_latency_ms`;
+   - `search_latency_ms`;
    - `latency_ms`;
    - `events`.
 6. Flow xử lý:
@@ -419,10 +422,21 @@ Yêu cầu:
    - parse bằng `SearchPlanJsonParser`;
    - validate bằng Bean Validation + `SearchPlanValidator`;
    - nếu parse/validation lỗi, gọi repair tối đa một lần;
+   - repair prompt phải được build rõ ràng, gồm:
+     - câu hỏi gốc của user;
+     - raw output lỗi mà LLM đã sinh trước đó;
+     - danh sách lỗi chi tiết từ `SearchPlanJsonParser`, Jackson hoặc `SearchPlanValidator`;
+     - yêu cầu sửa thành duy nhất một JSON `SearchPlan` hợp lệ;
+     - nhắc lại không markdown/prose/DSL, không field ngoài schema, không tự thêm filter không có trong câu hỏi gốc;
    - sau repair vẫn lỗi thì trả lỗi rõ ràng;
+   - backend inject hoặc override `page` và `size` từ request vào `SearchPlan` cuối cùng trước khi execute;
    - gọi `SearchPlanExecutor.search(searchPlan)`;
    - trả response chuẩn hóa.
-7. `page` và `size` trong request phải được đưa vào `SearchPlan` cuối cùng. Nếu LLM trả page/size khác request, backend ưu tiên page/size từ request để tránh LLM tự nâng size.
+7. Không để LLM quyết định pagination:
+   - Prompt gửi LLM không cần nhấn mạnh page/size;
+   - nếu LLM không trả page/size thì backend vẫn tạo `SearchPlan` cuối cùng với `page` và `size` từ request;
+   - nếu LLM trả page/size khác request thì backend bắt buộc override bằng page/size từ request;
+   - mục tiêu là tránh LLM tự nâng `size` hoặc đổi page ngoài ý người dùng.
 8. Chỉ support `mode = search` trong ngày 4.
 9. Không triển khai aggregation trong endpoint này.
 10. Không persist audit log vào PostgreSQL trong ngày 4.
@@ -436,12 +450,19 @@ Yêu cầu:
 14. Endpoint có Swagger/OpenAPI annotation hữu ích.
 15. Thêm controller/service test:
    - question hợp lệ với mock trả 200;
+   - với `LLM_PROVIDER=mock`, câu `"failed login china"` phải search được mà không cần API key;
    - response có `original_question`;
    - response có `search_plan` object;
    - response có `generated_dsl` object;
+   - `generated_dsl` không phải JSON string escaped;
+   - response có `llm_latency_ms`, `search_latency_ms` và `latency_ms`;
+   - `latency_ms` >= `llm_latency_ms + search_latency_ms` hoặc ít nhất không nhỏ hơn từng thành phần;
    - response có `events`;
    - blank question trả 400;
    - size > 100 trả 400;
+   - LLM trả page/size khác request, ví dụ LLM size=100 nhưng request size=5, thì response cuối cùng và `search_plan` cuối cùng vẫn dùng size=5;
+   - repair prompt có chứa câu hỏi gốc, raw output lỗi và lỗi parse/validation cụ thể;
+   - repair prompt không chứa API key, raw event, search result hoặc secret;
    - LLM output invalid rồi repair thành công;
    - LLM output invalid sau repair trả lỗi có kiểm soát.
 16. Nếu Docker đang chạy và dataset đã seed, test thật endpoint bằng Invoke-RestMethod với provider mock.

@@ -6,6 +6,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.soc.ai.search.search.plan.SearchPlan;
 import com.soc.ai.search.search.validation.SearchPlanValidationException;
 import com.soc.ai.search.search.validation.SearchPlanValidator;
@@ -15,13 +16,14 @@ import org.springframework.stereotype.Service;
 public class SearchPlanJsonParser {
 
     private final ObjectReader strictSearchPlanReader;
+    private final ObjectMapper strictObjectMapper;
     private final SearchPlanValidator searchPlanValidator;
 
     public SearchPlanJsonParser(ObjectMapper objectMapper, SearchPlanValidator searchPlanValidator) {
-        this.strictSearchPlanReader = objectMapper.copy()
+        this.strictObjectMapper = objectMapper.copy()
                 .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
-                .configure(DeserializationFeature.FAIL_ON_TRAILING_TOKENS, true)
-                .readerFor(SearchPlan.class);
+                .configure(DeserializationFeature.FAIL_ON_TRAILING_TOKENS, true);
+        this.strictSearchPlanReader = strictObjectMapper.readerFor(SearchPlan.class);
         this.searchPlanValidator = searchPlanValidator;
     }
 
@@ -36,6 +38,30 @@ public class SearchPlanJsonParser {
             throw new SearchPlanJsonParseException(exception.errors());
         } catch (JsonProcessingException exception) {
             throw new SearchPlanJsonParseException(List.of("LLM output must be a valid SearchPlan JSON object"));
+        }
+    }
+
+    public SearchPlan parseWithPaginationOverride(String rawContent, int page, int size) {
+        var content = normalizeInput(rawContent);
+        rejectNonJsonObjectShape(content);
+
+        try {
+            var root = strictObjectMapper.readTree(content);
+            if (!root.isObject()) {
+                throw new SearchPlanJsonParseException(List.of("LLM output must be exactly one JSON object without prose"));
+            }
+
+            var objectNode = (ObjectNode) root;
+            objectNode.put("page", page);
+            objectNode.put("size", size);
+
+            var plan = strictObjectMapper.treeToValue(objectNode, SearchPlan.class);
+            return searchPlanValidator.validate(plan);
+        } catch (SearchPlanValidationException exception) {
+            throw new SearchPlanJsonParseException(exception.errors());
+        } catch (JsonProcessingException exception) {
+            throw new SearchPlanJsonParseException(List.of(
+                    "LLM output must be a valid SearchPlan JSON object: " + exception.getOriginalMessage()));
         }
     }
 

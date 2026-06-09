@@ -58,4 +58,22 @@ class SearchPlanPromptBuilderTest {
                 .contains("Do not invent another mode")
                 .contains("\"mode\": \"search\"");
     }
+
+    @Test
+    void buildsRepairPromptWithOriginalQuestionInvalidOutputAndErrors() {
+        var request = promptBuilder.buildRepairSearchPlanRequest(
+                "failed login china",
+                "{\"hack_field\":true}",
+                java.util.List.of("Unrecognized field hack_field"));
+
+        assertThat(request.systemPrompt())
+                .contains("SearchPlan schema")
+                .contains("Do not return Elasticsearch DSL");
+        assertThat(request.userQuestion())
+                .contains("failed login china")
+                .contains("{\"hack_field\":true}")
+                .contains("Unrecognized field hack_field")
+                .contains("Return exactly one corrected JSON SearchPlan object")
+                .doesNotContain("api_key", "raw event", "search result", "secret");
+    }
 }
