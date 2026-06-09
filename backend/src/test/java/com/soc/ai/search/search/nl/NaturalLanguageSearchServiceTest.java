@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.soc.ai.search.llm.LlmClient;
@@ -27,6 +28,9 @@ import com.soc.ai.search.search.plan.SearchPlan;
 import com.soc.ai.search.search.validation.SearchPlanValidator;
 import jakarta.validation.Validation;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 
 class NaturalLanguageSearchServiceTest {
@@ -57,6 +61,35 @@ class NaturalLanguageSearchServiceTest {
         assertThat(response.llmLatencyMs()).isGreaterThanOrEqualTo(0);
         assertThat(response.searchLatencyMs()).isEqualTo(30);
         assertThat(response.latencyMs()).isGreaterThanOrEqualTo(response.llmLatencyMs() + response.searchLatencyMs());
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("demoQuestions")
+    void mockProviderSupportsMainDemoQuestionsThroughService(String question, ExpectedPlan expected) {
+        var executor = org.mockito.Mockito.mock(SearchPlanExecutor.class);
+        when(executor.search(any(SearchPlan.class))).thenReturn(searchResponse(0, 5, 30));
+        var service = new NaturalLanguageSearchService(
+                promptBuilder,
+                new MockLlmClient(mockProperties()),
+                parser,
+                executor);
+
+        var response = service.search(new NaturalLanguageSearchRequest(question, 0, 5));
+
+        assertThat(response.originalQuestion()).isEqualTo(question);
+        assertThat(response.searchPlan().mode()).isEqualTo(SearchMode.SEARCH);
+        assertThat(response.searchPlan().page()).isZero();
+        assertThat(response.searchPlan().size()).isEqualTo(5);
+        assertThat(response.size()).isEqualTo(5);
+        assertThat(response.generatedDsl()).isInstanceOf(Map.class);
+        assertThat(response.events()).isNotEmpty();
+
+        assertList(response.searchPlan().filters().eventType(), expected.eventType());
+        assertList(response.searchPlan().filters().countryCode(), expected.countryCode());
+        assertList(response.searchPlan().filters().severity(), expected.severity());
+        assertThat(response.searchPlan().messageQuery()).isEqualTo(expected.messageQuery());
+        assertThat(response.searchPlan().filters().timestamp().from()).isEqualTo(expected.from());
+        assertThat(response.searchPlan().filters().timestamp().to()).isEqualTo(expected.to());
     }
 
     @Test
@@ -180,5 +213,36 @@ class NaturalLanguageSearchServiceTest {
                 "from", 0,
                 "size", size,
                 "sort", List.of(Map.of("timestamp", Map.of("order", "desc"))));
+    }
+
+    private static Stream<Arguments> demoQuestions() {
+        return Stream.of(
+                Arguments.of(
+                        "Show me failed login attempts from China in the last 24h",
+                        new ExpectedPlan(List.of("failed_login"), List.of("CN"), null, null, "now-24h", "now")),
+                Arguments.of(
+                        "Tìm alert critical trong 7 ngày qua",
+                        new ExpectedPlan(null, null, List.of("critical"), null, "now-7d", "now")),
+                Arguments.of(
+                        "Tìm malware detected trong 7 ngày qua",
+                        new ExpectedPlan(null, null, null, "malware detected", "now-7d", "now")));
+    }
+
+    private void assertList(List<String> actual, List<String> expected) {
+        if (expected == null) {
+            assertThat(actual).isNull();
+            return;
+        }
+
+        assertThat(actual).containsExactlyElementsOf(expected);
+    }
+
+    private record ExpectedPlan(
+            List<String> eventType,
+            List<String> countryCode,
+            List<String> severity,
+            String messageQuery,
+            String from,
+            String to) {
     }
 }

@@ -555,18 +555,33 @@ Yêu cầu:
      - `timestamp.from = "now-30d"`
      - `timestamp.to = "now"`
 4. Mọi mock response phải là JSON `SearchPlan` thuần, không markdown/prose.
-5. Mock phải set `page` và `size` theo request từ endpoint, không tự nâng size.
+5. Mock không cần tự quyết định `page` và `size`; backend endpoint/service phải inject hoặc override `page` và `size` từ request như Prompt 4.
 6. Nếu mock nhận câu chưa hỗ trợ, trả lỗi có kiểm soát, không đoán mò.
-7. Thêm table-driven unit test:
+7. Tách regression test theo tầng để dễ debug:
+   - Mock layer: question -> `MockLlmClient` -> JSON thuần;
+   - Parser layer: JSON thuần -> `SearchPlan`;
+   - Validator layer: `SearchPlan` -> pass `SearchPlanValidator`;
+   - Endpoint/service layer: question -> response chuẩn hóa.
+8. Thêm table-driven unit test cho Mock/Parser/Validator:
+   - 10 câu hỏi đều sinh JSON thuần, không markdown/prose;
    - 10 câu hỏi đều parse thành `SearchPlan`;
+   - 10 plan đều có `mode = SearchMode.SEARCH`;
    - 10 plan đều pass `SearchPlanValidator`;
    - mapping từng câu đúng field bắt buộc;
-   - mock không sinh DSL.
-8. Thêm controller/service test cho ít nhất 3 câu:
+   - mock không sinh Elasticsearch DSL.
+9. Thêm test synonym để chứng minh mock keyword-based, không phụ thuộc exact phrase:
+   - `"failed login china"` và `"failed login from cn"` cùng map ra `event_type = ["failed_login"]`, `country_code = ["CN"]`;
+   - `"critical 7 days"` và `"critical 7 ngày"` cùng map ra `severity = ["critical"]`, `timestamp.from = "now-7d"`.
+10. Thêm service/endpoint test cho pagination guardrail:
+   - request `page=0`, `size=5` thì `SearchPlan` cuối cùng và response dùng `page=0`, `size=5`;
+   - nếu LLM/mock trả `size=100`, backend vẫn override thành `size=5`;
+   - nếu LLM/mock không trả `page/size`, backend vẫn inject từ request.
+11. Thêm controller/service test cho ít nhất 3 câu:
    - failed login China 24h;
    - critical 7 ngày;
    - malware detected 7 ngày.
-9. Chạy backend test và báo file đã tạo hoặc sửa.
+12. Với các scenario có thể phụ thuộc dataset như `firewall_block`, `privilege_escalation`, `account_lockout`, regression test ngày 4 chỉ bắt buộc verify `SearchPlan` đúng mapping và pass validator. Không bắt buộc search result `total > 0` để tránh test fail do dataset local khác nhau.
+13. Chạy backend test và báo file đã tạo hoặc sửa.
 
 Không triển khai aggregation, summary, audit log, CSV, frontend hoặc auth.
 ```

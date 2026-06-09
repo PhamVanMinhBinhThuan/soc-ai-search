@@ -28,6 +28,10 @@ public class MockLlmClient implements LlmClient {
     private String contentFor(String question) {
         var normalized = normalize(question);
 
+        if (containsFailedLoginAdmin(normalized)) {
+            return failedLoginAdminPlan();
+        }
+
         if (containsFailedLoginChina(normalized)) {
             return failedLoginChinaPlan();
         }
@@ -40,17 +44,51 @@ public class MockLlmClient implements LlmClient {
             return malwareSevenDaysPlan();
         }
 
-        return broadRecentSearchPlan();
+        if (containsFirewallBlockCn(normalized)) {
+            return firewallBlockCnPlan();
+        }
+
+        if (containsPrivilegeEscalationAdmin(normalized)) {
+            return privilegeEscalationAdminPlan();
+        }
+
+        if (containsAccountLockout(normalized)) {
+            return accountLockoutSevenDaysPlan();
+        }
+
+        return unsupportedQuestionPlan();
     }
 
     private boolean containsFailedLoginChina(String value) {
-        return value.contains("failed login")
+        return (value.contains("failed login") || containsVietnameseFailedLogin(value))
                 && (value.contains("china") || value.contains(" cn") || value.contains("trung quoc"));
     }
 
     private boolean containsCriticalSevenDays(String value) {
         return value.contains("critical")
                 && (value.contains("7 day") || value.contains("7 days") || value.contains("7 ngay"));
+    }
+
+    private boolean containsFailedLoginAdmin(String value) {
+        return value.contains("failed login") && value.contains("admin");
+    }
+
+    private boolean containsFirewallBlockCn(String value) {
+        return value.contains("firewall") && value.contains("block")
+                && (value.contains(" cn") || value.contains("china") || value.contains("trung quoc"));
+    }
+
+    private boolean containsPrivilegeEscalationAdmin(String value) {
+        return value.contains("privilege") && value.contains("escalation") && value.contains("admin");
+    }
+
+    private boolean containsAccountLockout(String value) {
+        return value.contains("account") && value.contains("lockout");
+    }
+
+    private boolean containsVietnameseFailedLogin(String value) {
+        return value.contains("login that bai")
+                || (value.contains("dang nhap") && value.contains("that bai"));
     }
 
     private String failedLoginChinaPlan() {
@@ -64,6 +102,19 @@ public class MockLlmClient implements LlmClient {
                   },
                   "page": 0,
                   "size": 20
+                }
+                """;
+    }
+
+    private String failedLoginAdminPlan() {
+        return """
+                {
+                  "mode": "search",
+                  "filters": {
+                    "timestamp": { "from": "now-30d", "to": "now" },
+                    "event_type": ["failed_login"],
+                    "user": "admin"
+                  }
                 }
                 """;
     }
@@ -96,15 +147,49 @@ public class MockLlmClient implements LlmClient {
                 """;
     }
 
-    private String broadRecentSearchPlan() {
+    private String firewallBlockCnPlan() {
         return """
                 {
                   "mode": "search",
                   "filters": {
-                    "timestamp": { "from": "now-24h", "to": "now" }
-                  },
-                  "page": 0,
-                  "size": 20
+                    "timestamp": { "from": "now-30d", "to": "now" },
+                    "event_type": ["firewall_block"],
+                    "country_code": ["CN"]
+                  }
+                }
+                """;
+    }
+
+    private String privilegeEscalationAdminPlan() {
+        return """
+                {
+                  "mode": "search",
+                  "filters": {
+                    "timestamp": { "from": "now-30d", "to": "now" },
+                    "event_type": ["privilege_escalation"],
+                    "user": "admin"
+                  }
+                }
+                """;
+    }
+
+    private String accountLockoutSevenDaysPlan() {
+        return """
+                {
+                  "mode": "search",
+                  "filters": {
+                    "timestamp": { "from": "now-7d", "to": "now" },
+                    "event_type": ["account_lockout"]
+                  }
+                }
+                """;
+    }
+
+    private String unsupportedQuestionPlan() {
+        return """
+                {
+                  "mode": "search",
+                  "unsupported_question": true
                 }
                 """;
     }
