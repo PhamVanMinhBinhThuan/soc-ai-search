@@ -305,32 +305,60 @@ Yêu cầu:
 8. Gemini request chỉ gửi:
    - system prompt;
    - user question;
-   - schema/allowlist/examples.
+   - schema/allowlist và số lượng ví dụ tối thiểu nếu thật sự cần;
+   - Không nhồi nhiều few-shot examples làm prompt dài và tăng token cost.
 9. Gemini request không gửi:
    - raw log;
    - search result;
    - event document;
    - Elasticsearch DSL từ kết quả trước.
-10. Gemini response parser trong client chỉ lấy text output từ response provider và trả raw string cho parser/service; client không tự compile DSL.
-11. Retry giới hạn:
+10. Sử dụng Spring `RestClient` hoặc `WebClient` đang có trong project để gọi HTTP. Không dùng `HttpURLConnection` và không thêm thư viện HTTP mới nếu chưa cần.
+11. HTTP request nên gửi `User-Agent` rõ ràng, ví dụ `soc-ai-search-mvp`.
+12. Gemini client chỉ chịu trách nhiệm:
+   - gọi API;
+   - lấy text từ candidate đầu tiên trong response Gemini;
+   - trả text đó vào `LlmResponse.content`;
+   - đo và populate `LlmResponse.latencyMs`;
+   - set `LlmResponse.model` từ cấu hình hoặc response nếu có.
+13. Gemini response thực tế có dạng gần như bên dưới. Không cần tạo class phức tạp nếu chưa cần, nhưng phải đọc đúng path text:
+
+   {
+     "candidates": [
+       {
+         "content": {
+           "parts": [
+             { "text": "{...}" }
+           ]
+         }
+       }
+     ]
+   }
+
+   Client phải lấy `candidates[0].content.parts[0].text`. Nếu thiếu text, trả lỗi có kiểm soát.
+14. Gemini client không parse JSON thành `SearchPlan`, không validate SearchPlan, không compile DSL và không gọi Elasticsearch/PostgreSQL.
+15. Retry giới hạn:
    - tối đa `LLM_MAX_ATTEMPTS`;
    - retry cho lỗi mạng hoặc HTTP 5xx;
    - không retry vô hạn;
    - HTTP 4xx trả lỗi có kiểm soát.
-12. Timeout phải dùng `LLM_TIMEOUT_MS`.
-13. Nếu provider là `gemini` mà thiếu `LLM_API_KEY` hoặc `LLM_MODEL`, trả lỗi cấu hình rõ ràng khi gọi, không fail mơ hồ.
-14. Thêm test bằng mock HTTP server hoặc mock RestClient:
-   - Gemini client parse text response thành raw JSON string;
+16. Timeout phải dùng `LLM_TIMEOUT_MS`.
+17. Nếu provider là `gemini` mà thiếu `LLM_API_KEY`, `LLM_MODEL` hoặc `LLM_BASE_URL`, trả lỗi cấu hình rõ ràng khi gọi, không fail mơ hồ.
+18. Thêm test bằng mock HTTP server hoặc mock `RestClient`/`WebClient`:
+   - Gemini client parse `candidates[0].content.parts[0].text` thành `LlmResponse.content`;
+   - Gemini client populate `LlmResponse.model`;
+   - Gemini client đo `LlmResponse.latencyMs` lớn hơn hoặc bằng 0 và không hardcode luôn 0;
    - Gemini client không log/return API key;
    - lỗi 5xx retry theo giới hạn;
-   - lỗi 4xx không retry vô hạn.
-15. Không gọi API Gemini thật trong test.
-16. Cập nhật README hoặc `.env.example` ngắn gọn cách bật Gemini:
+   - lỗi 4xx không retry vô hạn;
+   - response thiếu candidate/text trả lỗi có kiểm soát.
+19. Không gọi API Gemini thật trong test.
+20. Cập nhật README hoặc `.env.example` ngắn gọn cách bật Gemini:
    - `LLM_PROVIDER=gemini`;
+   - `LLM_BASE_URL=...`;
    - `LLM_API_KEY=...`;
    - `LLM_MODEL=...`;
    - mặc định vẫn là `mock`.
-17. Chạy backend test và báo file đã tạo hoặc sửa.
+21. Chạy backend test và báo file đã tạo hoặc sửa.
 
 Không triển khai aggregation, summary, audit log, CSV, frontend hoặc auth.
 ```
