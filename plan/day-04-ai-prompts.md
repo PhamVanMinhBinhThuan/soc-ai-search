@@ -621,21 +621,27 @@ Yêu cầu:
    - Elasticsearch health;
    - OpenAPI có `/api/v1/search`;
    - OpenAPI vẫn có `/api/v1/search/plan`;
+   - natural language endpoint chạy được khi không có `LLM_API_KEY`, chứng minh provider `mock` dùng được cho local/dev/test;
    - câu "Show me failed login attempts from China in the last 24h" trả total > 0;
    - câu "Tìm alert critical trong 7 ngày qua" trả total > 0;
    - câu "Tìm malware detected trong 7 ngày qua" trả total > 0;
    - response có `original_question`;
+   - response có `mode = "search"`;
+   - response có `search_plan.mode = "search"`, để xác nhận ngày 4 chưa sinh aggregation;
    - response có `search_plan` dạng object, không phải string;
    - response có `generated_dsl` dạng object, không phải string;
    - response có `total_pages >= 0`;
+   - response có `llm_latency_ms`, `search_latency_ms`, `latency_ms` và các giá trị này `>= 0`;
+   - pagination guardrail: với request `size = 5`, response `size = 5` và `search_plan.size = 5`;
    - events trả về không vượt quá size request;
    - nếu total > 0 thì event đầu tiên có `event_id` không blank;
+   - no-result search qua endpoint kỹ thuật `POST /api/v1/search/plan` với filter hợp lệ nhưng chắc chắn không có dữ liệu, ví dụ user `definitely.no.such.user`, phải trả HTTP 200, `total = 0` và `events = []`;
    - blank question trả 400;
    - size > 100 trả 400.
 5. Smoke script phải fail rõ ràng nếu checkpoint không đạt.
 6. Cập nhật README.md với:
-   - cách chạy provider mock;
-   - cách bật Gemini bằng env var placeholder;
+   - cách chạy provider mock cho local/dev/test và nhấn mạnh không cần API key;
+   - cách bật Gemini bằng env var placeholder cho integration thật;
    - cách gọi `POST /api/v1/search`;
    - cách chạy smoke test ngày 4;
    - ghi rõ ngày 4 chưa persist audit log vào PostgreSQL.
@@ -653,6 +659,7 @@ Kết quả cần có:
 
 - Smoke test PASS.
 - Không cần API key thật để pass.
+- Smoke test xác nhận `mock` dùng được cho local/dev/test, còn Gemini chỉ bật khi cấu hình integration thật.
 
 ## 10. Prompt 7 - Review ngày 4 và cập nhật tài liệu
 

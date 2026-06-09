@@ -4,7 +4,7 @@
 
 ## Trạng thái
 
-Repository đã hoàn thành foundation **ngày 3** cho MVP: backend/frontend scaffold, Docker Compose local, Elasticsearch mapping/bootstrap, PostgreSQL/Flyway, API ingest single/bulk event, script seed synthetic dataset, SearchPlan validator/compiler/executor, endpoint search kỹ thuật, event detail và smoke test ngày 3. CI/CD, search bằng natural language và LLM chưa được tích hợp.
+Repository đã hoàn thành foundation **ngày 4** cho MVP: backend/frontend scaffold, Docker Compose local, Elasticsearch mapping/bootstrap, PostgreSQL/Flyway, API ingest single/bulk event, script seed synthetic dataset, SearchPlan validator/compiler/executor, endpoint search kỹ thuật, event detail, LLM abstraction, mock LLM, Gemini client foundation, endpoint natural language search và smoke test ngày 4. CI/CD, aggregation, summary, audit persistence và CSV export chưa được triển khai.
 
 ## Kiến trúc
 
@@ -113,6 +113,59 @@ Sau khi Docker Compose đang chạy, backend đã được rebuild và dataset n
 
 Smoke test ngày 3 kiểm tra SearchPlan endpoint, `generated_dsl`, pagination, mapping Elasticsearch `_id` sang `event_id`, event detail endpoint và raw log.
 
+### LLM provider ngày 4
+
+Mặc định local/dev/test dùng provider `mock`. Provider này không cần API key và đủ để demo luồng natural language search MVP:
+
+```env
+LLM_PROVIDER=mock
+```
+
+Gemini là provider hosted dùng cho integration thật khi cần gọi Cloud LLM:
+
+```env
+LLM_PROVIDER=gemini
+LLM_BASE_URL=https://generativelanguage.googleapis.com
+LLM_API_KEY=your-api-key
+LLM_MODEL=gemini-model-name
+LLM_TIMEOUT_MS=10000
+LLM_MAX_ATTEMPTS=2
+```
+
+Không commit API key thật vào Git. Ngày 4 không gửi raw log, search result hoặc event document vào LLM.
+
+### Natural language search endpoint ngày 4
+
+Endpoint natural language MVP:
+
+```text
+POST http://localhost:8081/api/v1/search
+```
+
+Ví dụ request:
+
+```json
+{
+  "question": "Show me failed login attempts from China in the last 24h",
+  "page": 0,
+  "size": 5
+}
+```
+
+Response có `original_question`, `search_plan`, `generated_dsl`, `llm_latency_ms`, `search_latency_ms`, `latency_ms`, pagination và danh sách `events`. Backend luôn override `page`/`size` từ request, không để LLM tự quyết định pagination.
+
+Ngày 4 chưa persist audit log/query history vào PostgreSQL. `search_query_logs` sẽ dùng ở các ngày sau khi triển khai audit/history.
+
+### Smoke test ngày 4
+
+Sau khi Docker Compose đang chạy, backend đã được rebuild với ngày 4 và dataset ngày 2 đã seed:
+
+```powershell
+.\scripts\smoke-test-day-04.ps1
+```
+
+Smoke test ngày 4 kiểm tra health, OpenAPI, natural language search bằng mock provider, `search_plan`, `generated_dsl`, latency fields, pagination guardrail, no-result search qua `/api/v1/search/plan`, và validation lỗi `400`.
+
 ### SearchPlan endpoint ngày 3
 
 Endpoint kỹ thuật này dùng để kiểm tra lõi `SearchPlan -> validate -> compile DSL -> execute Elasticsearch` trước khi nối LLM:
@@ -151,7 +204,7 @@ GET http://localhost:8081/api/v1/events/{event_id}
 
 Endpoint detail trả đầy đủ field chính và `raw` log. Đây là luồng dùng để demo: search list trả gọn, mở detail để xem raw log.
 
-Natural language search và LLM integration sẽ được triển khai ở ngày 4. Endpoint `/api/v1/search/plan` hiện chưa phải endpoint natural language cuối cùng.
+Endpoint `/api/v1/search/plan` vẫn được giữ làm endpoint kỹ thuật để debug SearchPlan/DSL. Endpoint natural language cuối cùng của ngày 4 là `/api/v1/search`.
 
 ### Lưu ý về PostgreSQL password
 
