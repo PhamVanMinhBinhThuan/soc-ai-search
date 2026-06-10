@@ -10,6 +10,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
+import com.soc.ai.search.search.plan.AggregationPlan;
+import com.soc.ai.search.search.plan.AggregationType;
 import com.soc.ai.search.search.plan.SearchFilters;
 import com.soc.ai.search.search.plan.SearchMode;
 import com.soc.ai.search.search.plan.SearchPlan;
@@ -25,6 +27,15 @@ public class SearchPlanValidator {
             "now-24h",
             "now-7d",
             "now-30d");
+
+    private static final Set<String> AGGREGATION_FIELD_ALLOWLIST = Set.of(
+            "source",
+            "severity",
+            "event_type",
+            "user",
+            "host",
+            "ip",
+            "country_code");
 
     private final Validator beanValidator;
 
@@ -43,6 +54,7 @@ public class SearchPlanValidator {
         validateMode(plan, errors);
         validateFilters(plan.filters(), errors);
         rejectDangerousValue("message_query", plan.messageQuery(), errors);
+        validateAggregation(plan, errors);
 
         if (!errors.isEmpty()) {
             throw new SearchPlanValidationException(errors);
@@ -59,8 +71,113 @@ public class SearchPlanValidator {
     }
 
     private void validateMode(SearchPlan plan, List<String> errors) {
-        if (plan.mode() != null && plan.mode() != SearchMode.SEARCH) {
-            errors.add("mode: only search is supported in day 3 MVP scope");
+        if (plan.mode() != null
+                && plan.mode() != SearchMode.SEARCH
+                && plan.mode() != SearchMode.AGGREGATION) {
+            errors.add("mode: only search and aggregation are supported");
+        }
+    }
+
+    private void validateAggregation(SearchPlan plan, List<String> errors) {
+        if (plan.mode() == SearchMode.SEARCH) {
+            if (plan.aggregation() != null) {
+                errors.add("aggregation: must be null when mode is search");
+            }
+            return;
+        }
+
+        if (plan.mode() != SearchMode.AGGREGATION) {
+            return;
+        }
+
+        if (plan.messageQuery() != null) {
+            errors.add("message_query: is not supported when mode is aggregation");
+        }
+
+        var aggregation = plan.aggregation();
+        if (aggregation == null) {
+            errors.add("aggregation: must not be null when mode is aggregation");
+            return;
+        }
+
+        validateAggregationByType(aggregation, errors);
+    }
+
+    private void validateAggregationByType(AggregationPlan aggregation, List<String> errors) {
+        if (aggregation.type() == null) {
+            return;
+        }
+
+        switch (aggregation.type()) {
+            case COUNT -> validateCountAggregation(aggregation, errors);
+            case GROUP_BY -> validateGroupByAggregation(aggregation, errors);
+            case TOP_N -> validateTopNAggregation(aggregation, errors);
+            case DATE_HISTOGRAM -> validateDateHistogramAggregation(aggregation, errors);
+        }
+    }
+
+    private void validateCountAggregation(AggregationPlan aggregation, List<String> errors) {
+        if (aggregation.field() != null) {
+            errors.add("aggregation.field: must be null for count aggregation");
+        }
+        if (aggregation.topN() != null) {
+            errors.add("aggregation.top_n: must be null for count aggregation");
+        }
+        if (aggregation.interval() != null) {
+            errors.add("aggregation.interval: must be null for count aggregation");
+        }
+    }
+
+    private void validateGroupByAggregation(AggregationPlan aggregation, List<String> errors) {
+        validateRequiredAggregationField(aggregation.field(), errors);
+        validateOptionalTopN(aggregation.topN(), errors);
+        if (aggregation.interval() != null) {
+            errors.add("aggregation.interval: must be null for group_by aggregation");
+        }
+    }
+
+    private void validateTopNAggregation(AggregationPlan aggregation, List<String> errors) {
+        validateRequiredAggregationField(aggregation.field(), errors);
+        if (aggregation.topN() == null) {
+            errors.add("aggregation.top_n: must not be null for top_n aggregation");
+        } else {
+            validateOptionalTopN(aggregation.topN(), errors);
+        }
+        if (aggregation.interval() != null) {
+            errors.add("aggregation.interval: must be null for top_n aggregation");
+        }
+    }
+
+    private void validateDateHistogramAggregation(AggregationPlan aggregation, List<String> errors) {
+        if (aggregation.field() != null) {
+            errors.add("aggregation.field: must be null for date_histogram aggregation because timestamp is fixed");
+        }
+        if (aggregation.topN() != null) {
+            errors.add("aggregation.top_n: must be null for date_histogram aggregation");
+        }
+        if (aggregation.interval() == null) {
+            errors.add("aggregation.interval: must not be null for date_histogram aggregation");
+        }
+    }
+
+    private void validateRequiredAggregationField(String field, List<String> errors) {
+        if (field == null || field.isBlank()) {
+            errors.add("aggregation.field: must not be blank");
+            return;
+        }
+
+        if (!AGGREGATION_FIELD_ALLOWLIST.contains(field)) {
+            errors.add("aggregation.field: must be one of " + String.join(", ", AGGREGATION_FIELD_ALLOWLIST));
+        }
+    }
+
+    private void validateOptionalTopN(Integer topN, List<String> errors) {
+        if (topN == null) {
+            return;
+        }
+
+        if (topN < 1 || topN > 100) {
+            errors.add("aggregation.top_n: must be between 1 and 100");
         }
     }
 

@@ -206,7 +206,8 @@ Yêu cầu:
    - `filters` vẫn dùng lại filter ngày 4;
    - `message_query` không dùng cho aggregation trong MVP, nếu xuất hiện thì reject rõ ràng;
    - `page` vẫn phải hợp lệ nếu contract yêu cầu, nhưng aggregation không dùng pagination event list;
-   - `size` là upper bound cho số bucket khi cần, vẫn giới hạn 1-100.
+   - `size` vẫn phải hợp lệ để giữ contract chung của `SearchPlan`, nhưng validator không dùng `size` để quyết định số bucket aggregation;
+   - bucket limit thuộc `aggregation.top_n` hoặc default compiler ở Prompt 3.
 6. Allowlist field cho aggregation:
    - `source`;
    - `severity`;
@@ -222,10 +223,10 @@ Yêu cầu:
    - field lạ như `password`;
    - field có `.keyword` do user/LLM sinh ra.
 8. Quy tắc theo `AggregationType`:
-   - `COUNT`: không cần `field`, không cần `top_n`, không cần `interval`;
-   - `GROUP_BY`: cần `field` trong allowlist, `top_n` optional nhưng nếu có phải 1-100;
+   - `COUNT`: `field` phải null, `top_n` phải null, `interval` phải null; nếu xuất hiện thì reject;
+   - `GROUP_BY`: cần `field` trong allowlist, `top_n` optional nhưng nếu có phải 1-100; nếu `top_n` null, compiler ở Prompt 3 dùng default bucket limit 20;
    - `TOP_N`: cần `field` trong allowlist, `top_n` bắt buộc 1-100;
-   - `DATE_HISTOGRAM`: không dùng `field` tùy ý, luôn chạy trên `timestamp`; cần `interval` là `minute`, `hour` hoặc `day`.
+   - `DATE_HISTOGRAM`: `field` phải null, `top_n` phải null, `interval` bắt buộc là `minute`, `hour` hoặc `day`; histogram luôn chạy trên `timestamp`.
 9. Java enum trong code vẫn dùng UPPERCASE (`TOP_N`, `DATE_HISTOGRAM`, `HOUR`), nhưng JSON input/output dùng lowercase/snake_case (`"top_n"`, `"date_histogram"`, `"hour"`).
 10. Không tự thêm `.keyword` vào field trong validator. Mapping MVP hiện tại đã định nghĩa `user`, `host`, `ip`, `severity`, `event_type`, `country_code`, `source` là keyword/ip trực tiếp.
 11. Error message phải rõ để debug qua Swagger, không lộ stack trace.
@@ -239,6 +240,12 @@ Yêu cầu:
     - invalid field `message`;
     - invalid field `raw`;
     - invalid field `user.keyword`;
+    - invalid field case-sensitive như `User` hoặc `USER`;
+    - invalid COUNT có `field = user`;
+    - invalid COUNT có `top_n = 10`;
+    - invalid COUNT có `interval = hour`;
+    - invalid DATE_HISTOGRAM có `field = user`;
+    - invalid DATE_HISTOGRAM có `top_n = 10`;
     - invalid top_n > 100;
     - invalid DATE_HISTOGRAM interval;
     - invalid message_query trong aggregation.
@@ -291,7 +298,8 @@ Yêu cầu:
 7. `GROUP_BY`:
    - dùng Elasticsearch `terms` aggregation;
    - field lấy từ allowlist;
-   - size bucket dùng `aggregation.top_n` nếu có, nếu không dùng request `size`, capped 100;
+   - size bucket dùng `aggregation.top_n` nếu có, nếu không dùng default bucket limit 20;
+   - không dùng `SearchPlan.size` để quyết định số bucket trong compiler;
    - không thêm `.keyword`.
 8. `TOP_N`:
    - dùng Elasticsearch `terms` aggregation;
@@ -313,7 +321,7 @@ Yêu cầu:
 12. Timeout và `track_total_hits` vẫn thuộc executor, không đặt ở compiler nếu hiện kiến trúc đang làm vậy.
 13. Thêm unit test table-driven cho DSL shape:
     - COUNT failed_login 7 ngày -> `size = 0`, không có `aggs`;
-    - GROUP_BY user -> `terms.field = "user"`;
+    - GROUP_BY user không có top_n -> `terms.field = "user"` và `terms.size = 20`;
     - TOP_N ip top 10 -> `terms.field = "ip"`, `terms.size = 10`;
     - DATE_HISTOGRAM hour -> aggregation trên `timestamp`;
     - filter severity/event_type/country_code vẫn compile đúng `terms`;
@@ -512,10 +520,11 @@ Yêu cầu:
    - `events` có thể là `[]` hoặc null với aggregation, nhưng nên dùng `[]` để frontend dễ xử lý.
 7. Pagination/bucket guardrail:
    - backend vẫn override `page` và `size` từ request;
-   - với aggregation, request `size` là upper bound cho số bucket;
-   - final `top_n = min(LLM top_n nếu có, request size, 100)`;
-   - nếu LLM không trả `top_n` cho `TOP_N/GROUP_BY`, dùng request `size`;
-   - không để LLM tự nâng số bucket vượt request.
+   - aggregation bucket limit chính là `aggregation.top_n`;
+   - nếu LLM không trả `top_n` cho `GROUP_BY`, compiler dùng default bucket limit 20;
+   - nếu LLM không trả `top_n` cho `TOP_N`, validator reject rõ ràng;
+   - `SearchPlan.size` tiếp tục là pagination contract chung, không phải bucket limit trực tiếp;
+   - không để LLM sinh `top_n` vượt 100.
 8. Repair/retry một lần từ ngày 4 vẫn hoạt động với aggregation.
 9. Thêm unit/service/controller test:
    - 3 câu aggregation mock parse thành `SearchPlan` đúng mapping;
@@ -523,7 +532,8 @@ Yêu cầu:
    - endpoint `/api/v1/search` với mock trả response aggregation;
    - response có `aggregation_results` và `chart_metadata`;
    - `generated_dsl` là object/map, không phải string;
-   - request `size = 5`, LLM `top_n = 10` thì final bucket size không vượt 5;
+   - `GROUP_BY` thiếu `top_n` vẫn dùng default bucket limit 20;
+   - LLM `top_n > 100` bị reject rõ ràng;
    - unsupported aggregation field bị reject rõ;
    - search câu ngày 4 vẫn chạy.
 10. Nếu Docker đang chạy và dataset đã seed, test thật 3 câu bằng Invoke-RestMethod với provider mock.
@@ -598,7 +608,7 @@ Yêu cầu:
    - `chart_metadata.chart_type` phù hợp:
      - TOP_N/GROUP_BY -> BAR;
      - DATE_HISTOGRAM -> LINE;
-   - số item trong `aggregation_results` không vượt quá request `size` hoặc `top_n` với TOP_N/GROUP_BY;
+   - số item trong `aggregation_results` không vượt quá `top_n` với TOP_N/GROUP_BY; nếu GROUP_BY không có `top_n`, không vượt quá default bucket limit 20;
    - không có field `.keyword` trong generated_dsl.
 6. Smoke script phải fail rõ ràng nếu checkpoint không đạt.
 7. Cập nhật README.md với:
@@ -656,7 +666,7 @@ Kiểm tra:
 15. Response aggregation có `generated_dsl` object/map, không phải string.
 16. Response aggregation có `aggregation_results`.
 17. Response aggregation có `chart_metadata`.
-18. Bucket count không vượt quá request `size` hoặc `top_n` đã giới hạn.
+18. Bucket count không vượt quá `top_n` đã giới hạn; nếu GROUP_BY không có `top_n`, không vượt quá default bucket limit 20.
 19. No-result/no-bucket aggregation trả 200 với `aggregation_results = []`.
 20. Backend test pass.
 21. Smoke test ngày 5 pass.
