@@ -166,6 +166,59 @@ Sau khi Docker Compose đang chạy, backend đã được rebuild với ngày 4
 
 Smoke test ngày 4 kiểm tra health, OpenAPI, natural language search bằng mock provider, `search_plan`, `generated_dsl`, latency fields, pagination guardrail, no-result search qua `/api/v1/search/plan`, và validation lỗi `400`.
 
+### Aggregation ngày 5
+
+Ngày 5 mở rộng `SearchPlan` và natural language search để hỗ trợ aggregation MVP.
+
+Aggregation type đang hỗ trợ:
+
+- `count`
+- `group_by`
+- `top_n`
+- `date_histogram`
+
+Aggregation field allowlist:
+
+- `source`
+- `severity`
+- `event_type`
+- `user`
+- `host`
+- `ip`
+- `country_code`
+
+Ví dụ gọi aggregation bằng natural language:
+
+```text
+POST http://localhost:8081/api/v1/search
+```
+
+```json
+{
+  "question": "Đếm số lần login thất bại theo từng user trong 7 ngày qua",
+  "page": 0,
+  "size": 10
+}
+```
+
+Ba câu demo aggregation bằng mock provider:
+
+- `Đếm số lần login thất bại theo từng user trong 7 ngày qua`
+- `Top 10 IP có nhiều alert nhất tháng này`
+- `Số event theo giờ trong 24h qua`
+
+Response aggregation có `aggregation_type`, `aggregation_results`, `chart_metadata`, `generated_dsl`, `search_latency_ms` và `events = []`. Ngày 5 chưa làm summary, audit persistence, CSV và frontend chart UI.
+
+### Smoke test ngày 5
+
+Sau khi Docker Compose đang chạy, backend đã được rebuild với ngày 5 và dataset ngày 2 đã seed:
+
+```powershell
+.\scripts\smoke-test-day-05.ps1
+```
+
+Smoke test ngày 5 kiểm tra health, OpenAPI, aggregation kỹ thuật qua `/api/v1/search/plan`, natural language aggregation qua `/api/v1/search`, response contract `aggregation_results`/`chart_metadata`, `generated_dsl`, bucket limit và mock provider không cần API key.
+
 ### SearchPlan endpoint ngày 3
 
 Endpoint kỹ thuật này dùng để kiểm tra lõi `SearchPlan -> validate -> compile DSL -> execute Elasticsearch` trước khi nối LLM:

@@ -633,9 +633,16 @@ Yêu cầu:
    - `search_plan.mode = "aggregation"` nếu endpoint NL trả `search_plan`;
    - `generated_dsl` là object/map, không phải string;
    - `generated_dsl` không phải JSON string escaped;
-   - `aggregation_type` tồn tại;
+   - `aggregation_type` đúng theo request/câu hỏi:
+     - COUNT -> `count`;
+     - TOP_N -> `top_n`;
+     - DATE_HISTOGRAM -> `date_histogram`;
+     - câu "Đếm số lần login thất bại theo từng user trong 7 ngày qua" -> `group_by`;
    - `aggregation_results` tồn tại;
-   - `chart_metadata` tồn tại;
+   - `chart_metadata` tồn tại và có đủ:
+     - `chart_type`;
+     - `x_axis_label`;
+     - `y_axis_label`;
    - nếu là câu "Đếm số lần login thất bại theo từng user trong 7 ngày qua", verify `search_plan.aggregation.type = "group_by"`, `field = "user"`, `top_n = 10`;
    - `chart_metadata.chart_type` phù hợp:
      - TOP_N/GROUP_BY -> BAR;
@@ -644,16 +651,17 @@ Yêu cầu:
    - response aggregation có `events = []`, không phải null;
    - response aggregation có `search_latency_ms >= 0` nếu là endpoint `/api/v1/search`;
    - response aggregation không có field `aggregation_latency_ms`;
-   - `total` luôn là `hits.total`, không phải tổng bucket hoặc số bucket;
-   - số item trong `aggregation_results` không vượt quá `top_n` với TOP_N/GROUP_BY; nếu GROUP_BY không có `top_n`, không vượt quá default bucket limit 20;
+   - `total >= 0`; smoke test không cần so sánh trực tiếp với Elasticsearch `hits.total`, phần này đã được kiểm bằng backend test;
+   - số item trong `aggregation_results` không vượt quá `top_n` với TOP_N/GROUP_BY; nếu GROUP_BY không có `top_n`, không vượt quá default bucket limit 20; không yêu cầu số item phải bằng `top_n` vì dataset có thể ít bucket hơn;
    - COUNT generated_dsl có `size = 0`, có query/filter nếu request có filter, không có `aggs` và không có `aggs = {}` rỗng;
-   - COUNT no-result trả 200, `total = 0`, `aggregation_results = []`;
    - DATE_HISTOGRAM generated_dsl dùng `fixed_interval`, ví dụ hour -> `1h`, day -> `1d`;
    - không có field `.keyword` trong generated_dsl.
 6. Smoke script phải fail rõ ràng nếu checkpoint không đạt.
 7. Cập nhật README.md với:
    - cách gọi aggregation bằng `/api/v1/search`;
    - ví dụ 3 câu aggregation demo;
+   - aggregation type MVP đang hỗ trợ: `count`, `group_by`, `top_n`, `date_histogram`;
+   - aggregation field allowlist: `source`, `severity`, `event_type`, `user`, `host`, `ip`, `country_code`;
    - cách chạy smoke test ngày 5;
    - ghi rõ ngày 5 chưa làm summary, audit persistence, CSV và frontend chart UI.
 8. Không triển khai summary, audit log, CSV, frontend hoặc auth.
@@ -707,14 +715,14 @@ Kiểm tra:
 16. Response aggregation có `generated_dsl` object/map, không phải string và không phải JSON string escaped.
 17. Response aggregation lấy `generated_dsl` trực tiếp từ output compiler, không build lại DSL lần thứ hai trong executor.
 18. Response aggregation có `aggregation_results`.
-19. Response aggregation có `chart_metadata`.
+19. Response aggregation có `chart_metadata` đầy đủ `chart_type`, `x_axis_label`, `y_axis_label`.
 20. Response aggregation qua `/api/v1/search` có `events = []`, không trả null.
 21. Response aggregation qua `/api/v1/search` vẫn dùng `search_latency_ms`, không tạo field mới `aggregation_latency_ms`.
 22. COUNT response có `chart_metadata.chart_type = "NUMBER"`.
-23. `total` trong aggregation response luôn là `hits.total`, không phải tổng bucket hoặc số bucket.
-24. Bucket count không vượt quá `top_n` đã giới hạn; nếu GROUP_BY không có `top_n`, không vượt quá default bucket limit 20.
-25. No-result/no-bucket aggregation trả 200 với `aggregation_results = []`.
-26. COUNT no-result trả 200 với `total = 0`, `aggregation_results = []`.
+23. Backend test xác nhận `total` trong aggregation response luôn là `hits.total`, không phải tổng bucket hoặc số bucket; smoke test chỉ cần kiểm `total >= 0`.
+24. Smoke test xác nhận bucket count không vượt quá `top_n` đã giới hạn; nếu GROUP_BY không có `top_n`, không vượt quá default bucket limit 20; không yêu cầu bucket count bằng `top_n`.
+25. Backend test xác nhận no-result/no-bucket aggregation trả 200 với `aggregation_results = []`.
+26. Backend test xác nhận COUNT no-result trả 200 với `total = 0`, `aggregation_results = []`.
 27. Backend test pass.
 28. Smoke test ngày 5 pass.
 29. docker compose config hợp lệ và stack local healthy.
@@ -728,6 +736,7 @@ Sau đó:
    - cách gọi aggregation;
    - cách chạy smoke test ngày 5;
    - response contract `aggregation_results` và `chart_metadata`;
+   - aggregation type MVP và field allowlist;
    - ghi rõ frontend chart UI sẽ làm ngày 6.
 3. Chạy verify phù hợp.
 4. Báo checklist PASS/FAIL theo từng mục.
