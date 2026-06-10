@@ -19,8 +19,21 @@ public class SearchPlanPromptBuilder {
             "ip",
             "country_code",
             "message_query",
+            "aggregation.type",
+            "aggregation.field",
+            "aggregation.top_n",
+            "aggregation.interval",
             "page",
             "size");
+
+    private static final List<String> AGGREGATION_FIELDS = List.of(
+            "source",
+            "severity",
+            "event_type",
+            "user",
+            "host",
+            "ip",
+            "country_code");
 
     private static final List<String> SUPPORTED_TIME_VALUES = List.of(
             "now",
@@ -47,10 +60,10 @@ public class SearchPlanPromptBuilder {
                 - Return exactly one raw JSON object.
                 - Do not return markdown, code fences, prose, explanations, or comments.
                 - Do not return Elasticsearch DSL.
+                - Do not return Elasticsearch DSL fields such as query, aggs, dsl, script, wildcard, or query_string.
                 - Do not add fields outside the SearchPlan schema.
-                - Day 4 supports only "mode": "search".
-                - Aggregation, statistics, top-N, and chart requests are not supported in Day 4. Do not invent another mode.
-                - If a requested aggregation also contains clear search filters, return the minimal search SearchPlan using only those filters.
+                - Supported modes are "search" and "aggregation".
+                - For aggregation, return an AggregationPlan. Never return Elasticsearch aggregation DSL.
                 - If the question does not specify a filter, omit that filter. Do not infer or hallucinate filter values.
                 - page and size may be omitted. Backend owns pagination and will override them from the API request.
                 - Never include raw logs, search results, event documents, API keys, passwords, or secrets.
@@ -72,7 +85,36 @@ public class SearchPlanPromptBuilder {
                   "size": 20
                 }
 
+                AggregationPlan schema:
+                {
+                  "mode": "aggregation",
+                  "filters": {
+                    "timestamp": { "from": "now-7d", "to": "now" },
+                    "event_type": ["failed_login"]
+                  },
+                  "aggregation": {
+                    "type": "group_by",
+                    "field": "user",
+                    "top_n": 10,
+                    "interval": "hour"
+                  },
+                  "page": 0,
+                  "size": 20
+                }
+
+                Aggregation rules:
+                - type must be one of count, group_by, top_n, date_histogram.
+                - interval must be one of minute, hour, day.
+                - count must not include field, top_n, or interval.
+                - group_by must include an allowed field. top_n may be omitted.
+                - top_n must include an allowed field and top_n between 1 and 100.
+                - date_histogram must include interval and always uses timestamp internally.
+                - Do not add .keyword to any field.
+
                 Allowed fields:
+                %s
+
+                Aggregation field allowlist:
                 %s
 
                 Supported timestamp values:
@@ -87,6 +129,7 @@ public class SearchPlanPromptBuilder {
                 message_query is full-text search on the event message field and must not contain wildcard or script syntax.
                 """.formatted(
                 bulletList(ALLOWED_FIELDS),
+                bulletList(AGGREGATION_FIELDS),
                 bulletList(SUPPORTED_TIME_VALUES),
                 bulletList(SUPPORTED_SEVERITIES));
     }

@@ -28,6 +28,18 @@ public class MockLlmClient implements LlmClient {
     private String contentFor(String question) {
         var normalized = normalize(question);
 
+        if (containsFailedLoginByUserAggregation(normalized)) {
+            return failedLoginByUserAggregationPlan();
+        }
+
+        if (containsTopIpAlerts(normalized)) {
+            return topIpAlertsAggregationPlan();
+        }
+
+        if (containsEventsByHour(normalized)) {
+            return eventsByHourAggregationPlan();
+        }
+
         if (containsFailedLoginAdmin(normalized)) {
             return failedLoginAdminPlan();
         }
@@ -62,6 +74,23 @@ public class MockLlmClient implements LlmClient {
     private boolean containsFailedLoginChina(String value) {
         return (value.contains("failed login") || containsVietnameseFailedLogin(value))
                 && (value.contains("china") || value.contains(" cn") || value.contains("trung quoc"));
+    }
+
+    private boolean containsFailedLoginByUserAggregation(String value) {
+        return (value.contains("dem") || value.contains("count"))
+                && (value.contains("theo tung user") || value.contains("by user") || value.contains("per user"))
+                && (value.contains("failed login") || containsVietnameseFailedLogin(value));
+    }
+
+    private boolean containsTopIpAlerts(String value) {
+        return value.contains("top")
+                && value.contains("ip")
+                && (value.contains("alert") || value.contains("event"));
+    }
+
+    private boolean containsEventsByHour(String value) {
+        return (value.contains("so event") || value.contains("event count") || value.contains("events"))
+                && (value.contains("theo gio") || value.contains("by hour") || value.contains("per hour"));
     }
 
     private boolean containsCriticalSevenDays(String value) {
@@ -185,6 +214,54 @@ public class MockLlmClient implements LlmClient {
                 """;
     }
 
+    private String failedLoginByUserAggregationPlan() {
+        return """
+                {
+                  "mode": "aggregation",
+                  "filters": {
+                    "timestamp": { "from": "now-7d", "to": "now" },
+                    "event_type": ["failed_login"]
+                  },
+                  "aggregation": {
+                    "type": "group_by",
+                    "field": "user",
+                    "top_n": 10
+                  }
+                }
+                """;
+    }
+
+    private String topIpAlertsAggregationPlan() {
+        return """
+                {
+                  "mode": "aggregation",
+                  "filters": {
+                    "timestamp": { "from": "now-30d", "to": "now" }
+                  },
+                  "aggregation": {
+                    "type": "top_n",
+                    "field": "ip",
+                    "top_n": 10
+                  }
+                }
+                """;
+    }
+
+    private String eventsByHourAggregationPlan() {
+        return """
+                {
+                  "mode": "aggregation",
+                  "filters": {
+                    "timestamp": { "from": "now-24h", "to": "now" }
+                  },
+                  "aggregation": {
+                    "type": "date_histogram",
+                    "interval": "hour"
+                  }
+                }
+                """;
+    }
+
     private String unsupportedQuestionPlan() {
         return """
                 {
@@ -197,6 +274,7 @@ public class MockLlmClient implements LlmClient {
     private String normalize(String value) {
         var lowerCase = value.toLowerCase(Locale.ROOT);
         return Normalizer.normalize(lowerCase, Normalizer.Form.NFD)
-                .replaceAll("\\p{M}", "");
+                .replaceAll("\\p{M}", "")
+                .replace('đ', 'd');
     }
 }

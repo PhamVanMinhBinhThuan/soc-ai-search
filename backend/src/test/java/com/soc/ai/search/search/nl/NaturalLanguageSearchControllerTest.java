@@ -12,8 +12,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.util.List;
 import java.util.Map;
 
+import com.soc.ai.search.search.execution.AggregationResultItem;
+import com.soc.ai.search.search.execution.ChartMetadata;
+import com.soc.ai.search.search.execution.ChartType;
 import com.soc.ai.search.search.execution.SearchEvent;
 import com.soc.ai.search.search.execution.SearchExecutionException;
+import com.soc.ai.search.search.plan.AggregationPlan;
+import com.soc.ai.search.search.plan.AggregationType;
 import com.soc.ai.search.search.plan.SearchFilters;
 import com.soc.ai.search.search.plan.SearchMode;
 import com.soc.ai.search.search.plan.SearchPlan;
@@ -62,6 +67,37 @@ class NaturalLanguageSearchControllerTest {
                 .andExpect(jsonPath("$.search_latency_ms").value(12))
                 .andExpect(jsonPath("$.latency_ms").value(20))
                 .andExpect(jsonPath("$.events[0].event_id").value("seed-42-1"));
+    }
+
+    @Test
+    void naturalLanguageSearchReturnsAggregationResponse() throws Exception {
+        when(naturalLanguageSearchService.search(any(NaturalLanguageSearchRequest.class)))
+                .thenReturn(aggregationResponse());
+
+        mockMvc.perform(post("/api/v1/search")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "question": "Đếm số lần login thất bại theo từng user trong 7 ngày qua",
+                                  "page": 0,
+                                  "size": 5
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.original_question").value("Đếm số lần login thất bại theo từng user trong 7 ngày qua"))
+                .andExpect(jsonPath("$.mode").value("aggregation"))
+                .andExpect(jsonPath("$.search_plan.mode").value("aggregation"))
+                .andExpect(jsonPath("$.search_plan.aggregation.type").value("group_by"))
+                .andExpect(jsonPath("$.search_plan.aggregation.field").value("user"))
+                .andExpect(jsonPath("$.search_plan.aggregation.top_n").value(10))
+                .andExpect(jsonPath("$.generated_dsl").isMap())
+                .andExpect(jsonPath("$.aggregation_type").value("group_by"))
+                .andExpect(jsonPath("$.aggregation_results[0].key").value("admin"))
+                .andExpect(jsonPath("$.chart_metadata.chart_type").value("BAR"))
+                .andExpect(jsonPath("$.events").isArray())
+                .andExpect(jsonPath("$.events").isEmpty())
+                .andExpect(jsonPath("$.search_latency_ms").value(12))
+                .andExpect(jsonPath("$.aggregation_latency_ms").doesNotExist());
     }
 
     @Test
@@ -150,6 +186,9 @@ class NaturalLanguageSearchControllerTest {
                 7,
                 12,
                 20,
+                null,
+                List.of(),
+                null,
                 List.of(new SearchEvent(
                         "seed-42-1",
                         "2026-06-06T10:00:00Z",
@@ -163,6 +202,30 @@ class NaturalLanguageSearchControllerTest {
                         "Failed login attempt from CN")));
     }
 
+    private NaturalLanguageSearchResponse aggregationResponse() {
+        return new NaturalLanguageSearchResponse(
+                "Đếm số lần login thất bại theo từng user trong 7 ngày qua",
+                SearchMode.AGGREGATION,
+                aggregationPlan(),
+                Map.of(
+                        "query", Map.of("bool", Map.of("filter", List.of())),
+                        "size", 0,
+                        "aggs", Map.of(
+                                "count_by_field", Map.of(
+                                        "terms", Map.of("field", "user", "size", 10)))),
+                10,
+                0,
+                5,
+                0,
+                7,
+                12,
+                20,
+                AggregationType.GROUP_BY,
+                List.of(new AggregationResultItem("admin", 10)),
+                new ChartMetadata(ChartType.BAR, "user", "Count"),
+                List.of());
+    }
+
     private SearchPlan searchPlan() {
         return new SearchPlan(
                 SearchMode.SEARCH,
@@ -174,6 +237,23 @@ class NaturalLanguageSearchControllerTest {
                         null,
                         null,
                         List.of("CN")),
+                0,
+                5);
+    }
+
+    private SearchPlan aggregationPlan() {
+        return new SearchPlan(
+                SearchMode.AGGREGATION,
+                new SearchFilters(
+                        new TimeRange("now-7d", "now"),
+                        null,
+                        List.of("failed_login"),
+                        null,
+                        null,
+                        null,
+                        null),
+                new AggregationPlan(AggregationType.GROUP_BY, "user", 10, null),
+                null,
                 0,
                 5);
     }

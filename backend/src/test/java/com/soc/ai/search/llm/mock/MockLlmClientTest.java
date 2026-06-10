@@ -12,6 +12,8 @@ import com.soc.ai.search.llm.LlmProvider;
 import com.soc.ai.search.llm.LlmSearchPlanRequest;
 import com.soc.ai.search.llm.prompt.SearchPlanJsonParseException;
 import com.soc.ai.search.llm.prompt.SearchPlanJsonParser;
+import com.soc.ai.search.search.plan.AggregationType;
+import com.soc.ai.search.search.plan.HistogramInterval;
 import com.soc.ai.search.search.plan.SearchMode;
 import com.soc.ai.search.search.plan.SearchPlan;
 import com.soc.ai.search.search.validation.SearchPlanValidator;
@@ -62,6 +64,30 @@ class MockLlmClientTest {
         assertThat(plan.filters().user()).isEqualTo(expected.user());
     }
 
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("aggregationQuestions")
+    void mapsAggregationQuestionsToValidatedAggregationPlans(String question, ExpectedAggregationPlan expected) {
+        var response = client.generateSearchPlan(request(question));
+
+        assertThat(response.content().trim()).startsWith("{").endsWith("}");
+        assertThat(response.content())
+                .doesNotContain("```", "Sure", "SearchPlan:", "\"query\"", "\"aggs\"", "\"dsl\"");
+
+        var plan = parser.parseWithPaginationOverride(response.content(), 0, 5);
+        validator.validate(plan);
+
+        assertThat(plan.mode()).isEqualTo(SearchMode.AGGREGATION);
+        assertThat(plan.page()).isZero();
+        assertThat(plan.size()).isEqualTo(5);
+        assertThat(plan.aggregation().type()).isEqualTo(expected.type());
+        assertThat(plan.aggregation().field()).isEqualTo(expected.field());
+        assertThat(plan.aggregation().topN()).isEqualTo(expected.topN());
+        assertThat(plan.aggregation().interval()).isEqualTo(expected.interval());
+        assertThat(plan.filters().timestamp().from()).isEqualTo(expected.from());
+        assertThat(plan.filters().timestamp().to()).isEqualTo(expected.to());
+        assertList(plan.filters().eventType(), expected.eventType());
+    }
+
     @ParameterizedTest(name = "{0} and {1} map to same plan")
     @MethodSource("synonymQuestions")
     void mapsSynonymsByKeywordInsteadOfExactPhrase(String firstQuestion, String secondQuestion) {
@@ -86,6 +112,31 @@ class MockLlmClientTest {
 
         assertThat(response.content()).contains("unsupported_question");
         assertThatThrownBy(() -> parser.parseWithPaginationOverride(response.content(), 0, 5))
+                .isInstanceOf(SearchPlanJsonParseException.class);
+    }
+
+    @Test
+    void parserRejectsInvalidAggregationFieldAndMissingDateHistogramInterval() {
+        assertThatThrownBy(() -> parser.parseWithPaginationOverride("""
+                {
+                  "mode": "aggregation",
+                  "aggregation": {
+                    "type": "top_n",
+                    "field": "password",
+                    "top_n": 10
+                  }
+                }
+                """, 0, 5))
+                .isInstanceOf(SearchPlanJsonParseException.class);
+
+        assertThatThrownBy(() -> parser.parseWithPaginationOverride("""
+                {
+                  "mode": "aggregation",
+                  "aggregation": {
+                    "type": "date_histogram"
+                  }
+                }
+                """, 0, 5))
                 .isInstanceOf(SearchPlanJsonParseException.class);
     }
 
@@ -129,6 +180,40 @@ class MockLlmClientTest {
                 Arguments.of("critical 7 days", "critical 7 ngày"));
     }
 
+    private static Stream<Arguments> aggregationQuestions() {
+        return Stream.of(
+                Arguments.of(
+                        "Đếm số lần login thất bại theo từng user trong 7 ngày qua",
+                        new ExpectedAggregationPlan(
+                                AggregationType.GROUP_BY,
+                                "user",
+                                10,
+                                null,
+                                List.of("failed_login"),
+                                "now-7d",
+                                "now")),
+                Arguments.of(
+                        "Top 10 IP có nhiều alert nhất tháng này",
+                        new ExpectedAggregationPlan(
+                                AggregationType.TOP_N,
+                                "ip",
+                                10,
+                                null,
+                                null,
+                                "now-30d",
+                                "now")),
+                Arguments.of(
+                        "Số event theo giờ trong 24h qua",
+                        new ExpectedAggregationPlan(
+                                AggregationType.DATE_HISTOGRAM,
+                                null,
+                                null,
+                                HistogramInterval.HOUR,
+                                null,
+                                "now-24h",
+                                "now")));
+    }
+
     private void assertList(List<String> actual, List<String> expected) {
         if (expected == null) {
             assertThat(actual).isNull();
@@ -148,6 +233,16 @@ class MockLlmClientTest {
             List<String> severity,
             String user,
             String messageQuery,
+            String from,
+            String to) {
+    }
+
+    private record ExpectedAggregationPlan(
+            AggregationType type,
+            String field,
+            Integer topN,
+            HistogramInterval interval,
+            List<String> eventType,
             String from,
             String to) {
     }

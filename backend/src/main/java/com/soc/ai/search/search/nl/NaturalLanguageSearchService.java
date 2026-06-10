@@ -9,7 +9,10 @@ import com.soc.ai.search.llm.LlmSearchPlanRequest;
 import com.soc.ai.search.llm.prompt.SearchPlanJsonParseException;
 import com.soc.ai.search.llm.prompt.SearchPlanJsonParser;
 import com.soc.ai.search.llm.prompt.SearchPlanPromptBuilder;
+import com.soc.ai.search.search.execution.AggregationSearchResponse;
 import com.soc.ai.search.search.execution.SearchPlanExecutor;
+import com.soc.ai.search.search.execution.SearchPlanSearchResponse;
+import com.soc.ai.search.search.plan.SearchMode;
 import com.soc.ai.search.search.plan.SearchPlan;
 import org.springframework.stereotype.Service;
 
@@ -49,7 +52,21 @@ public class NaturalLanguageSearchService {
             searchPlan = parseRepairedOutput(repairResponse.content(), request);
         }
 
+        if (searchPlan.mode() == SearchMode.AGGREGATION) {
+            var aggregationResponse = searchPlanExecutor.aggregate(searchPlan);
+            return aggregationResponse(request, searchPlan, llmLatencyMs, startedAt, aggregationResponse);
+        }
+
         var searchResponse = searchPlanExecutor.search(searchPlan);
+        return searchResponse(request, searchPlan, llmLatencyMs, startedAt, searchResponse);
+    }
+
+    private NaturalLanguageSearchResponse searchResponse(
+            NaturalLanguageSearchRequest request,
+            SearchPlan searchPlan,
+            long llmLatencyMs,
+            long startedAt,
+            SearchPlanSearchResponse searchResponse) {
         var searchLatencyMs = searchResponse.latencyMs();
         var latencyMs = Math.max(elapsedMs(startedAt), llmLatencyMs + searchLatencyMs);
 
@@ -65,7 +82,37 @@ public class NaturalLanguageSearchService {
                 llmLatencyMs,
                 searchLatencyMs,
                 latencyMs,
+                null,
+                List.of(),
+                null,
                 searchResponse.events());
+    }
+
+    private NaturalLanguageSearchResponse aggregationResponse(
+            NaturalLanguageSearchRequest request,
+            SearchPlan searchPlan,
+            long llmLatencyMs,
+            long startedAt,
+            AggregationSearchResponse aggregationResponse) {
+        var searchLatencyMs = aggregationResponse.latencyMs();
+        var latencyMs = Math.max(elapsedMs(startedAt), llmLatencyMs + searchLatencyMs);
+
+        return new NaturalLanguageSearchResponse(
+                request.question(),
+                aggregationResponse.mode(),
+                searchPlan,
+                aggregationResponse.generatedDsl(),
+                aggregationResponse.total(),
+                request.page(),
+                request.size(),
+                0,
+                llmLatencyMs,
+                searchLatencyMs,
+                latencyMs,
+                aggregationResponse.aggregationType(),
+                aggregationResponse.aggregationResults(),
+                aggregationResponse.chartMetadata(),
+                List.of());
     }
 
     private SearchPlan parseWithRequestPagination(String rawContent, NaturalLanguageSearchRequest request) {

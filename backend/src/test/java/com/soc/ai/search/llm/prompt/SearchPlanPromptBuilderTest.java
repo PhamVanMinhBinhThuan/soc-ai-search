@@ -30,6 +30,10 @@ class SearchPlanPromptBuilderTest {
                 .contains("ip")
                 .contains("country_code")
                 .contains("message_query")
+                .contains("aggregation.type")
+                .contains("aggregation.field")
+                .contains("aggregation.top_n")
+                .contains("aggregation.interval")
                 .contains("page")
                 .contains("size");
     }
@@ -43,20 +47,24 @@ class SearchPlanPromptBuilderTest {
                 .contains("code fences")
                 .contains("prose")
                 .contains("Do not return Elasticsearch DSL")
+                .contains("query, aggs, dsl")
                 .contains("Never include raw logs")
                 .contains("API keys")
                 .contains("passwords");
     }
 
     @Test
-    void systemPromptForbidsHallucinatedFiltersAndAggregationMode() {
+    void systemPromptSupportsAggregationAndForbidsHallucinatedFilters() {
         var prompt = promptBuilder.buildSystemPrompt();
 
         assertThat(prompt)
                 .contains("Do not infer or hallucinate filter values")
-                .contains("Aggregation, statistics, top-N")
-                .contains("Do not invent another mode")
-                .contains("\"mode\": \"search\"");
+                .contains("Supported modes are \"search\" and \"aggregation\"")
+                .contains("\"mode\": \"search\"")
+                .contains("\"mode\": \"aggregation\"")
+                .contains("AggregationPlan schema")
+                .contains("count, group_by, top_n, date_histogram")
+                .contains("Do not add .keyword");
     }
 
     @Test
