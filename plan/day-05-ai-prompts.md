@@ -380,6 +380,8 @@ Yêu cầu:
    - compile DSL aggregation;
    - execute Elasticsearch trên index từ `ElasticsearchProperties.indexEvents`, không hardcode `soc-events-v1`;
    - trả response aggregation chuẩn hóa.
+   - `generated_dsl` trong response phải lấy trực tiếp từ output của `SearchPlanCompiler`, ví dụ `compiledQuery.searchSpec()`;
+   - executor không được tự build lại DSL lần thứ hai để tránh lệch giữa compiler và response.
 4. Tạo response DTO riêng cho aggregation, ví dụ:
    - `AggregationSearchResponse`;
    - `AggregationResultItem`;
@@ -394,14 +396,15 @@ Yêu cầu:
    - `aggregation_results`: danh sách `{ key, value }`;
    - `chart_metadata`: object `{ chart_type, x_axis_label, y_axis_label }`.
 6. Mapping response:
-   - `COUNT`: `total` lấy từ `hits.total`, `aggregation_results` có thể chứa một item `{ key: "total", value: total }`;
+   - `total` luôn là `hits.total` từ Elasticsearch query, không phải tổng value của bucket và không phải số lượng bucket;
+   - `COUNT`: `total` lấy từ `hits.total`; nếu `total > 0` có thể trả một item `{ key: "total", value: total }`, nếu `total = 0` thì trả `aggregation_results = []`;
    - `GROUP_BY`/`TOP_N`: map buckets thành `{ key, value }`;
    - `DATE_HISTOGRAM`: map buckets thành `{ key, value }`, key là timestamp bucket dạng string.
 7. Chart metadata gợi ý:
    - `GROUP_BY`/`TOP_N` -> `BAR`;
    - nếu field là `severity` hoặc `country_code`, có thể dùng `PIE` hoặc `BAR`; để MVP đơn giản, chọn `BAR` cũng được;
    - `DATE_HISTOGRAM` -> `LINE`;
-   - `COUNT` -> `NUMBER` hoặc `BAR` nếu chưa có enum `NUMBER`.
+   - `COUNT` -> `NUMBER`; nếu chưa có enum `NUMBER` thì thêm enum này trong phạm vi response metadata.
 8. Executor áp dụng:
    - timeout hợp lý, ví dụ 3s;
    - `track_total_hits = true`;
@@ -412,12 +415,16 @@ Yêu cầu:
 12. Thêm test:
     - SearchPlan search cũ vẫn trả response như trước;
     - COUNT response lấy từ total;
+    - COUNT no-result trả 200, `total = 0`, `aggregation_results = []`;
+    - `total` của COUNT/GROUP_BY/TOP_N/DATE_HISTOGRAM luôn lấy từ `hits.total`, không phải tổng bucket hoặc số bucket;
     - COUNT generated_dsl có `size = 0`, không có `aggs` và không có `aggs = {}` rỗng;
     - TOP_N response map buckets;
     - DATE_HISTOGRAM response map buckets;
     - DATE_HISTOGRAM generated_dsl giữ `fixed_interval`, ví dụ hour -> `1h`;
     - response có `chart_metadata`;
+    - COUNT response có `chart_metadata.chart_type = "NUMBER"`;
     - `generated_dsl` là object/map, không phải string escaped;
+    - `generated_dsl` trong response bằng đúng output compiler, không phải DSL build lại trong executor;
     - no-bucket aggregation trả 200 với `aggregation_results = []`;
     - Elasticsearch lỗi trả lỗi có kiểm soát.
 13. Nếu Docker đang chạy và dataset đã seed, test thật bằng Invoke-RestMethod với:
@@ -487,6 +494,7 @@ Yêu cầu:
    - cho LLM sinh `COUNT`, `GROUP_BY`, `TOP_N`, `DATE_HISTOGRAM`;
    - JSON phải dùng lowercase/snake_case cho enum: `count`, `group_by`, `top_n`, `date_histogram`, `minute`, `hour`, `day`;
    - nhắc lại LLM chỉ sinh JSON SearchPlan, không sinh Elasticsearch DSL;
+   - cấm LLM sinh field Elasticsearch DSL như `query`, `aggs`, `dsl`, `script`, `wildcard` hoặc `query_string`;
    - nhắc lại field allowlist aggregation;
    - nhắc không dùng `.keyword`;
    - không gửi raw log, search result hoặc event document vào LLM.
@@ -500,9 +508,10 @@ Yêu cầu:
      - `filters.timestamp.from = "now-7d"`;
      - `filters.timestamp.to = "now"`;
      - `filters.event_type = ["failed_login"]`;
-     - `aggregation.type = "top_n"` hoặc `"group_by"` theo lựa chọn nhất quán;
+     - `aggregation.type = "group_by"`;
      - `aggregation.field = "user"`;
      - `aggregation.top_n = 10`.
+     - Không dùng `"top_n"` cho câu này vì ý nghĩa nghiệp vụ là đếm theo từng user, không phải truy vấn top user.
    - Câu 2:
      - `mode = "aggregation"`;
      - timestamp trong tháng này nếu đã hỗ trợ relative time phù hợp; nếu chưa hỗ trợ `now/M`, dùng `now-30d` cho MVP và ghi rõ trade-off;
@@ -526,12 +535,13 @@ Yêu cầu:
    - `generated_dsl`;
    - `total`;
    - `llm_latency_ms`;
-   - `search_latency_ms` hoặc `aggregation_latency_ms` nếu bạn chọn tên mới;
+   - `search_latency_ms`;
    - `latency_ms`;
    - `aggregation_type`;
    - `aggregation_results`;
    - `chart_metadata`;
-   - `events` có thể là `[]` hoặc null với aggregation, nhưng nên dùng `[]` để frontend dễ xử lý.
+   - `events = []` với aggregation, không trả null để frontend dễ xử lý;
+   - không tạo field mới `aggregation_latency_ms`; `search_latency_ms` được hiểu là thời gian query Elasticsearch cho cả search và aggregation.
 7. Pagination/bucket guardrail:
    - backend vẫn override `page` và `size` từ request;
    - aggregation bucket limit chính là `aggregation.top_n`;
@@ -542,13 +552,19 @@ Yêu cầu:
 8. Repair/retry một lần từ ngày 4 vẫn hoạt động với aggregation.
 9. Thêm unit/service/controller test:
    - 3 câu aggregation mock parse thành `SearchPlan` đúng mapping;
+   - câu "Đếm số lần login thất bại theo từng user trong 7 ngày qua" map đúng `aggregation.type = "group_by"`, không phải `"top_n"`;
    - 3 plan pass validator;
    - endpoint `/api/v1/search` với mock trả response aggregation;
    - response có `aggregation_results` và `chart_metadata`;
+   - response aggregation có `events = []`;
+   - response aggregation vẫn có `search_latency_ms` và không có field `aggregation_latency_ms`;
    - `generated_dsl` là object/map, không phải string;
    - `GROUP_BY` thiếu `top_n` vẫn dùng default bucket limit 20;
    - LLM `top_n > 100` bị reject rõ ràng;
    - unsupported aggregation field bị reject rõ;
+   - aggregation field `password` bị reject rõ;
+   - `DATE_HISTOGRAM` thiếu `interval` bị reject rõ;
+   - LLM/Mock không sinh Elasticsearch DSL field như `query`, `aggs` hoặc `dsl`;
    - search câu ngày 4 vẫn chạy.
 10. Nếu Docker đang chạy và dataset đã seed, test thật 3 câu bằng Invoke-RestMethod với provider mock.
 11. Chạy backend test và báo file đã tạo hoặc sửa.
@@ -620,11 +636,18 @@ Yêu cầu:
    - `aggregation_type` tồn tại;
    - `aggregation_results` tồn tại;
    - `chart_metadata` tồn tại;
+   - nếu là câu "Đếm số lần login thất bại theo từng user trong 7 ngày qua", verify `search_plan.aggregation.type = "group_by"`, `field = "user"`, `top_n = 10`;
    - `chart_metadata.chart_type` phù hợp:
      - TOP_N/GROUP_BY -> BAR;
      - DATE_HISTOGRAM -> LINE;
+     - COUNT -> NUMBER;
+   - response aggregation có `events = []`, không phải null;
+   - response aggregation có `search_latency_ms >= 0` nếu là endpoint `/api/v1/search`;
+   - response aggregation không có field `aggregation_latency_ms`;
+   - `total` luôn là `hits.total`, không phải tổng bucket hoặc số bucket;
    - số item trong `aggregation_results` không vượt quá `top_n` với TOP_N/GROUP_BY; nếu GROUP_BY không có `top_n`, không vượt quá default bucket limit 20;
    - COUNT generated_dsl có `size = 0`, có query/filter nếu request có filter, không có `aggs` và không có `aggs = {}` rỗng;
+   - COUNT no-result trả 200, `total = 0`, `aggregation_results = []`;
    - DATE_HISTOGRAM generated_dsl dùng `fixed_interval`, ví dụ hour -> `1h`, day -> `1d`;
    - không có field `.keyword` trong generated_dsl.
 6. Smoke script phải fail rõ ràng nếu checkpoint không đạt.
@@ -680,17 +703,24 @@ Kiểm tra:
 12. `/api/v1/search/plan` chạy được mode aggregation.
 13. `/api/v1/search` chạy được câu natural language search ngày 4.
 14. `/api/v1/search` chạy được 3 câu natural language aggregation ngày 5 bằng mock.
-15. Response aggregation có `generated_dsl` object/map, không phải string và không phải JSON string escaped.
-16. Response aggregation có `aggregation_results`.
-17. Response aggregation có `chart_metadata`.
-18. Bucket count không vượt quá `top_n` đã giới hạn; nếu GROUP_BY không có `top_n`, không vượt quá default bucket limit 20.
-19. No-result/no-bucket aggregation trả 200 với `aggregation_results = []`.
-20. Backend test pass.
-21. Smoke test ngày 5 pass.
-22. docker compose config hợp lệ và stack local healthy.
-23. Không persist audit log vào PostgreSQL trong ngày 5.
-24. Không triển khai summary, frontend chart UI, CSV hoặc auth trong ngày 5.
-25. Không có API key thật hoặc generated dataset lớn trong Git-tracked files.
+15. Câu "Đếm số lần login thất bại theo từng user trong 7 ngày qua" map thành `aggregation.type = "group_by"`, `field = "user"`, `top_n = 10`, không map thành `"top_n"`.
+16. Response aggregation có `generated_dsl` object/map, không phải string và không phải JSON string escaped.
+17. Response aggregation lấy `generated_dsl` trực tiếp từ output compiler, không build lại DSL lần thứ hai trong executor.
+18. Response aggregation có `aggregation_results`.
+19. Response aggregation có `chart_metadata`.
+20. Response aggregation qua `/api/v1/search` có `events = []`, không trả null.
+21. Response aggregation qua `/api/v1/search` vẫn dùng `search_latency_ms`, không tạo field mới `aggregation_latency_ms`.
+22. COUNT response có `chart_metadata.chart_type = "NUMBER"`.
+23. `total` trong aggregation response luôn là `hits.total`, không phải tổng bucket hoặc số bucket.
+24. Bucket count không vượt quá `top_n` đã giới hạn; nếu GROUP_BY không có `top_n`, không vượt quá default bucket limit 20.
+25. No-result/no-bucket aggregation trả 200 với `aggregation_results = []`.
+26. COUNT no-result trả 200 với `total = 0`, `aggregation_results = []`.
+27. Backend test pass.
+28. Smoke test ngày 5 pass.
+29. docker compose config hợp lệ và stack local healthy.
+30. Không persist audit log vào PostgreSQL trong ngày 5.
+31. Không triển khai summary, frontend chart UI, CSV hoặc auth trong ngày 5.
+32. Không có API key thật hoặc generated dataset lớn trong Git-tracked files.
 
 Sau đó:
 1. Sửa lỗi nhỏ nếu phát hiện.

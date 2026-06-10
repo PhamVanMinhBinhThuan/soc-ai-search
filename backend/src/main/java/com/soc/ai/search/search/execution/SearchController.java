@@ -31,9 +31,9 @@ public class SearchController {
     @PostMapping("/plan")
     @Operation(
             summary = "Execute a validated SearchPlan",
-            description = "Technical endpoint used before natural-language and LLM integration.")
-    public SearchPlanSearchResponse searchByPlan(@Valid @RequestBody SearchPlan searchPlan) {
-        return searchPlanExecutor.search(searchPlan);
+            description = "Technical endpoint for deterministic search or aggregation SearchPlan execution.")
+    public Object searchByPlan(@Valid @RequestBody SearchPlan searchPlan) {
+        return searchPlanExecutor.execute(searchPlan);
     }
 
     @ExceptionHandler(SearchPlanValidationException.class)

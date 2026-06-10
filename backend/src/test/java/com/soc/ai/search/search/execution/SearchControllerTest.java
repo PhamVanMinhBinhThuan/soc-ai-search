@@ -12,6 +12,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.util.List;
 import java.util.Map;
 
+import com.soc.ai.search.search.plan.AggregationType;
 import com.soc.ai.search.search.plan.SearchMode;
 import com.soc.ai.search.search.plan.SearchPlan;
 import org.junit.jupiter.api.Test;
@@ -32,7 +33,7 @@ class SearchControllerTest {
 
     @Test
     void searchPlanReturnsResponseForValidSearchPlan() throws Exception {
-        when(searchPlanExecutor.search(any(SearchPlan.class))).thenReturn(responseWithOneEvent());
+        when(searchPlanExecutor.execute(any(SearchPlan.class))).thenReturn(responseWithOneEvent());
 
         mockMvc.perform(post("/api/v1/search/plan")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -50,12 +51,12 @@ class SearchControllerTest {
                 .andExpect(jsonPath("$.events[0].event_type").value("failed_login"))
                 .andExpect(jsonPath("$.events[0].country_code").value("CN"));
 
-        verify(searchPlanExecutor).search(any(SearchPlan.class));
+        verify(searchPlanExecutor).execute(any(SearchPlan.class));
     }
 
     @Test
     void searchPlanAcceptsMessageQuery() throws Exception {
-        when(searchPlanExecutor.search(any(SearchPlan.class))).thenReturn(responseWithOneEvent());
+        when(searchPlanExecutor.execute(any(SearchPlan.class))).thenReturn(responseWithOneEvent());
 
         mockMvc.perform(post("/api/v1/search/plan")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -63,12 +64,12 @@ class SearchControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.events[0].message").value("Failed login attempt from CN"));
 
-        verify(searchPlanExecutor).search(any(SearchPlan.class));
+        verify(searchPlanExecutor).execute(any(SearchPlan.class));
     }
 
     @Test
     void searchPlanReturnsOkForNoResults() throws Exception {
-        when(searchPlanExecutor.search(any(SearchPlan.class))).thenReturn(emptyResponse());
+        when(searchPlanExecutor.execute(any(SearchPlan.class))).thenReturn(emptyResponse());
 
         mockMvc.perform(post("/api/v1/search/plan")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -88,7 +89,7 @@ class SearchControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("Invalid SearchPlan"));
 
-        verify(searchPlanExecutor, never()).search(any(SearchPlan.class));
+        verify(searchPlanExecutor, never()).execute(any(SearchPlan.class));
     }
 
     @Test
@@ -99,12 +100,12 @@ class SearchControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("Invalid request body"));
 
-        verify(searchPlanExecutor, never()).search(any(SearchPlan.class));
+        verify(searchPlanExecutor, never()).execute(any(SearchPlan.class));
     }
 
     @Test
     void searchPlanReturnsControlledErrorWhenElasticsearchFails() throws Exception {
-        when(searchPlanExecutor.search(any(SearchPlan.class)))
+        when(searchPlanExecutor.execute(any(SearchPlan.class)))
                 .thenThrow(new SearchExecutionException("Failed to execute Elasticsearch search", new RuntimeException()));
 
         mockMvc.perform(post("/api/v1/search/plan")
@@ -112,6 +113,27 @@ class SearchControllerTest {
                         .content(validSearchPlanJson()))
                 .andExpect(status().isServiceUnavailable())
                 .andExpect(jsonPath("$.message").value("Search dependency is unavailable"));
+    }
+
+    @Test
+    void searchPlanReturnsAggregationResponseForAggregationMode() throws Exception {
+        when(searchPlanExecutor.execute(any(SearchPlan.class))).thenReturn(aggregationResponse());
+
+        mockMvc.perform(post("/api/v1/search/plan")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validAggregationPlanJson()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.mode").value("aggregation"))
+                .andExpect(jsonPath("$.aggregation_type").value("count"))
+                .andExpect(jsonPath("$.generated_dsl.query.bool.filter").isArray())
+                .andExpect(jsonPath("$.generated_dsl").isMap())
+                .andExpect(jsonPath("$.total").value(42))
+                .andExpect(jsonPath("$.latency_ms").value(9))
+                .andExpect(jsonPath("$.aggregation_results[0].key").value("total"))
+                .andExpect(jsonPath("$.aggregation_results[0].value").value(42))
+                .andExpect(jsonPath("$.chart_metadata.chart_type").value("NUMBER"));
+
+        verify(searchPlanExecutor).execute(any(SearchPlan.class));
     }
 
     private SearchPlanSearchResponse responseWithOneEvent() {
@@ -148,6 +170,22 @@ class SearchControllerTest {
                 List.of());
     }
 
+    private AggregationSearchResponse aggregationResponse() {
+        return new AggregationSearchResponse(
+                SearchMode.AGGREGATION,
+                AggregationType.COUNT,
+                Map.of(
+                        "query", Map.of(
+                                "bool", Map.of(
+                                        "filter", List.of(Map.of(
+                                                "terms", Map.of("event_type", List.of("failed_login")))))),
+                        "size", 0),
+                42,
+                9,
+                List.of(new AggregationResultItem("total", 42)),
+                new ChartMetadata(ChartType.NUMBER, "Total", "Events"));
+    }
+
     private Map<String, Object> generatedDsl() {
         return Map.of(
                 "query", Map.of(
@@ -177,5 +215,22 @@ class SearchControllerTest {
     private String validSearchPlanWithMessageQueryJson() {
         return validSearchPlanJson()
                 .replace("\"page\": 0", "\"message_query\": \"malware detected\",%n                  \"page\": 0".formatted());
+    }
+
+    private String validAggregationPlanJson() {
+        return """
+                {
+                  "mode": "aggregation",
+                  "filters": {
+                    "timestamp": { "from": "now-7d", "to": "now" },
+                    "event_type": ["failed_login"]
+                  },
+                  "aggregation": {
+                    "type": "count"
+                  },
+                  "page": 0,
+                  "size": 20
+                }
+                """;
     }
 }
