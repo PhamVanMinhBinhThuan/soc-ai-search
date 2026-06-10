@@ -4,7 +4,7 @@
 
 ## Trạng thái
 
-Repository đã hoàn thành foundation **ngày 4** cho MVP: backend/frontend scaffold, Docker Compose local, Elasticsearch mapping/bootstrap, PostgreSQL/Flyway, API ingest single/bulk event, script seed synthetic dataset, SearchPlan validator/compiler/executor, endpoint search kỹ thuật, event detail, LLM abstraction, mock LLM, Gemini client foundation, endpoint natural language search và smoke test ngày 4. CI/CD, aggregation, summary, audit persistence và CSV export chưa được triển khai.
+Repository đã hoàn thành foundation **ngày 5** cho MVP: backend/frontend scaffold, Docker Compose local, Elasticsearch mapping/bootstrap, PostgreSQL/Flyway, API ingest single/bulk event, script seed synthetic dataset, SearchPlan validator/compiler/executor, endpoint search kỹ thuật, event detail, LLM abstraction, mock LLM, Gemini client foundation, endpoint natural language search, aggregation MVP và smoke test ngày 5. CI/CD, summary, audit persistence, frontend chart UI và CSV export chưa được triển khai.
 
 ## Kiến trúc
 

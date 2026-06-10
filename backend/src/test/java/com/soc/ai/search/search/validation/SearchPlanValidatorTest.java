@@ -109,6 +109,8 @@ class SearchPlanValidatorTest {
                 Arguments.of("aggregation field user.keyword", aggregationPlan(validFilters(), new AggregationPlan(TOP_N, "user.keyword", 10, null)), "aggregation.field"),
                 Arguments.of("aggregation field User case-sensitive", aggregationPlan(validFilters(), new AggregationPlan(TOP_N, "User", 10, null)), "aggregation.field"),
                 Arguments.of("aggregation field USER case-sensitive", aggregationPlan(validFilters(), new AggregationPlan(TOP_N, "USER", 10, null)), "aggregation.field"),
+                Arguments.of("aggregation field Ip case-sensitive", aggregationPlan(validFilters(), new AggregationPlan(TOP_N, "Ip", 10, null)), "aggregation.field"),
+                Arguments.of("aggregation field EVENT_TYPE case-sensitive", aggregationPlan(validFilters(), new AggregationPlan(TOP_N, "EVENT_TYPE", 10, null)), "aggregation.field"),
                 Arguments.of("count with field", aggregationPlan(validFilters(), new AggregationPlan(COUNT, "user", null, null)), "aggregation.field"),
                 Arguments.of("count with top_n", aggregationPlan(validFilters(), new AggregationPlan(COUNT, null, 10, null)), "aggregation.top_n"),
                 Arguments.of("count with interval", aggregationPlan(validFilters(), new AggregationPlan(COUNT, null, null, HOUR)), "aggregation.interval"),

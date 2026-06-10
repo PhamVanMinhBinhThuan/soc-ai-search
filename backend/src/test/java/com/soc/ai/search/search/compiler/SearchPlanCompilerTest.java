@@ -139,6 +139,16 @@ class SearchPlanCompilerTest {
                         aggregationPlan(validFilters(), new AggregationPlan(GROUP_BY, "user", null, null)),
                         (DslAssertion) searchSpec -> assertTermsAggregation(searchSpec, "count_by_field", "user", 20)),
                 Arguments.of(
+                        "group_by user without top_n ignores SearchPlan size",
+                        new SearchPlan(
+                                AGGREGATION,
+                                validFilters(),
+                                new AggregationPlan(GROUP_BY, "user", null, null),
+                                null,
+                                0,
+                                100),
+                        (DslAssertion) searchSpec -> assertTermsAggregation(searchSpec, "count_by_field", "user", 20)),
+                Arguments.of(
                         "group_by user with top_n uses requested bucket limit",
                         aggregationPlan(validFilters(), new AggregationPlan(GROUP_BY, "user", 50, null)),
                         (DslAssertion) searchSpec -> assertTermsAggregation(searchSpec, "count_by_field", "user", 50)),

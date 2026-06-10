@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.List;
+import java.util.Map;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -187,5 +188,36 @@ class SearchPlanJacksonTest {
                 .isInstanceOf(JsonProcessingException.class)
                 .hasRootCauseInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Unsupported search mode");
+    }
+
+    @Test
+    void mapsAllAggregationTypeJsonValues() throws Exception {
+        var expectedValues = Map.of(
+                AggregationType.COUNT, "count",
+                AggregationType.GROUP_BY, "group_by",
+                AggregationType.TOP_N, "top_n",
+                AggregationType.DATE_HISTOGRAM, "date_histogram");
+
+        for (var entry : expectedValues.entrySet()) {
+            assertThat(objectMapper.readValue("\"" + entry.getValue() + "\"", AggregationType.class))
+                    .isEqualTo(entry.getKey());
+            assertThat(objectMapper.writeValueAsString(entry.getKey()))
+                    .isEqualTo("\"" + entry.getValue() + "\"");
+        }
+    }
+
+    @Test
+    void mapsAllHistogramIntervalJsonValues() throws Exception {
+        var expectedValues = Map.of(
+                HistogramInterval.MINUTE, "minute",
+                HistogramInterval.HOUR, "hour",
+                HistogramInterval.DAY, "day");
+
+        for (var entry : expectedValues.entrySet()) {
+            assertThat(objectMapper.readValue("\"" + entry.getValue() + "\"", HistogramInterval.class))
+                    .isEqualTo(entry.getKey());
+            assertThat(objectMapper.writeValueAsString(entry.getKey()))
+                    .isEqualTo("\"" + entry.getValue() + "\"");
+        }
     }
 }

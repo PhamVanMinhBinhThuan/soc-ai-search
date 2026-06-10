@@ -700,35 +700,54 @@ Kiểm tra:
 1. `SearchMode` có `SEARCH` và `AGGREGATION`.
 2. Có `AggregationPlan` hoặc DTO tương đương.
 3. Aggregation type hỗ trợ `COUNT`, `GROUP_BY`, `TOP_N`, `DATE_HISTOGRAM`.
-4. Validator reject aggregation field ngoài allowlist.
-5. Validator reject `.keyword` do LLM/user sinh ra.
-6. COUNT dùng `hits.total` và `size = 0`, không sinh `aggs` và không sinh `aggs = {}` rỗng.
-7. GROUP_BY/TOP_N dùng `terms` aggregation; GROUP_BY thiếu `top_n` dùng default bucket limit 20.
-8. DATE_HISTOGRAM dùng `date_histogram` trên `timestamp` với `fixed_interval` thống nhất: minute -> `1m`, hour -> `1h`, day -> `1d`.
-9. Compiler không sinh wildcard/script/query_string.
-10. Aggregation field dùng mapping hiện tại, không tự thêm `.keyword`.
-11. `/api/v1/search/plan` vẫn chạy được mode search ngày 4.
-12. `/api/v1/search/plan` chạy được mode aggregation.
-13. `/api/v1/search` chạy được câu natural language search ngày 4.
-14. `/api/v1/search` chạy được 3 câu natural language aggregation ngày 5 bằng mock.
-15. Câu "Đếm số lần login thất bại theo từng user trong 7 ngày qua" map thành `aggregation.type = "group_by"`, `field = "user"`, `top_n = 10`, không map thành `"top_n"`.
-16. Response aggregation có `generated_dsl` object/map, không phải string và không phải JSON string escaped.
-17. Response aggregation lấy `generated_dsl` trực tiếp từ output compiler, không build lại DSL lần thứ hai trong executor.
-18. Response aggregation có `aggregation_results`.
-19. Response aggregation có `chart_metadata` đầy đủ `chart_type`, `x_axis_label`, `y_axis_label`.
-20. Response aggregation qua `/api/v1/search` có `events = []`, không trả null.
-21. Response aggregation qua `/api/v1/search` vẫn dùng `search_latency_ms`, không tạo field mới `aggregation_latency_ms`.
-22. COUNT response có `chart_metadata.chart_type = "NUMBER"`.
-23. Backend test xác nhận `total` trong aggregation response luôn là `hits.total`, không phải tổng bucket hoặc số bucket; smoke test chỉ cần kiểm `total >= 0`.
-24. Smoke test xác nhận bucket count không vượt quá `top_n` đã giới hạn; nếu GROUP_BY không có `top_n`, không vượt quá default bucket limit 20; không yêu cầu bucket count bằng `top_n`.
-25. Backend test xác nhận no-result/no-bucket aggregation trả 200 với `aggregation_results = []`.
-26. Backend test xác nhận COUNT no-result trả 200 với `total = 0`, `aggregation_results = []`.
-27. Backend test pass.
-28. Smoke test ngày 5 pass.
-29. docker compose config hợp lệ và stack local healthy.
-30. Không persist audit log vào PostgreSQL trong ngày 5.
-31. Không triển khai summary, frontend chart UI, CSV hoặc auth trong ngày 5.
-32. Không có API key thật hoặc generated dataset lớn trong Git-tracked files.
+4. Jackson contract serialize/deserialize đúng `AggregationType`:
+   - `COUNT` <-> `"count"`;
+   - `GROUP_BY` <-> `"group_by"`;
+   - `TOP_N` <-> `"top_n"`;
+   - `DATE_HISTOGRAM` <-> `"date_histogram"`.
+5. Jackson contract serialize/deserialize đúng `HistogramInterval`:
+   - `MINUTE` <-> `"minute"`;
+   - `HOUR` <-> `"hour"`;
+   - `DAY` <-> `"day"`.
+6. Validator reject aggregation field ngoài allowlist.
+7. Validator reject aggregation field có `.keyword` do LLM/user sinh ra.
+8. Validator reject aggregation field sai hoa/thường như `User`, `USER`, `Ip`, `EVENT_TYPE`; chỉ chấp nhận field đúng allowlist lowercase/snake_case.
+9. Validator reject `COUNT` nếu có `field`, `top_n` hoặc `interval`.
+10. Validator reject `TOP_N` nếu thiếu `top_n`.
+11. Validator reject `DATE_HISTOGRAM` nếu có `field`, có `top_n` hoặc thiếu `interval`.
+12. COUNT dùng `hits.total` và `size = 0`, không sinh `aggs` và không sinh `aggs = {}` rỗng.
+13. GROUP_BY/TOP_N dùng `terms` aggregation; GROUP_BY thiếu `top_n` dùng default bucket limit 20.
+14. Backend test xác nhận GROUP_BY không có `top_n` compile ra `terms.size = 20`.
+15. Backend test xác nhận aggregation bucket limit không lấy từ `SearchPlan.size`; GROUP_BY/TOP_N chỉ dùng `aggregation.top_n` hoặc default bucket limit 20.
+16. DATE_HISTOGRAM dùng `date_histogram` trên `timestamp` với `fixed_interval` thống nhất: minute -> `1m`, hour -> `1h`, day -> `1d`.
+17. Compiler không sinh wildcard/script/query_string.
+18. Aggregation field dùng mapping hiện tại, không tự thêm `.keyword`.
+19. Backend test xác nhận `generated_dsl` không chứa `user.keyword`, `host.keyword`, `ip.keyword`, `severity.keyword`, `event_type.keyword`, `country_code.keyword` hoặc `source.keyword`.
+20. `/api/v1/search/plan` vẫn chạy được mode search ngày 4.
+21. `/api/v1/search/plan` chạy được mode aggregation.
+22. `/api/v1/search` chạy được câu natural language search ngày 4.
+23. `/api/v1/search` chạy được 3 câu natural language aggregation ngày 5 bằng mock.
+24. Backend test xác nhận `mode = aggregation` được route sang aggregation executor, không route nhầm sang search executor.
+25. Câu "Đếm số lần login thất bại theo từng user trong 7 ngày qua" map thành `aggregation.type = "group_by"`, `field = "user"`, `top_n = 10`, không map thành `"top_n"`.
+26. Response aggregation có `generated_dsl` object/map, không phải string và không phải JSON string escaped.
+27. Response aggregation lấy `generated_dsl` trực tiếp từ output compiler, không build lại DSL lần thứ hai trong executor.
+28. Response aggregation có `aggregation_results`.
+29. Response aggregation có `chart_metadata` đầy đủ `chart_type`, `x_axis_label`, `y_axis_label`.
+30. Response aggregation qua `/api/v1/search` có `events = []`, không trả null.
+31. Response aggregation qua `/api/v1/search` vẫn dùng `search_latency_ms`, không tạo field mới `aggregation_latency_ms`.
+32. Response aggregation qua `/api/v1/search` có `llm_latency_ms`, `search_latency_ms`, `latency_ms` và các giá trị này `>= 0`.
+33. COUNT response có `chart_metadata.chart_type = "NUMBER"`.
+34. Backend test xác nhận `total` trong aggregation response luôn là `hits.total`, không phải tổng bucket hoặc số bucket; smoke test chỉ cần kiểm `total >= 0`.
+35. Smoke test xác nhận bucket count không vượt quá `top_n` đã giới hạn; nếu GROUP_BY không có `top_n`, không vượt quá default bucket limit 20; không yêu cầu bucket count bằng `top_n`.
+36. Backend test xác nhận aggregation response không phụ thuộc pagination event search; `page`/`size` không ảnh hưởng bucket limit ngoài guardrail chung.
+37. Backend test xác nhận no-result/no-bucket aggregation trả 200 với `aggregation_results = []`.
+38. Backend test xác nhận COUNT no-result trả 200 với `total = 0`, `aggregation_results = []`.
+39. Backend test pass.
+40. Smoke test ngày 5 pass.
+41. docker compose config hợp lệ và stack local healthy.
+42. Không persist audit log vào PostgreSQL trong ngày 5.
+43. Không triển khai summary, frontend chart UI, CSV hoặc auth trong ngày 5.
+44. Không có API key thật hoặc generated dataset lớn trong Git-tracked files.
 
 Sau đó:
 1. Sửa lỗi nhỏ nếu phát hiện.
