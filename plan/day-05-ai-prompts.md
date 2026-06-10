@@ -293,37 +293,48 @@ Yêu cầu:
    - không dùng query string tự do.
 6. `COUNT`:
    - sinh search spec với `size = 0`;
-   - không cần `aggs`;
+   - vẫn sinh `query`/`bool.filter` nếu SearchPlan có filter;
+   - không sinh `aggs`;
+   - không sinh `aggs = {}` rỗng;
    - executor sẽ lấy `hits.total`.
 7. `GROUP_BY`:
    - dùng Elasticsearch `terms` aggregation;
    - field lấy từ allowlist;
-   - size bucket dùng `aggregation.top_n` nếu có, nếu không dùng default bucket limit 20;
+   - nếu `aggregation.top_n` có giá trị thì dùng làm `terms.size`;
+   - nếu `aggregation.top_n` null thì dùng default bucket limit 20;
    - không dùng `SearchPlan.size` để quyết định số bucket trong compiler;
    - không thêm `.keyword`.
 8. `TOP_N`:
    - dùng Elasticsearch `terms` aggregation;
    - field lấy từ allowlist;
-   - size bucket dùng `aggregation.top_n`, capped 100;
+   - `aggregation.top_n` bắt buộc đã được validator kiểm tra;
+   - dùng `aggregation.top_n` làm `terms.size`;
    - không thêm `.keyword`.
 9. `DATE_HISTOGRAM`:
    - dùng Elasticsearch `date_histogram` trên field `timestamp`;
+   - chốt dùng `fixed_interval` để DSL thống nhất và dễ test;
    - interval map:
-     - `minute` -> `calendar_interval` hoặc `fixed_interval` phù hợp, ví dụ `1m`;
-     - `hour` -> `1h`;
-     - `day` -> `1d`;
+     - `minute` -> `fixed_interval = "1m"`;
+     - `hour` -> `fixed_interval = "1h"`;
+     - `day` -> `fixed_interval = "1d"`;
    - sort bucket theo thời gian tăng dần nếu DSL hỗ trợ rõ ràng.
 10. Aggregation name nên ổn định, ví dụ:
     - `count_by_field`;
     - `top_values`;
     - `events_over_time`.
 11. Output DSL/search spec phải có `generated_dsl` dễ đọc để frontend render pretty JSON.
+    - `generated_dsl` phải là Java object/map để serialize thành JSON object;
+    - không trả `generated_dsl` dưới dạng JSON string escaped như `"{\"query\":...}"`.
 12. Timeout và `track_total_hits` vẫn thuộc executor, không đặt ở compiler nếu hiện kiến trúc đang làm vậy.
 13. Thêm unit test table-driven cho DSL shape:
-    - COUNT failed_login 7 ngày -> `size = 0`, không có `aggs`;
+    - COUNT failed_login 7 ngày -> `size = 0`, vẫn có query/filter nếu có filter, không có `aggs` và không có `aggs = {}` rỗng;
     - GROUP_BY user không có top_n -> `terms.field = "user"` và `terms.size = 20`;
+    - GROUP_BY user với `top_n = 50` -> `terms.field = "user"` và `terms.size = 50`;
     - TOP_N ip top 10 -> `terms.field = "ip"`, `terms.size = 10`;
-    - DATE_HISTOGRAM hour -> aggregation trên `timestamp`;
+    - TOP_N ip với `top_n = 100` -> `terms.field = "ip"`, `terms.size = 100`;
+    - DATE_HISTOGRAM hour -> aggregation trên `timestamp`, `fixed_interval = "1h"`;
+    - DATE_HISTOGRAM day -> aggregation trên `timestamp`, `fixed_interval = "1d"`;
+    - `generated_dsl`/search spec là object/map, không phải string;
     - filter severity/event_type/country_code vẫn compile đúng `terms`;
     - field không có `.keyword`;
     - compiler không sinh script/wildcard/query_string.
@@ -377,6 +388,7 @@ Yêu cầu:
    - `mode`;
    - `aggregation_type`;
    - `generated_dsl` dạng object/map, không phải string;
+   - `generated_dsl` không phải JSON string escaped;
    - `total`;
    - `latency_ms`;
    - `aggregation_results`: danh sách `{ key, value }`;
@@ -400,10 +412,12 @@ Yêu cầu:
 12. Thêm test:
     - SearchPlan search cũ vẫn trả response như trước;
     - COUNT response lấy từ total;
+    - COUNT generated_dsl có `size = 0`, không có `aggs` và không có `aggs = {}` rỗng;
     - TOP_N response map buckets;
     - DATE_HISTOGRAM response map buckets;
+    - DATE_HISTOGRAM generated_dsl giữ `fixed_interval`, ví dụ hour -> `1h`;
     - response có `chart_metadata`;
-    - `generated_dsl` là object/map, không phải string;
+    - `generated_dsl` là object/map, không phải string escaped;
     - no-bucket aggregation trả 200 với `aggregation_results = []`;
     - Elasticsearch lỗi trả lỗi có kiểm soát.
 13. Nếu Docker đang chạy và dataset đã seed, test thật bằng Invoke-RestMethod với:
@@ -602,6 +616,7 @@ Yêu cầu:
    - `mode = "aggregation"`;
    - `search_plan.mode = "aggregation"` nếu endpoint NL trả `search_plan`;
    - `generated_dsl` là object/map, không phải string;
+   - `generated_dsl` không phải JSON string escaped;
    - `aggregation_type` tồn tại;
    - `aggregation_results` tồn tại;
    - `chart_metadata` tồn tại;
@@ -609,6 +624,8 @@ Yêu cầu:
      - TOP_N/GROUP_BY -> BAR;
      - DATE_HISTOGRAM -> LINE;
    - số item trong `aggregation_results` không vượt quá `top_n` với TOP_N/GROUP_BY; nếu GROUP_BY không có `top_n`, không vượt quá default bucket limit 20;
+   - COUNT generated_dsl có `size = 0`, có query/filter nếu request có filter, không có `aggs` và không có `aggs = {}` rỗng;
+   - DATE_HISTOGRAM generated_dsl dùng `fixed_interval`, ví dụ hour -> `1h`, day -> `1d`;
    - không có field `.keyword` trong generated_dsl.
 6. Smoke script phải fail rõ ràng nếu checkpoint không đạt.
 7. Cập nhật README.md với:
@@ -654,16 +671,16 @@ Kiểm tra:
 3. Aggregation type hỗ trợ `COUNT`, `GROUP_BY`, `TOP_N`, `DATE_HISTOGRAM`.
 4. Validator reject aggregation field ngoài allowlist.
 5. Validator reject `.keyword` do LLM/user sinh ra.
-6. COUNT dùng `hits.total` và `size = 0`, không cần aggregation DSL riêng.
-7. GROUP_BY/TOP_N dùng `terms` aggregation.
-8. DATE_HISTOGRAM dùng `date_histogram` trên `timestamp`.
+6. COUNT dùng `hits.total` và `size = 0`, không sinh `aggs` và không sinh `aggs = {}` rỗng.
+7. GROUP_BY/TOP_N dùng `terms` aggregation; GROUP_BY thiếu `top_n` dùng default bucket limit 20.
+8. DATE_HISTOGRAM dùng `date_histogram` trên `timestamp` với `fixed_interval` thống nhất: minute -> `1m`, hour -> `1h`, day -> `1d`.
 9. Compiler không sinh wildcard/script/query_string.
 10. Aggregation field dùng mapping hiện tại, không tự thêm `.keyword`.
 11. `/api/v1/search/plan` vẫn chạy được mode search ngày 4.
 12. `/api/v1/search/plan` chạy được mode aggregation.
 13. `/api/v1/search` chạy được câu natural language search ngày 4.
 14. `/api/v1/search` chạy được 3 câu natural language aggregation ngày 5 bằng mock.
-15. Response aggregation có `generated_dsl` object/map, không phải string.
+15. Response aggregation có `generated_dsl` object/map, không phải string và không phải JSON string escaped.
 16. Response aggregation có `aggregation_results`.
 17. Response aggregation có `chart_metadata`.
 18. Bucket count không vượt quá `top_n` đã giới hạn; nếu GROUP_BY không có `top_n`, không vượt quá default bucket limit 20.

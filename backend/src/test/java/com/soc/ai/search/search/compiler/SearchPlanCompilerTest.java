@@ -1,5 +1,12 @@
 package com.soc.ai.search.search.compiler;
 
+import static com.soc.ai.search.search.plan.AggregationType.COUNT;
+import static com.soc.ai.search.search.plan.AggregationType.DATE_HISTOGRAM;
+import static com.soc.ai.search.search.plan.AggregationType.GROUP_BY;
+import static com.soc.ai.search.search.plan.AggregationType.TOP_N;
+import static com.soc.ai.search.search.plan.HistogramInterval.DAY;
+import static com.soc.ai.search.search.plan.HistogramInterval.HOUR;
+import static com.soc.ai.search.search.plan.SearchMode.AGGREGATION;
 import static com.soc.ai.search.search.plan.SearchMode.SEARCH;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -7,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import com.soc.ai.search.search.plan.AggregationPlan;
 import com.soc.ai.search.search.plan.SearchFilters;
 import com.soc.ai.search.search.plan.SearchPlan;
 import com.soc.ai.search.search.plan.TimeRange;
@@ -28,6 +36,17 @@ class SearchPlanCompilerTest {
         var searchSpec = compiler.compile(plan).searchSpec();
 
         assertion.verify(searchSpec);
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("compiledAggregationCases")
+    void compilesExpectedAggregationDslShape(String name, SearchPlan plan, DslAssertion assertion) {
+        var searchSpec = compiler.compile(plan).searchSpec();
+
+        assertion.verify(searchSpec);
+        assertThat(searchSpec).isInstanceOf(Map.class);
+        assertNoUnsupportedQueries(searchSpec);
+        assertNoKeywordFields(searchSpec);
     }
 
     @Test
@@ -102,8 +121,51 @@ class SearchPlanCompilerTest {
                         (DslAssertion) SearchPlanCompilerTest::assertTimestampDescSort));
     }
 
+    private static Stream<Arguments> compiledAggregationCases() {
+        return Stream.of(
+                Arguments.of(
+                        "count failed_login 7 days keeps query filter and no aggs",
+                        aggregationPlan(
+                                failedLoginSevenDaysFilters(),
+                                new AggregationPlan(COUNT, null, null, null)),
+                        (DslAssertion) searchSpec -> {
+                            assertThat(searchSpec).containsEntry("size", 0);
+                            assertThat(searchSpec).doesNotContainKey("aggs");
+                            assertTerms(searchSpec, "event_type", List.of("failed_login"));
+                            assertRange(searchSpec, "now-7d", "now");
+                        }),
+                Arguments.of(
+                        "group_by user without top_n uses default bucket limit",
+                        aggregationPlan(validFilters(), new AggregationPlan(GROUP_BY, "user", null, null)),
+                        (DslAssertion) searchSpec -> assertTermsAggregation(searchSpec, "count_by_field", "user", 20)),
+                Arguments.of(
+                        "group_by user with top_n uses requested bucket limit",
+                        aggregationPlan(validFilters(), new AggregationPlan(GROUP_BY, "user", 50, null)),
+                        (DslAssertion) searchSpec -> assertTermsAggregation(searchSpec, "count_by_field", "user", 50)),
+                Arguments.of(
+                        "top_n ip top 10 uses terms aggregation",
+                        aggregationPlan(validFilters(), new AggregationPlan(TOP_N, "ip", 10, null)),
+                        (DslAssertion) searchSpec -> assertTermsAggregation(searchSpec, "top_values", "ip", 10)),
+                Arguments.of(
+                        "top_n ip top 100 uses terms aggregation",
+                        aggregationPlan(validFilters(), new AggregationPlan(TOP_N, "ip", 100, null)),
+                        (DslAssertion) searchSpec -> assertTermsAggregation(searchSpec, "top_values", "ip", 100)),
+                Arguments.of(
+                        "date_histogram hour uses fixed interval",
+                        aggregationPlan(validFilters(), new AggregationPlan(DATE_HISTOGRAM, null, null, HOUR)),
+                        (DslAssertion) searchSpec -> assertDateHistogram(searchSpec, "1h")),
+                Arguments.of(
+                        "date_histogram day uses fixed interval",
+                        aggregationPlan(validFilters(), new AggregationPlan(DATE_HISTOGRAM, null, null, DAY)),
+                        (DslAssertion) searchSpec -> assertDateHistogram(searchSpec, "1d")));
+    }
+
     private static SearchPlan validSearchPlan() {
         return new SearchPlan(SEARCH, validFilters(), 0, 20);
+    }
+
+    private static SearchPlan aggregationPlan(SearchFilters filters, AggregationPlan aggregation) {
+        return new SearchPlan(AGGREGATION, filters, aggregation, null, 0, 20);
     }
 
     private static SearchFilters validFilters() {
@@ -115,6 +177,17 @@ class SearchPlanCompilerTest {
                 "vpn-gw-01",
                 "203.0.113.45",
                 List.of("CN"));
+    }
+
+    private static SearchFilters failedLoginSevenDaysFilters() {
+        return new SearchFilters(
+                new TimeRange("now-7d", "now"),
+                null,
+                List.of("failed_login"),
+                null,
+                null,
+                null,
+                null);
     }
 
     private static void assertRange(Map<String, Object> searchSpec, String expectedGte, String expectedLte) {
@@ -152,6 +225,44 @@ class SearchPlanCompilerTest {
     private static void assertTimestampDescSort(Map<String, Object> searchSpec) {
         assertThat(searchSpec.get("sort"))
                 .isEqualTo(List.of(Map.of("timestamp", Map.of("order", "desc"))));
+    }
+
+    @SuppressWarnings("unchecked")
+    private static void assertTermsAggregation(
+            Map<String, Object> searchSpec,
+            String aggregationName,
+            String expectedField,
+            int expectedSize) {
+        var aggs = (Map<String, Object>) searchSpec.get("aggs");
+        var aggregation = (Map<String, Object>) aggs.get(aggregationName);
+        var terms = (Map<String, Object>) aggregation.get("terms");
+
+        assertThat(terms).containsEntry("field", expectedField);
+        assertThat(terms).containsEntry("size", expectedSize);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static void assertDateHistogram(Map<String, Object> searchSpec, String expectedFixedInterval) {
+        var aggs = (Map<String, Object>) searchSpec.get("aggs");
+        var aggregation = (Map<String, Object>) aggs.get("events_over_time");
+        var dateHistogram = (Map<String, Object>) aggregation.get("date_histogram");
+
+        assertThat(dateHistogram).containsEntry("field", "timestamp");
+        assertThat(dateHistogram).containsEntry("fixed_interval", expectedFixedInterval);
+        assertThat(dateHistogram).containsEntry("order", Map.of("_key", "asc"));
+    }
+
+    private static void assertNoUnsupportedQueries(Map<String, Object> searchSpec) {
+        var rendered = searchSpec.toString();
+
+        assertThat(rendered)
+                .doesNotContain("script")
+                .doesNotContain("wildcard")
+                .doesNotContain("query_string");
+    }
+
+    private static void assertNoKeywordFields(Map<String, Object> searchSpec) {
+        assertThat(searchSpec.toString()).doesNotContain(".keyword");
     }
 
     @SuppressWarnings("unchecked")
