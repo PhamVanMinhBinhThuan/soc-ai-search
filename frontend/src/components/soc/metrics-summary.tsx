@@ -1,0 +1,143 @@
+import {
+  Activity,
+  Database,
+  Gauge,
+  ShieldAlert,
+  ShieldCheck,
+  Sparkles,
+} from 'lucide-react'
+
+import { Card } from '@/components/ui/card'
+import type { SearchMode } from '@/types/soc'
+
+const metricStyles = [
+  {
+    icon: Gauge,
+    iconClass: 'text-cyan-300 bg-cyan-400/10 ring-cyan-400/25',
+  },
+  {
+    icon: Activity,
+    iconClass: 'text-rose-300 bg-rose-400/10 ring-rose-400/25',
+  },
+  {
+    icon: ShieldCheck,
+    iconClass: 'text-emerald-300 bg-emerald-400/10 ring-emerald-400/25',
+  },
+  {
+    icon: Sparkles,
+    iconClass: 'text-violet-300 bg-violet-400/10 ring-violet-400/25',
+  },
+  {
+    icon: Database,
+    iconClass: 'text-sky-300 bg-sky-400/10 ring-sky-400/25',
+  },
+]
+
+export function MetricsSummary({
+  mode,
+  total,
+  llmLatencyMs,
+  searchLatencyMs,
+  summary,
+}: {
+  mode: SearchMode
+  total: number
+  llmLatencyMs: number
+  searchLatencyMs: number
+  summary: string
+}) {
+  const metrics = [
+    {
+      label: 'Query Type',
+      value: mode.toUpperCase(),
+      hint: mode === 'search' ? 'event list response' : 'bucket response',
+    },
+    {
+      label: 'Total Events',
+      value: total.toLocaleString('en-US'),
+      hint: 'matched documents',
+    },
+    {
+      label: 'SearchPlan',
+      value: 'VALIDATED',
+      hint: 'guardrails passed',
+    },
+    {
+      label: 'LLM Latency',
+      value: `${llmLatencyMs}ms`,
+      hint: 'NL -> SearchPlan',
+    },
+    {
+      label: 'Execution',
+      value: `${searchLatencyMs}ms`,
+      hint: 'Elasticsearch query',
+    },
+  ]
+  const isBruteForceRisk =
+    summary.toLowerCase().includes('failed login') ||
+    summary.toLowerCase().includes('brute force')
+
+  return (
+    <section className="space-y-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        {metrics.map((metric, index) => {
+          const meta = metricStyles[index]
+          const Icon = meta.icon
+          return (
+            <Card
+              key={metric.label}
+              className="min-w-0 flex-row items-center gap-3 rounded-xl border border-border bg-card p-3 py-3"
+            >
+              <span
+                className={`flex size-9 shrink-0 items-center justify-center rounded-lg ring-1 ${meta.iconClass}`}
+              >
+                <Icon className="size-4" />
+              </span>
+              <span className="min-w-0">
+                <span className="block text-[10px] tracking-[0.16em] text-muted-foreground uppercase">
+                  {metric.label}
+                </span>
+                <span
+                  className={
+                    metric.value === 'VALIDATED'
+                      ? 'block truncate font-mono text-base font-semibold text-emerald-300'
+                      : 'block truncate font-mono text-base font-semibold text-foreground'
+                  }
+                >
+                  {metric.value}
+                </span>
+                <span className="block truncate text-[10px] text-muted-foreground">
+                  {metric.hint}
+                </span>
+              </span>
+            </Card>
+          )
+        })}
+      </div>
+
+      <div className="ai-summary-glow relative overflow-hidden rounded-xl p-px">
+        <div className="relative rounded-[11px] bg-card/95 px-4 py-3 backdrop-blur-sm">
+          <div className="mb-2 flex flex-wrap items-center gap-2 text-sm font-semibold">
+            <Sparkles className="size-4 text-violet-300" />
+            Mock AI Summary
+            <span className="hidden flex-1 sm:block" />
+            {isBruteForceRisk ? (
+              <span className="risk-badge-pulse inline-flex items-center gap-1 rounded-full border border-rose-400/40 bg-rose-500/15 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-rose-200">
+                <ShieldAlert className="size-3" />
+                BRUTE FORCE RISK
+              </span>
+            ) : null}
+            <span
+              className={
+                'rounded-full border border-violet-400/25 bg-violet-500/10 px-2 py-0.5 text-[10px] font-medium text-violet-200'
+              }
+            >
+              STATIC DEMO DATA
+            </span>
+          </div>
+          <p className="text-sm leading-6 text-foreground/85">{summary}</p>
+        </div>
+      </div>
+    </section>
+  )
+}

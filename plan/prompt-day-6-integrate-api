@@ -1,0 +1,47 @@
+Giao diện Mock UI cho SOC Dashboard hiện đã hoạt động hoàn hảo về mặt bố cục. Nhiệm vụ hiện tại của bạn là Tích hợp API thực tế (API Integration) và xử lý các trạng thái UI nâng cao.
+
+I. Thông tin API Backend (Base URL: http://localhost:8081):
+
+POST /api/v1/search: Nhận body { "question": "...", "page": 0, "size": 20 } -> Trả về DTO đa hình (Search hoặc Aggregation).
+
+GET /api/v1/events/{event_id}: Trả về chi tiết một event (gồm metadata và raw log).
+
+II. Yêu cầu triển khai chi tiết:
+
+1. Tạo API Client & Cơ chế Fallback (Rất quan trọng):
+
+Tạo một file service riêng (ví dụ: src/services/api.ts) để quản lý các hàm gọi fetch/axios.
+
+Tích hợp biến môi trường VITE_USE_MOCK.
+
+Nếu VITE_USE_MOCK=true: Trả về dữ liệu mock (giữ lại các state mock hiện tại của UI).
+
+Nếu VITE_USE_MOCK=false (Mặc định): Gọi trực tiếp xuống Backend API.
+
+2. Xử lý Trạng thái UI (UI States):
+
+Quản lý chặt chẽ 4 trạng thái khi gọi API POST /api/v1/search:
+
+Loading: Đang chờ API -> Hiển thị Skeleton cho biểu đồ/bảng và loading spinner ở nút Search.
+
+Empty Result: Trả về 200 nhưng total = 0 hoặc mảng rỗng -> Hiển thị component báo không tìm thấy kết quả.
+
+Error: Catch lỗi HTTP (như Elasticsearch/LLM unavailable) -> Hiển thị Alert component của shadcn báo lỗi màu đỏ, có nút Retry.
+
+Success: Render dữ liệu đa hình vào UI.
+
+3. Map Dữ liệu Đa hình (Polymorphism):
+
+Nếu mode = search: Tự động kích hoạt tab 'Raw Events', ẩn/disable tab 'Analytics View'. Đổ mảng events vào bảng.
+
+Nếu mode = aggregation: Tự động kích hoạt tab 'Analytics View', ẩn/disable tab 'Raw Events'. Đổ aggregation_results vào Recharts và Summary Table. Map thông tin cấu hình từ chart_metadata.
+
+4. Tích hợp Event Detail Drawer:
+
+Khi user click vào nút 'View' hoặc click vào một hàng (row) trên bảng Raw Events, hãy trích xuất event_id.
+
+Gọi API GET /api/v1/events/{event_id}. Trong lúc chờ, hiển thị Skeleton loading bên trong Drawer. Khi có dữ liệu, đổ metadata vào tab [Formatted Fields] và log thô vào tab [Raw Log].
+
+5. Hoàn thiện Trải nghiệm (UX):
+
+Các 'Suggested Queries' (Câu hỏi gợi ý) bên dưới ô tìm kiếm: Khi user click vào, input value thay đổi và tự động kích hoạt gọi API ngay lập tức mà không cần nhấn thêm nút Search

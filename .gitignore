@@ -12,3 +12,5 @@ generated-data/
 .idea/
 .vscode/
 *.iml
+
+soc-ai-search/
