@@ -167,7 +167,7 @@ export function SocSidebar() {
             )}
           >
             <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-secondary text-xs font-semibold ring-1 ring-border">
-              SA
+              DA
             </div>
             <div
               className={cn(
@@ -177,9 +177,9 @@ export function SocSidebar() {
                   : 'ml-0 w-0 opacity-0',
               )}
             >
-              <span className="block text-xs font-medium">SOC Analyst</span>
+              <span className="block text-xs font-medium">demo-analyst</span>
               <span className="block text-[10px] text-muted-foreground">
-                Local demo
+                SOC Analyst
               </span>
             </div>
           </div>

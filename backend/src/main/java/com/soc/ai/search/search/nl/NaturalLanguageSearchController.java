@@ -60,6 +60,14 @@ public class NaturalLanguageSearchController {
                 .body(new SearchErrorResponse(exception.getMessage(), exception.errors()));
     }
 
+    @ExceptionHandler(NaturalLanguageSearchRateLimitException.class)
+    ResponseEntity<SearchErrorResponse> handleNaturalLanguageSearchRateLimit(
+            NaturalLanguageSearchRateLimitException exception) {
+        return ResponseEntity
+                .status(HttpStatus.TOO_MANY_REQUESTS)
+                .body(new SearchErrorResponse(exception.getMessage(), exception.errors()));
+    }
+
     @ExceptionHandler(SearchExecutionException.class)
     ResponseEntity<SearchErrorResponse> handleSearchExecution() {
         return ResponseEntity

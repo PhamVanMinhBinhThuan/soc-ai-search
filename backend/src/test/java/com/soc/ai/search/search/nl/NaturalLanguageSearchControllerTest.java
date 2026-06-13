@@ -156,6 +156,28 @@ class NaturalLanguageSearchControllerTest {
     }
 
     @Test
+    void returnsTooManyRequestsWhenGeminiQuotaIsExceeded() throws Exception {
+        when(naturalLanguageSearchService.search(any(NaturalLanguageSearchRequest.class)))
+                .thenThrow(new NaturalLanguageSearchRateLimitException(
+                        "LLM rate limit exceeded",
+                        List.of("Gemini quota exceeded; retry later"),
+                        new RuntimeException()));
+
+        mockMvc.perform(post("/api/v1/search")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "question": "failed login china",
+                                  "page": 0,
+                                  "size": 5
+                                }
+                                """))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(jsonPath("$.message").value("LLM rate limit exceeded"))
+                .andExpect(jsonPath("$.errors[0]").value("Gemini quota exceeded; retry later"));
+    }
+
+    @Test
     void returnsControlledErrorWhenSearchDependencyFails() throws Exception {
         when(naturalLanguageSearchService.search(any(NaturalLanguageSearchRequest.class)))
                 .thenThrow(new SearchExecutionException("Failed to execute Elasticsearch search", new RuntimeException()));

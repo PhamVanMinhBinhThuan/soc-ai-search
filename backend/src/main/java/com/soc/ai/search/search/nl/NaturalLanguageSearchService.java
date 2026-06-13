@@ -6,6 +6,7 @@ import java.util.List;
 import com.soc.ai.search.llm.LlmClient;
 import com.soc.ai.search.llm.LlmResponse;
 import com.soc.ai.search.llm.LlmSearchPlanRequest;
+import com.soc.ai.search.llm.gemini.GeminiRateLimitException;
 import com.soc.ai.search.llm.prompt.SearchPlanJsonParseException;
 import com.soc.ai.search.llm.prompt.SearchPlanJsonParser;
 import com.soc.ai.search.llm.prompt.SearchPlanPromptBuilder;
@@ -14,10 +15,14 @@ import com.soc.ai.search.search.execution.SearchPlanExecutor;
 import com.soc.ai.search.search.execution.SearchPlanSearchResponse;
 import com.soc.ai.search.search.plan.SearchMode;
 import com.soc.ai.search.search.plan.SearchPlan;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 @Service
 public class NaturalLanguageSearchService {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(NaturalLanguageSearchService.class);
 
     private final SearchPlanPromptBuilder promptBuilder;
     private final LlmClient llmClient;
@@ -44,6 +49,9 @@ public class NaturalLanguageSearchService {
         try {
             searchPlan = parseWithRequestPagination(initialLlmResponse.content(), request);
         } catch (SearchPlanJsonParseException initialException) {
+            LOGGER.warn(
+                    "Initial LLM SearchPlan output failed validation; attempting one repair: {}",
+                    initialException.errors());
             var repairResponse = callLlm(promptBuilder.buildRepairSearchPlanRequest(
                     request.question(),
                     initialLlmResponse.content(),
@@ -133,6 +141,11 @@ public class NaturalLanguageSearchService {
     private LlmResponse callLlm(LlmSearchPlanRequest request) {
         try {
             return llmClient.generateSearchPlan(request);
+        } catch (GeminiRateLimitException exception) {
+            throw new NaturalLanguageSearchRateLimitException(
+                    "LLM rate limit exceeded",
+                    List.of("Gemini quota exceeded; retry later or check the Google AI Studio quota and billing settings"),
+                    exception);
         } catch (RuntimeException exception) {
             throw new NaturalLanguageSearchException(
                     "LLM provider is unavailable",

@@ -135,7 +135,7 @@ PostgreSQL table đề xuất: `search_query_logs`.
 | `question` | `text` | Câu hỏi tự nhiên gốc |
 | `search_plan` | `jsonb` nullable | Plan đã validate; có thể chưa tồn tại nếu lỗi sớm |
 | `generated_dsl` | `jsonb` nullable | Elasticsearch Query DSL đã compile; có thể chưa tồn tại nếu lỗi sớm |
-| `mode` | `varchar` nullable | `search` hoặc `aggregate` |
+| `mode` | `varchar` nullable | `search` hoặc `aggregation` |
 | `result_count` | `bigint` | Số kết quả |
 | `latency_ms` | `bigint` | Thời gian xử lý |
 | `status` | `varchar` | `SUCCESS` hoặc `FAILED` |
@@ -437,23 +437,34 @@ Việc cần làm:
 
 Việc cần làm:
 
-- Lưu recent history và audit log vào bảng `search_query_logs`.
-- Lưu user, timestamp, câu hỏi, `SearchPlan`, DSL, mode, result count, latency, status và error nếu có.
-- Hiển thị lịch sử truy vấn gần đây.
-- Tạo payload summary nhỏ gọn:
+- Lưu mọi search attempt đã đi vào orchestration của `POST /api/v1/search` vào bảng `search_query_logs`, gồm cả thành công và thất bại.
+- Dùng identity demo cấu hình được, mặc định `demo-analyst`; chưa tạo bảng user hoặc auth.
+- Lưu query ID, timestamp, câu hỏi, `SearchPlan`, DSL, mode, result count, latency, status, lỗi đã sanitize và summary nếu có.
+- Trả `query_id` trong response search thành công để frontend có thể export lại đúng truy vấn.
+- Tạo endpoint recent history và audit log từ cùng bảng `search_query_logs`; không tạo thêm table trong MVP.
+- Tạo payload summary nhỏ gọn từ Elasticsearch:
   - tổng số event;
   - top user, host và IP;
   - phân bố severity;
-  - tối đa một số sample event đã giới hạn.
-- Gọi LLM để sinh summary 3-5 câu; có fallback summary deterministic nếu LLM lỗi.
-- Làm export CSV có giới hạn dòng.
-- Kiểm tra mọi endpoint bằng Swagger.
+  - tối đa 5 sample event, chỉ chứa field cần thiết.
+- Không gửi `raw`, toàn bộ event result hoặc secret vào LLM khi summarization.
+- Gọi LLM tối đa một lần để sinh summary 3-5 câu; nếu LLM lỗi, hết quota hoặc output rỗng thì dùng fallback deterministic và vẫn trả kết quả search thành công.
+- Lưu summary cuối cùng vào `search_query_logs` và hiển thị phía trên kết quả trên frontend.
+- Làm export CSV theo `query_id`:
+  - search mode export các field event chính, không export raw log mặc định;
+  - aggregation mode export `key,value`;
+  - giới hạn tối đa 10.000 dòng;
+  - chạy lại `SearchPlan` đã validate được lưu trong PostgreSQL, không nhận DSL tùy ý từ client.
+- Hiển thị recent query history trên frontend và cho phép chạy lại câu hỏi.
+- Kiểm tra history, audit, summary và CSV bằng backend test, Swagger và smoke test ngày 7.
 
 **Điều kiện hoàn thành:**
 
 - Demo end-to-end đủ các mục chức năng của MVP trên máy local.
 - LLM lỗi không làm hỏng kết quả search.
-- CSV tải xuống và mở được.
+- Mỗi search attempt đã vào orchestration, dù thành công hoặc thất bại, đều có audit record phù hợp.
+- Recent history hiển thị được câu hỏi, trạng thái, mode, result count và thời gian.
+- CSV tải xuống, mở được và không vượt quá 10.000 dòng dữ liệu.
 
 ### Ngày 8 - Thứ Hai, 08/06: Docker Compose production và EC2
 

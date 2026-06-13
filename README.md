@@ -125,9 +125,9 @@ Gemini là provider hosted dùng cho integration thật khi cần gọi Cloud LL
 
 ```env
 LLM_PROVIDER=gemini
-LLM_BASE_URL=https://generativelanguage.googleapis.com
+LLM_BASE_URL=https://generativelanguage.googleapis.com/v1beta
 LLM_API_KEY=your-api-key
-LLM_MODEL=gemini-model-name
+LLM_MODEL=gemini-2.5-flash
 LLM_TIMEOUT_MS=10000
 LLM_MAX_ATTEMPTS=2
 ```

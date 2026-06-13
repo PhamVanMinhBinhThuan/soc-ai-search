@@ -1,4 +1,11 @@
-import { Check, Code2, Copy, FileJson2 } from 'lucide-react'
+import {
+  Check,
+  ChevronDown,
+  ChevronUp,
+  Code2,
+  Copy,
+  FileJson2,
+} from 'lucide-react'
 import { useState } from 'react'
 
 import { Button } from '@/components/ui/button'
@@ -54,6 +61,7 @@ export function QueryTransparency({
   searchPlan: SearchPlanDto
   generatedDsl: Record<string, unknown>
 }) {
+  const [expanded, setExpanded] = useState(true)
   const [copyState, setCopyState] = useState<{
     type: 'plan' | 'dsl'
     status: 'copied' | 'failed'
@@ -80,38 +88,55 @@ export function QueryTransparency({
         <span className="hidden text-xs text-muted-foreground sm:inline">
           Natural Language -&gt; Elasticsearch DSL
         </span>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="ml-auto"
+          aria-expanded={expanded}
+          aria-controls="query-transparency-content"
+          onClick={() => setExpanded((current) => !current)}
+        >
+          {expanded ? <ChevronUp /> : <ChevronDown />}
+          {expanded ? 'Collapse' : 'Expand'}
+        </Button>
       </div>
 
-      <Tabs defaultValue="plan" className="p-3 sm:p-4">
-        <TabsList className="max-w-full overflow-x-auto">
-          <TabsTrigger value="plan">
-            <FileJson2 />
-            Validated SearchPlan
-          </TabsTrigger>
-          <TabsTrigger value="dsl">
-            <Code2 />
-            Compiled DSL
-          </TabsTrigger>
-        </TabsList>
-        <TabsContent value="plan">
-          <JsonViewer
-            value={searchPlan}
-            copyStatus={
-              copyState?.type === 'plan' ? copyState.status : 'idle'
-            }
-            onCopy={() => void copyValue('plan', searchPlan)}
-          />
-        </TabsContent>
-        <TabsContent value="dsl">
-          <JsonViewer
-            value={generatedDsl}
-            copyStatus={
-              copyState?.type === 'dsl' ? copyState.status : 'idle'
-            }
-            onCopy={() => void copyValue('dsl', generatedDsl)}
-          />
-        </TabsContent>
-      </Tabs>
+      {expanded ? (
+        <Tabs
+          id="query-transparency-content"
+          defaultValue="plan"
+          className="p-3 sm:p-4"
+        >
+          <TabsList className="max-w-full overflow-x-auto">
+            <TabsTrigger value="plan">
+              <FileJson2 />
+              Validated SearchPlan
+            </TabsTrigger>
+            <TabsTrigger value="dsl">
+              <Code2 />
+              Compiled DSL
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent value="plan">
+            <JsonViewer
+              value={searchPlan}
+              copyStatus={
+                copyState?.type === 'plan' ? copyState.status : 'idle'
+              }
+              onCopy={() => void copyValue('plan', searchPlan)}
+            />
+          </TabsContent>
+          <TabsContent value="dsl">
+            <JsonViewer
+              value={generatedDsl}
+              copyStatus={
+                copyState?.type === 'dsl' ? copyState.status : 'idle'
+              }
+              onCopy={() => void copyValue('dsl', generatedDsl)}
+            />
+          </TabsContent>
+        </Tabs>
+      ) : null}
     </Card>
   )
 }

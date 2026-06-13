@@ -81,6 +81,22 @@ class GeminiLlmClientTest {
     }
 
     @Test
+    void mapsHttp429ToRateLimitExceptionWithoutRetrying() {
+        var fixture = fixture(properties());
+        fixture.server.expect(once(), requestTo(containsString(":generateContent")))
+                .andRespond(withStatus(HttpStatus.TOO_MANY_REQUESTS)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body("{\"error\":{\"message\":\"quota exceeded\"}}"));
+
+        assertThatThrownBy(() -> fixture.client.generateSearchPlan(request()))
+                .isInstanceOf(GeminiRateLimitException.class)
+                .hasMessage("Gemini rate limit exceeded")
+                .hasMessageNotContaining(API_KEY);
+
+        fixture.server.verify();
+    }
+
+    @Test
     void rejectsResponseWithoutCandidateText() {
         var fixture = fixture(properties());
         fixture.server.expect(once(), requestTo(containsString(":generateContent")))
@@ -90,6 +106,20 @@ class GeminiLlmClientTest {
                 .isInstanceOf(GeminiLlmException.class)
                 .hasMessage("Gemini response does not contain text output");
 
+        fixture.server.verify();
+    }
+
+    @Test
+    void parsesJsonResponseEvenWhenProviderUsesOctetStreamContentType() {
+        var fixture = fixture(properties());
+        fixture.server.expect(once(), requestTo(containsString(":generateContent")))
+                .andRespond(withSuccess(
+                        geminiResponse("{\\\"mode\\\":\\\"search\\\"}"),
+                        MediaType.APPLICATION_OCTET_STREAM));
+
+        var response = fixture.client.generateSearchPlan(request());
+
+        assertThat(response.content()).isEqualTo("{\"mode\":\"search\"}");
         fixture.server.verify();
     }
 
