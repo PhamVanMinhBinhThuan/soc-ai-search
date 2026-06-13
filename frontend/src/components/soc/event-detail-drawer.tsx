@@ -1,4 +1,5 @@
 import {
+  AlertCircle,
   Braces,
   Clock3,
   Database,
@@ -6,6 +7,7 @@ import {
   Globe2,
   Monitor,
   Network,
+  RotateCcw,
   UserRound,
 } from 'lucide-react'
 import type { ReactNode } from 'react'
@@ -13,19 +15,30 @@ import type { ReactNode } from 'react'
 import { CountryCode } from '@/components/soc/country-code'
 import { SeverityBadge } from '@/components/soc/severity-badge'
 import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from '@/components/ui/alert'
+import { Button } from '@/components/ui/button'
+import {
   Sheet,
   SheetContent,
   SheetDescription,
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet'
+import { Skeleton } from '@/components/ui/skeleton'
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
 } from '@/components/ui/tabs'
-import type { EventDetailResponseDto } from '@/types/soc'
+import type {
+  DetailStatus,
+  EventDetailResponseDto,
+  UiError,
+} from '@/types/soc'
 
 type FieldProps = {
   icon: typeof Clock3
@@ -56,12 +69,18 @@ function Field({ icon: Icon, label, value, mono = true }: FieldProps) {
 
 export function EventDetailDrawer({
   event,
+  status,
+  error,
   open,
   onOpenChange,
+  onRetry,
 }: {
   event: EventDetailResponseDto | null
+  status: DetailStatus
+  error: UiError | null
   open: boolean
   onOpenChange: (open: boolean) => void
+  onRetry: () => void
 }) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -72,11 +91,69 @@ export function EventDetailDrawer({
             {event ? <SeverityBadge severity={event.severity} /> : null}
           </SheetTitle>
           <SheetDescription className="font-mono">
-            <span className="break-all">event_id: {event?.event_id ?? '-'}</span>
+            <span className="break-all">
+              event_id: {event?.event_id ?? 'loading'}
+            </span>
           </SheetDescription>
         </SheetHeader>
 
-        {event ? (
+        {status === 'loading' ? (
+          <div
+            className="flex min-h-0 flex-1 flex-col gap-4 p-5"
+            aria-live="polite"
+            aria-busy="true"
+          >
+            <span className="sr-only">Loading event detail</span>
+            <Skeleton className="h-9 w-full" />
+            <div className="rounded-xl border border-border bg-background/40 p-4">
+              {Array.from({ length: 8 }, (_, index) => (
+                <div
+                  key={index}
+                  className="flex items-center justify-between gap-4 border-b border-border/70 py-3 last:border-0"
+                >
+                  <Skeleton className="h-3 w-24" />
+                  <Skeleton className="h-3 w-40" />
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
+        {status === 'error' && error ? (
+          <div className="p-5">
+            <Alert className="border-rose-400/30 bg-rose-500/8">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="mt-0.5 size-5 shrink-0 text-rose-300" />
+                <div className="min-w-0 flex-1">
+                  <AlertTitle className="text-rose-200">
+                    {error.status === 404
+                      ? 'Event not found'
+                      : 'Event detail unavailable'}
+                  </AlertTitle>
+                  <AlertDescription>
+                    {error.message}
+                    {error.status > 0 ? (
+                      <span className="mt-2 block font-mono text-[11px]">
+                        HTTP status: {error.status}
+                      </span>
+                    ) : null}
+                  </AlertDescription>
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-4"
+                onClick={onRetry}
+              >
+                <RotateCcw />
+                Retry
+              </Button>
+            </Alert>
+          </div>
+        ) : null}
+
+        {status === 'success' && event ? (
           <Tabs
             defaultValue="formatted"
             className="min-h-0 flex-1 overflow-hidden p-3 sm:p-5"

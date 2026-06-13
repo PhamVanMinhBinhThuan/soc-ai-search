@@ -44,7 +44,7 @@ export function MetricsSummary({
   total: number
   llmLatencyMs: number
   searchLatencyMs: number
-  summary: string
+  summary: string | null
 }) {
   const metrics = [
     {
@@ -74,8 +74,8 @@ export function MetricsSummary({
     },
   ]
   const isBruteForceRisk =
-    summary.toLowerCase().includes('failed login') ||
-    summary.toLowerCase().includes('brute force')
+    summary?.toLowerCase().includes('failed login') ||
+    summary?.toLowerCase().includes('brute force')
 
   return (
     <section className="space-y-3">
@@ -115,29 +115,27 @@ export function MetricsSummary({
         })}
       </div>
 
-      <div className="ai-summary-glow relative overflow-hidden rounded-xl p-px">
-        <div className="relative rounded-[11px] bg-card/95 px-4 py-3 backdrop-blur-sm">
-          <div className="mb-2 flex flex-wrap items-center gap-2 text-sm font-semibold">
-            <Sparkles className="size-4 text-violet-300" />
-            Mock AI Summary
-            <span className="hidden flex-1 sm:block" />
-            {isBruteForceRisk ? (
-              <span className="risk-badge-pulse inline-flex items-center gap-1 rounded-full border border-rose-400/40 bg-rose-500/15 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-rose-200">
-                <ShieldAlert className="size-3" />
-                BRUTE FORCE RISK
+      {summary ? (
+        <div className="ai-summary-glow relative overflow-hidden rounded-xl p-px">
+          <div className="relative rounded-[11px] bg-card/95 px-4 py-3 backdrop-blur-sm">
+            <div className="mb-2 flex flex-wrap items-center gap-2 text-sm font-semibold">
+              <Sparkles className="size-4 text-violet-300" />
+              Mock AI Summary
+              <span className="hidden flex-1 sm:block" />
+              {isBruteForceRisk ? (
+                <span className="risk-badge-pulse inline-flex items-center gap-1 rounded-full border border-rose-400/40 bg-rose-500/15 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-rose-200">
+                  <ShieldAlert className="size-3" />
+                  BRUTE FORCE RISK
+                </span>
+              ) : null}
+              <span className="rounded-full border border-violet-400/25 bg-violet-500/10 px-2 py-0.5 text-[10px] font-medium text-violet-200">
+                STATIC DEMO DATA
               </span>
-            ) : null}
-            <span
-              className={
-                'rounded-full border border-violet-400/25 bg-violet-500/10 px-2 py-0.5 text-[10px] font-medium text-violet-200'
-              }
-            >
-              STATIC DEMO DATA
-            </span>
+            </div>
+            <p className="text-sm leading-6 text-foreground/85">{summary}</p>
           </div>
-          <p className="text-sm leading-6 text-foreground/85">{summary}</p>
         </div>
-      </div>
+      ) : null}
     </section>
   )
 }

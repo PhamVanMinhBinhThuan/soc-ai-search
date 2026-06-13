@@ -6,7 +6,7 @@ import type {
 } from '@/types/soc'
 
 export function formatTimeRangeLabel(searchPlan: SearchPlanDto) {
-  const timestamp = searchPlan.filters.timestamp
+  const timestamp = searchPlan.filters?.timestamp
 
   if (!timestamp) {
     return 'All Time'

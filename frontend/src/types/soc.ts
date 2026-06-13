@@ -2,6 +2,12 @@ export type SearchMode = 'search' | 'aggregation'
 
 export type Severity = 'low' | 'medium' | 'high' | 'critical'
 
+export type AggregationType =
+  | 'count'
+  | 'group_by'
+  | 'top_n'
+  | 'date_histogram'
+
 export type SearchEventDto = {
   event_id: string
   timestamp: string
@@ -25,27 +31,29 @@ export type EventDetailResponseDto = SearchEventDto & {
   raw: string
 }
 
+export type SearchFiltersDto = {
+  timestamp?: {
+    from: string
+    to: string
+  } | null
+  severity?: Severity[] | null
+  event_type?: string[] | null
+  user?: string | null
+  host?: string | null
+  ip?: string | null
+  country_code?: string[] | null
+}
+
 export type SearchPlanDto = {
   mode: SearchMode
-  filters: {
-    timestamp?: {
-      from: string
-      to: string
-    }
-    severity?: Severity[]
-    event_type?: string[]
-    user?: string
-    host?: string
-    ip?: string
-    country_code?: string[]
-  }
-  aggregation?: {
-    type: 'count' | 'group_by' | 'top_n' | 'date_histogram'
-    field?: string
-    top_n?: number
-    interval?: 'minute' | 'hour' | 'day'
-  }
-  message_query?: string
+  filters: SearchFiltersDto | null
+  aggregation: {
+    type: AggregationType
+    field?: string | null
+    top_n?: number | null
+    interval?: 'minute' | 'hour' | 'day' | null
+  } | null
+  message_query: string | null
   page: number
   size: number
 }
@@ -58,6 +66,54 @@ export type ChartMetadataDto = {
   y_axis_label: string
 }
 
+export type NaturalLanguageSearchRequestDto = {
+  question: string
+  page: number
+  size: number
+}
+
+export type NaturalLanguageSearchResponseDto = {
+  original_question: string
+  mode: SearchMode
+  search_plan: SearchPlanDto
+  generated_dsl: Record<string, unknown>
+  total: number
+  page: number
+  size: number
+  total_pages: number
+  llm_latency_ms: number
+  search_latency_ms: number
+  latency_ms: number
+  aggregation_type: AggregationType | null
+  aggregation_results: AggregationResultItemDto[]
+  chart_metadata: ChartMetadataDto | null
+  events: SearchEventDto[]
+}
+
+export type SearchErrorResponseDto = {
+  message: string
+  errors: string[]
+}
+
+export type EventErrorResponseDto = {
+  message: string
+}
+
+export type RequestStatus =
+  | 'idle'
+  | 'loading'
+  | 'success'
+  | 'empty'
+  | 'error'
+
+export type DetailStatus = 'idle' | 'loading' | 'success' | 'error'
+
+export type UiError = {
+  status: number
+  message: string
+  errors: string[]
+}
+
 export type MockScenario = {
   question: string
   shortLabel: string
@@ -67,7 +123,7 @@ export type MockScenario = {
   search_latency_ms: number
   search_plan: SearchPlanDto
   generated_dsl: Record<string, unknown>
-  aggregation_type?: 'count' | 'group_by' | 'top_n' | 'date_histogram'
+  aggregation_type?: AggregationType
   aggregation_results: AggregationResultItemDto[]
   chart_metadata?: ChartMetadataDto
   events: SearchEventDto[]

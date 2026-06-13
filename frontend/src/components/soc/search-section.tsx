@@ -1,4 +1,9 @@
-import { CornerDownLeft, Search, Sparkles } from 'lucide-react'
+import {
+  CornerDownLeft,
+  LoaderCircle,
+  Search,
+  Sparkles,
+} from 'lucide-react'
 import type { FormEvent, KeyboardEvent } from 'react'
 
 import { Button } from '@/components/ui/button'
@@ -8,29 +13,27 @@ import type { MockScenario } from '@/types/soc'
 export function SearchSection({
   question,
   scenarios,
+  isLoading,
+  isMockMode,
   onQuestionChange,
-  onSelectScenario,
+  onSubmitQuestion,
+  onSelectSuggestion,
 }: {
   question: string
   scenarios: MockScenario[]
+  isLoading: boolean
+  isMockMode: boolean
   onQuestionChange: (question: string) => void
-  onSelectScenario: (scenario: MockScenario) => void
+  onSubmitQuestion: (question: string) => void
+  onSelectSuggestion: (question: string) => void
 }) {
-  const matchingScenario = scenarios.find(
-    (scenario) =>
-      scenario.question.trim().toLocaleLowerCase() ===
-      question.trim().toLocaleLowerCase(),
-  )
-
-  const runMock = () => {
-    if (matchingScenario) {
-      onSelectScenario(matchingScenario)
-    }
-  }
+  const canSubmit = question.trim().length > 0 && !isLoading
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    runMock()
+    if (canSubmit) {
+      onSubmitQuestion(question)
+    }
   }
 
   const handleQuestionKeyDown = (
@@ -38,12 +41,14 @@ export function SearchSection({
   ) => {
     if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
       event.preventDefault()
-      runMock()
+      if (canSubmit) {
+        onSubmitQuestion(question)
+      }
     }
   }
 
   return (
-    <section className="space-y-3" aria-label="Mock AI event search">
+    <section className="space-y-3" aria-label="AI event search">
       <form
         onSubmit={handleSubmit}
         className="group relative overflow-hidden rounded-xl border border-border bg-card p-px focus-within:border-violet-400/50 focus-within:shadow-[0_0_30px_-10px_#a78bfa]"
@@ -63,22 +68,24 @@ export function SearchSection({
           <div className="flex shrink-0 flex-col gap-2 sm:items-end">
             <Button
               type="submit"
-              disabled={!matchingScenario}
-              title={
-                matchingScenario
-                  ? 'Run selected mock scenario'
-                  : 'Choose one of the supported suggested queries'
-              }
+              disabled={!canSubmit}
+              title="Run natural-language search"
               className="bg-violet-500 text-white shadow-[0_0_18px_-6px_#a78bfa] hover:bg-violet-400"
             >
-              <Search />
-              Run Mock
+              {isLoading ? (
+                <LoaderCircle className="animate-spin" />
+              ) : (
+                <Search />
+              )}
+              {isLoading
+                ? 'Searching...'
+                : isMockMode
+                  ? 'Run Mock'
+                  : 'Search'}
             </Button>
             <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
               <CornerDownLeft className="size-3" />
-              {matchingScenario
-                ? 'Ctrl + Enter to run'
-                : 'Select a supported suggestion'}
+              Ctrl + Enter to run
             </span>
           </div>
         </div>
@@ -91,7 +98,8 @@ export function SearchSection({
             key={scenario.question}
             type="button"
             aria-pressed={question === scenario.question}
-            onClick={() => onSelectScenario(scenario)}
+            disabled={isLoading}
+            onClick={() => onSelectSuggestion(scenario.question)}
             className={
               question === scenario.question
                 ? 'rounded-full border border-violet-400/40 bg-violet-500/15 px-3 py-1.5 text-xs text-violet-200'

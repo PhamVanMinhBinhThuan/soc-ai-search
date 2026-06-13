@@ -2,6 +2,8 @@ import {
   BarChart3,
   CalendarDays,
   Check,
+  ChevronLeft,
+  ChevronRight,
   DatabaseZap,
   Download,
   FileSearch,
@@ -68,31 +70,31 @@ function EmptyModeState({
 }
 
 function AnalyticsView({
-  mode,
   aggregationResults,
   chartMetadata,
   summary,
 }: {
-  mode: SearchMode
   aggregationResults: AggregationResultItemDto[]
-  chartMetadata?: ChartMetadataDto
-  summary: string
+  chartMetadata: ChartMetadataDto | null
+  summary: string | null
 }) {
-  if (mode !== 'aggregation' || aggregationResults.length === 0) {
+  if (aggregationResults.length === 0) {
     return (
       <EmptyModeState
         icon={BarChart3}
-        title="No aggregation payload in Search Mode"
-        description="The backend contract returns events or aggregation_results, never both. Choose an aggregation suggested query to populate this view."
+        title="No aggregation buckets"
+        description="The aggregation completed without returning any matching buckets."
       />
     )
   }
 
   return (
     <div className="space-y-4">
-      <div className="rounded-xl border border-violet-400/20 bg-violet-500/5 px-4 py-3">
-        <p className="text-xs leading-5 text-foreground/80">{summary}</p>
-      </div>
+      {summary ? (
+        <div className="rounded-xl border border-violet-400/20 bg-violet-500/5 px-4 py-3">
+          <p className="text-xs leading-5 text-foreground/80">{summary}</p>
+        </div>
+      ) : null}
 
       <Suspense
         fallback={
@@ -101,7 +103,7 @@ function AnalyticsView({
       >
         <AggregationChart
           data={aggregationResults}
-          metadata={chartMetadata}
+          metadata={chartMetadata ?? undefined}
         />
       </Suspense>
 
@@ -139,25 +141,34 @@ function AnalyticsView({
 }
 
 function RawEventsView({
-  mode,
   events,
   total,
+  page,
+  size,
+  totalPages,
+  onPageChange,
   onSelectEvent,
 }: {
-  mode: SearchMode
   events: SearchEventDto[]
   total: number
+  page: number
+  size: number
+  totalPages: number
+  onPageChange: (page: number) => void
   onSelectEvent: (eventId: string) => void
 }) {
-  if (mode !== 'search' || events.length === 0) {
+  if (events.length === 0) {
     return (
       <EmptyModeState
         icon={FileSearch}
-        title="No raw event payload in Aggregation Mode"
-        description="Aggregation responses contain buckets and chart metadata. Choose a search suggested query to render event rows."
+        title="No matching events"
+        description="The search completed successfully, but no raw events matched the validated SearchPlan."
       />
     )
   }
+
+  const firstResult = page * size + 1
+  const lastResult = Math.min(page * size + events.length, total)
 
   return (
     <div className="overflow-hidden rounded-xl border border-border">
@@ -232,17 +243,37 @@ function RawEventsView({
 
       <div className="flex items-center justify-between border-t border-border px-4 py-3">
         <span className="text-xs text-muted-foreground">
-          Showing{' '}
-          <span className="font-mono text-foreground">{events.length}</span>{' '}
-          mock rows from{' '}
+          Showing <span className="font-mono text-foreground">{firstResult}</span>
+          {' - '}
+          <span className="font-mono text-foreground">{lastResult}</span>
+          {' of '}
           <span className="font-mono text-foreground">
             {total.toLocaleString('en-US')}
-          </span>{' '}
-          matched events
+          </span>
         </span>
-        <span className="hidden text-[11px] text-muted-foreground sm:inline">
-          Backend pagination is not connected in mock mode
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="hidden font-mono text-[11px] text-muted-foreground sm:inline">
+            Page {page + 1} of {Math.max(totalPages, 1)}
+          </span>
+          <Button
+            variant="outline"
+            size="icon-sm"
+            aria-label="Previous result page"
+            disabled={page <= 0}
+            onClick={() => onPageChange(page - 1)}
+          >
+            <ChevronLeft />
+          </Button>
+          <Button
+            variant="outline"
+            size="icon-sm"
+            aria-label="Next result page"
+            disabled={page + 1 >= totalPages}
+            onClick={() => onPageChange(page + 1)}
+          >
+            <ChevronRight />
+          </Button>
+        </div>
       </div>
     </div>
   )
@@ -256,19 +287,29 @@ export function ResultTabs({
   chartMetadata,
   summary,
   total,
+  page,
+  size,
+  totalPages,
+  isMockMode,
   timeRangeLabel,
   onTabChange,
+  onPageChange,
   onSelectEvent,
 }: {
   mode: SearchMode
   activeTab: ResultTab
   events: SearchEventDto[]
   aggregationResults: AggregationResultItemDto[]
-  chartMetadata?: ChartMetadataDto
-  summary: string
+  chartMetadata: ChartMetadataDto | null
+  summary: string | null
   total: number
+  page: number
+  size: number
+  totalPages: number
+  isMockMode: boolean
   timeRangeLabel: string
   onTabChange: (tab: ResultTab) => void
+  onPageChange: (page: number) => void
   onSelectEvent: (eventId: string) => void
 }) {
   const [exported, setExported] = useState(false)
@@ -291,17 +332,19 @@ export function ResultTabs({
         <span className="rounded-lg border border-border bg-background/35 px-3 py-1.5 text-xs text-muted-foreground">
           Mode: <strong className="text-foreground">{mode}</strong>
         </span>
-        <Button
-          variant="outline"
-          size="sm"
-          className="ml-auto"
-          disabled={!hasExportData}
-          onClick={exportCsv}
-          aria-live="polite"
-        >
-          {exported ? <Check className="text-emerald-300" /> : <Download />}
-          {exported ? 'Exported' : 'Export Mock CSV'}
-        </Button>
+        {isMockMode ? (
+          <Button
+            variant="outline"
+            size="sm"
+            className="ml-auto"
+            disabled={!hasExportData}
+            onClick={exportCsv}
+            aria-live="polite"
+          >
+            {exported ? <Check className="text-emerald-300" /> : <Download />}
+            {exported ? 'Exported' : 'Export Mock CSV'}
+          </Button>
+        ) : null}
       </div>
 
       <Tabs
@@ -310,11 +353,11 @@ export function ResultTabs({
         className="p-3 sm:p-4"
       >
         <TabsList className="max-w-full overflow-x-auto">
-          <TabsTrigger value="analytics">
+          <TabsTrigger value="analytics" disabled={mode !== 'aggregation'}>
             <BarChart3 />
             Analytics View
           </TabsTrigger>
-          <TabsTrigger value="raw">
+          <TabsTrigger value="raw" disabled={mode !== 'search'}>
             <DatabaseZap />
             Raw Events
           </TabsTrigger>
@@ -322,7 +365,6 @@ export function ResultTabs({
 
         <TabsContent value="analytics">
           <AnalyticsView
-            mode={mode}
             aggregationResults={aggregationResults}
             chartMetadata={chartMetadata}
             summary={summary}
@@ -330,9 +372,12 @@ export function ResultTabs({
         </TabsContent>
         <TabsContent value="raw">
           <RawEventsView
-            mode={mode}
             events={events}
             total={total}
+            page={page}
+            size={size}
+            totalPages={totalPages}
+            onPageChange={onPageChange}
             onSelectEvent={onSelectEvent}
           />
         </TabsContent>
