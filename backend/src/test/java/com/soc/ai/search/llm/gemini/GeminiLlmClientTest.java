@@ -15,6 +15,7 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 import com.soc.ai.search.llm.LlmProperties;
 import com.soc.ai.search.llm.LlmProvider;
 import com.soc.ai.search.llm.LlmSearchPlanRequest;
+import com.soc.ai.search.llm.LlmSummaryRequest;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -124,6 +125,41 @@ class GeminiLlmClientTest {
     }
 
     @Test
+    void generatesPlainTextSummaryWithOneProviderCall() {
+        var fixture = fixture(properties());
+        fixture.server.expect(once(), requestTo(containsString(":generateContent")))
+                .andExpect(content().string(containsString("bounded payload")))
+                .andExpect(content().string(not(containsString("responseMimeType"))))
+                .andRespond(withSuccess(
+                        geminiResponse("First sentence. Second sentence. Third sentence."),
+                        MediaType.APPLICATION_JSON));
+
+        var response = fixture.client.generateSummary(new LlmSummaryRequest(
+                "summary system prompt",
+                "bounded payload"));
+
+        assertThat(response.content()).isEqualTo("First sentence. Second sentence. Third sentence.");
+        assertThat(response.latencyMs()).isGreaterThanOrEqualTo(0);
+        fixture.server.verify();
+    }
+
+    @Test
+    void summaryHttpFailureIsNotRetried() {
+        var fixture = fixture(properties());
+        fixture.server.expect(once(), requestTo(containsString(":generateContent")))
+                .andRespond(withStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body("{\"error\":{\"message\":\"temporary\"}}"));
+
+        assertThatThrownBy(() -> fixture.client.generateSummary(new LlmSummaryRequest(
+                "summary prompt",
+                "bounded payload")))
+                .isInstanceOf(GeminiLlmException.class);
+
+        fixture.server.verify();
+    }
+
+    @Test
     void failsClearlyWhenRequiredConfigIsMissing() {
         var fixture = fixture(new LlmProperties(
                 LlmProvider.GEMINI,
@@ -131,6 +167,7 @@ class GeminiLlmClientTest {
                 "",
                 "",
                 10_000,
+                5_000,
                 2));
 
         assertThatThrownBy(() -> fixture.client.generateSearchPlan(request()))
@@ -142,7 +179,8 @@ class GeminiLlmClientTest {
     private TestFixture fixture(LlmProperties properties) {
         var builder = RestClient.builder();
         var server = MockRestServiceServer.bindTo(builder).build();
-        var client = new GeminiLlmClient(builder.build(), properties);
+        var restClient = builder.build();
+        var client = new GeminiLlmClient(restClient, restClient, properties);
 
         return new TestFixture(client, server);
     }
@@ -154,6 +192,7 @@ class GeminiLlmClientTest {
                 API_KEY,
                 MODEL,
                 10_000,
+                5_000,
                 2);
     }
 

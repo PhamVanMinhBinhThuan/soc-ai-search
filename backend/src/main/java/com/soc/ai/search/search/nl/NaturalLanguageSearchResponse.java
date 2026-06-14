@@ -12,6 +12,7 @@ import com.soc.ai.search.search.execution.SearchEvent;
 import com.soc.ai.search.search.plan.AggregationType;
 import com.soc.ai.search.search.plan.SearchMode;
 import com.soc.ai.search.search.plan.SearchPlan;
+import com.soc.ai.search.summary.SummarySource;
 
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public record NaturalLanguageSearchResponse(
@@ -26,7 +27,10 @@ public record NaturalLanguageSearchResponse(
         long totalPages,
         long llmLatencyMs,
         long searchLatencyMs,
+        long summaryLatencyMs,
         long latencyMs,
+        String summary,
+        SummarySource summarySource,
         AggregationType aggregationType,
         List<AggregationResultItem> aggregationResults,
         ChartMetadata chartMetadata,

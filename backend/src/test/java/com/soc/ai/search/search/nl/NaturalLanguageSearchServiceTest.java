@@ -3,6 +3,7 @@ package com.soc.ai.search.search.nl;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -38,6 +39,9 @@ import com.soc.ai.search.search.plan.HistogramInterval;
 import com.soc.ai.search.search.plan.SearchMode;
 import com.soc.ai.search.search.plan.SearchPlan;
 import com.soc.ai.search.search.validation.SearchPlanValidator;
+import com.soc.ai.search.summary.ResultSummaryService;
+import com.soc.ai.search.summary.SummaryResult;
+import com.soc.ai.search.summary.SummarySource;
 import jakarta.validation.Validation;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -54,6 +58,8 @@ class NaturalLanguageSearchServiceTest {
     private final SearchAuditService searchAuditService = org.mockito.Mockito.mock(SearchAuditService.class);
     private final UUID queryId = UUID.fromString("11111111-1111-1111-1111-111111111111");
     private final QueryIdGenerator queryIdGenerator = () -> queryId;
+    private final ResultSummaryService resultSummaryService =
+            org.mockito.Mockito.mock(ResultSummaryService.class);
 
     @Test
     void mockProviderSearchesFailedLoginChinaWithoutApiKey() {
@@ -72,7 +78,20 @@ class NaturalLanguageSearchServiceTest {
         assertThat(response.generatedDsl()).isInstanceOf(Map.class);
         assertThat(response.llmLatencyMs()).isGreaterThanOrEqualTo(0);
         assertThat(response.searchLatencyMs()).isEqualTo(30);
-        assertThat(response.latencyMs()).isGreaterThanOrEqualTo(response.llmLatencyMs() + response.searchLatencyMs());
+        assertThat(response.summaryLatencyMs()).isEqualTo(4);
+        assertThat(response.summarySource()).isEqualTo(SummarySource.LLM);
+        assertThat(response.summary()).contains("First summary sentence");
+        assertThat(response.latencyMs()).isGreaterThanOrEqualTo(
+                response.llmLatencyMs() + response.searchLatencyMs() + response.summaryLatencyMs());
+
+        verify(searchAuditService, times(1)).saveSuccess(
+                eq(queryId),
+                eq("failed login china"),
+                eq(response.searchPlan()),
+                eq(response.generatedDsl()),
+                eq(response.total()),
+                eq(response.latencyMs()),
+                eq(response.summary()));
     }
 
     @ParameterizedTest(name = "{0}")
@@ -257,7 +276,8 @@ class NaturalLanguageSearchServiceTest {
                         any(SearchPlan.class),
                         org.mockito.ArgumentMatchers.<Map<String, Object>>any(),
                         org.mockito.ArgumentMatchers.anyLong(),
-                        org.mockito.ArgumentMatchers.anyLong());
+                        org.mockito.ArgumentMatchers.anyLong(),
+                        any(String.class));
         var service = service(new MockLlmClient(mockProperties()), executor);
 
         assertThatThrownBy(() -> service.search(new NaturalLanguageSearchRequest("failed login china", 0, 5)))
@@ -296,13 +316,29 @@ class NaturalLanguageSearchServiceTest {
     }
 
     private NaturalLanguageSearchService service(LlmClient llmClient, SearchPlanExecutor executor) {
+        when(resultSummaryService.summarizeSearch(
+                any(String.class),
+                any(SearchPlan.class),
+                any(SearchPlanSearchResponse.class)))
+                .thenReturn(new SummaryResult(
+                        "First summary sentence. Second summary sentence. Third summary sentence.",
+                        SummarySource.LLM,
+                        4));
+        when(resultSummaryService.summarizeAggregation(
+                any(String.class),
+                any(AggregationSearchResponse.class)))
+                .thenReturn(new SummaryResult(
+                        "First aggregation sentence. Second aggregation sentence. Third aggregation sentence.",
+                        SummarySource.LLM,
+                        4));
         return new NaturalLanguageSearchService(
                 promptBuilder,
                 llmClient,
                 parser,
                 executor,
                 searchAuditService,
-                queryIdGenerator);
+                queryIdGenerator,
+                resultSummaryService);
     }
 
     private LlmProperties mockProperties() {
@@ -312,6 +348,7 @@ class NaturalLanguageSearchServiceTest {
                 null,
                 null,
                 10_000,
+                5_000,
                 2);
     }
 

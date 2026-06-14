@@ -19,6 +19,8 @@ import com.soc.ai.search.search.execution.SearchPlanExecutor;
 import com.soc.ai.search.search.execution.SearchPlanSearchResponse;
 import com.soc.ai.search.search.plan.SearchMode;
 import com.soc.ai.search.search.plan.SearchPlan;
+import com.soc.ai.search.summary.ResultSummaryService;
+import com.soc.ai.search.summary.SummaryResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -34,6 +36,7 @@ public class NaturalLanguageSearchService {
     private final SearchPlanExecutor searchPlanExecutor;
     private final SearchAuditService searchAuditService;
     private final QueryIdGenerator queryIdGenerator;
+    private final ResultSummaryService resultSummaryService;
 
     public NaturalLanguageSearchService(
             SearchPlanPromptBuilder promptBuilder,
@@ -41,13 +44,15 @@ public class NaturalLanguageSearchService {
             SearchPlanJsonParser searchPlanJsonParser,
             SearchPlanExecutor searchPlanExecutor,
             SearchAuditService searchAuditService,
-            QueryIdGenerator queryIdGenerator) {
+            QueryIdGenerator queryIdGenerator,
+            ResultSummaryService resultSummaryService) {
         this.promptBuilder = promptBuilder;
         this.llmClient = llmClient;
         this.searchPlanJsonParser = searchPlanJsonParser;
         this.searchPlanExecutor = searchPlanExecutor;
         this.searchAuditService = searchAuditService;
         this.queryIdGenerator = queryIdGenerator;
+        this.resultSummaryService = resultSummaryService;
     }
 
     public NaturalLanguageSearchResponse search(NaturalLanguageSearchRequest request) {
@@ -75,19 +80,34 @@ public class NaturalLanguageSearchService {
 
             if (searchPlan.mode() == SearchMode.AGGREGATION) {
                 var aggregationResponse = searchPlanExecutor.aggregate(searchPlan);
+                var summaryResult = resultSummaryService.summarizeAggregation(
+                        request.question(),
+                        aggregationResponse);
                 var response = aggregationResponse(
                         queryId,
                         request,
                         searchPlan,
                         llmLatencyMs,
                         startedAt,
-                        aggregationResponse);
+                        aggregationResponse,
+                        summaryResult);
                 saveSuccessAudit(queryId, request, searchPlan, response);
                 return response;
             }
 
             var searchResponse = searchPlanExecutor.search(searchPlan);
-            var response = searchResponse(queryId, request, searchPlan, llmLatencyMs, startedAt, searchResponse);
+            var summaryResult = resultSummaryService.summarizeSearch(
+                    request.question(),
+                    searchPlan,
+                    searchResponse);
+            var response = searchResponse(
+                    queryId,
+                    request,
+                    searchPlan,
+                    llmLatencyMs,
+                    startedAt,
+                    searchResponse,
+                    summaryResult);
             saveSuccessAudit(queryId, request, searchPlan, response);
             return response;
         } catch (AuditPersistenceException exception) {
@@ -104,9 +124,12 @@ public class NaturalLanguageSearchService {
             SearchPlan searchPlan,
             long llmLatencyMs,
             long startedAt,
-            SearchPlanSearchResponse searchResponse) {
+            SearchPlanSearchResponse searchResponse,
+            SummaryResult summaryResult) {
         var searchLatencyMs = searchResponse.latencyMs();
-        var latencyMs = Math.max(elapsedMs(startedAt), llmLatencyMs + searchLatencyMs);
+        var latencyMs = Math.max(
+                elapsedMs(startedAt),
+                llmLatencyMs + searchLatencyMs + summaryResult.latencyMs());
 
         return new NaturalLanguageSearchResponse(
                 queryId,
@@ -120,7 +143,10 @@ public class NaturalLanguageSearchService {
                 searchResponse.totalPages(),
                 llmLatencyMs,
                 searchLatencyMs,
+                summaryResult.latencyMs(),
                 latencyMs,
+                summaryResult.summary(),
+                summaryResult.source(),
                 null,
                 List.of(),
                 null,
@@ -133,9 +159,12 @@ public class NaturalLanguageSearchService {
             SearchPlan searchPlan,
             long llmLatencyMs,
             long startedAt,
-            AggregationSearchResponse aggregationResponse) {
+            AggregationSearchResponse aggregationResponse,
+            SummaryResult summaryResult) {
         var searchLatencyMs = aggregationResponse.latencyMs();
-        var latencyMs = Math.max(elapsedMs(startedAt), llmLatencyMs + searchLatencyMs);
+        var latencyMs = Math.max(
+                elapsedMs(startedAt),
+                llmLatencyMs + searchLatencyMs + summaryResult.latencyMs());
 
         return new NaturalLanguageSearchResponse(
                 queryId,
@@ -149,7 +178,10 @@ public class NaturalLanguageSearchService {
                 0,
                 llmLatencyMs,
                 searchLatencyMs,
+                summaryResult.latencyMs(),
                 latencyMs,
+                summaryResult.summary(),
+                summaryResult.source(),
                 aggregationResponse.aggregationType(),
                 aggregationResponse.aggregationResults(),
                 aggregationResponse.chartMetadata(),
@@ -168,7 +200,8 @@ public class NaturalLanguageSearchService {
                     searchPlan,
                     response.generatedDsl(),
                     response.total(),
-                    response.latencyMs());
+                    response.latencyMs(),
+                    response.summary());
         } catch (AuditPersistenceException exception) {
             throw new AuditPersistenceException("Search completed but audit persistence failed", exception);
         }

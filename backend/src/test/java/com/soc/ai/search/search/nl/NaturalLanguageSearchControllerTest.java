@@ -25,6 +25,7 @@ import com.soc.ai.search.search.plan.SearchFilters;
 import com.soc.ai.search.search.plan.SearchMode;
 import com.soc.ai.search.search.plan.SearchPlan;
 import com.soc.ai.search.search.plan.TimeRange;
+import com.soc.ai.search.summary.SummarySource;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -68,7 +69,10 @@ class NaturalLanguageSearchControllerTest {
                 .andExpect(jsonPath("$.total_pages").value(1))
                 .andExpect(jsonPath("$.llm_latency_ms").value(7))
                 .andExpect(jsonPath("$.search_latency_ms").value(12))
-                .andExpect(jsonPath("$.latency_ms").value(20))
+                .andExpect(jsonPath("$.summary_latency_ms").value(3))
+                .andExpect(jsonPath("$.latency_ms").value(22))
+                .andExpect(jsonPath("$.summary").value("First sentence. Second sentence. Third sentence."))
+                .andExpect(jsonPath("$.summary_source").value("llm"))
                 .andExpect(jsonPath("$.events[0].event_id").value("seed-42-1"));
     }
 
@@ -232,7 +236,10 @@ class NaturalLanguageSearchControllerTest {
                 1,
                 7,
                 12,
-                20,
+                3,
+                22,
+                "First sentence. Second sentence. Third sentence.",
+                SummarySource.LLM,
                 null,
                 List.of(),
                 null,
@@ -267,7 +274,10 @@ class NaturalLanguageSearchControllerTest {
                 0,
                 7,
                 12,
-                20,
+                3,
+                22,
+                "First sentence. Second sentence. Third sentence.",
+                SummarySource.LLM,
                 AggregationType.GROUP_BY,
                 List.of(new AggregationResultItem("admin", 10)),
                 new ChartMetadata(ChartType.BAR, "user", "Count"),

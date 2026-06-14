@@ -7,6 +7,7 @@ import com.soc.ai.search.llm.LlmClient;
 import com.soc.ai.search.llm.LlmProperties;
 import com.soc.ai.search.llm.LlmResponse;
 import com.soc.ai.search.llm.LlmSearchPlanRequest;
+import com.soc.ai.search.llm.LlmSummaryRequest;
 
 public class MockLlmClient implements LlmClient {
 
@@ -23,6 +24,16 @@ public class MockLlmClient implements LlmClient {
         var latencyMs = (System.nanoTime() - startedAt) / 1_000_000;
 
         return new LlmResponse(content, properties.effectiveModel(), latencyMs);
+    }
+
+    @Override
+    public LlmResponse generateSummary(LlmSummaryRequest request) {
+        var startedAt = System.nanoTime();
+        var summary = "The query results were summarized from the validated SOC dataset. "
+                + "The response highlights the total volume and the most relevant entities or buckets. "
+                + "Analysts should use the displayed events and generated query details for further investigation.";
+        var latencyMs = (System.nanoTime() - startedAt) / 1_000_000;
+        return new LlmResponse(summary, properties.effectiveModel(), latencyMs);
     }
 
     private String contentFor(String question) {

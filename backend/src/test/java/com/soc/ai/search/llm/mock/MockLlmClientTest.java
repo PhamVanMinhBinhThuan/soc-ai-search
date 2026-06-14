@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.soc.ai.search.llm.LlmProperties;
 import com.soc.ai.search.llm.LlmProvider;
 import com.soc.ai.search.llm.LlmSearchPlanRequest;
+import com.soc.ai.search.llm.LlmSummaryRequest;
 import com.soc.ai.search.llm.prompt.SearchPlanJsonParseException;
 import com.soc.ai.search.llm.prompt.SearchPlanJsonParser;
 import com.soc.ai.search.search.plan.AggregationType;
@@ -31,6 +32,7 @@ class MockLlmClientTest {
             null,
             null,
             10_000,
+            5_000,
             2));
     private final SearchPlanJsonParser parser = new SearchPlanJsonParser(
             new ObjectMapper(),
@@ -113,6 +115,16 @@ class MockLlmClientTest {
         assertThat(response.content()).contains("unsupported_question");
         assertThatThrownBy(() -> parser.parseWithPaginationOverride(response.content(), 0, 5))
                 .isInstanceOf(SearchPlanJsonParseException.class);
+    }
+
+    @Test
+    void returnsDeterministicPlainTextSummaryWithoutApiKey() {
+        var response = client.generateSummary(new LlmSummaryRequest("summary prompt", "bounded payload"));
+
+        assertThat(response.content())
+                .doesNotContain("```", "<ul>", "{")
+                .contains("validated SOC dataset");
+        assertThat(response.latencyMs()).isGreaterThanOrEqualTo(0);
     }
 
     @Test

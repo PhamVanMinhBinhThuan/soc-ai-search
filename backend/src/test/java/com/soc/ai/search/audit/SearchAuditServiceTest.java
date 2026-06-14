@@ -32,7 +32,7 @@ class SearchAuditServiceTest {
         var plan = searchPlan();
         var dsl = Map.<String, Object>of("query", Map.of("match_all", Map.of()), "size", 5);
 
-        service.saveSuccess(queryId, "failed login china", plan, dsl, 12, 30);
+        service.saveSuccess(queryId, "failed login china", plan, dsl, 12, 30, "Three sentence summary.");
 
         var captor = ArgumentCaptor.forClass(SearchQueryLog.class);
         verify(persistenceService).save(captor.capture());
@@ -46,6 +46,8 @@ class SearchAuditServiceTest {
         assertThat(log.getSearchPlan()).isNotNull();
         assertThat(objectMapper.treeToValue(log.getSearchPlan(), SearchPlan.class)).isEqualTo(plan);
         assertThat(log.getGeneratedDsl().path("size").asInt()).isEqualTo(5);
+        assertThat(log.getSummary()).isEqualTo("Three sentence summary.");
+        assertThat(log.getLatencyMs()).isEqualTo(30);
     }
 
     @Test
@@ -58,7 +60,8 @@ class SearchAuditServiceTest {
                 searchPlan(),
                 oversizedDsl,
                 1,
-                10);
+                10,
+                "Summary.");
 
         var captor = ArgumentCaptor.forClass(SearchQueryLog.class);
         verify(persistenceService).save(captor.capture());

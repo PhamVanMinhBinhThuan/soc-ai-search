@@ -12,6 +12,7 @@ class LlmPropertiesTest {
             .withPropertyValues(
                     "app.llm.provider=mock",
                     "app.llm.timeout-ms=10000",
+                    "app.llm.summary-timeout-ms=5000",
                     "app.llm.max-attempts=2");
 
     @Test
@@ -21,6 +22,7 @@ class LlmPropertiesTest {
 
             assertThat(properties.provider()).isEqualTo(LlmProvider.MOCK);
             assertThat(properties.timeoutMs()).isEqualTo(10_000);
+            assertThat(properties.summaryTimeoutMs()).isEqualTo(5_000);
             assertThat(properties.maxAttempts()).isEqualTo(2);
             assertThat(context).hasSingleBean(LlmClient.class);
         });

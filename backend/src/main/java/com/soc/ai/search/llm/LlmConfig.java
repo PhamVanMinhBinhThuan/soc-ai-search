@@ -24,14 +24,22 @@ public class LlmConfig {
     @Bean
     @ConditionalOnProperty(prefix = "app.llm", name = "provider", havingValue = "gemini")
     LlmClient geminiLlmClient(RestClient.Builder restClientBuilder, LlmProperties properties) {
-        var requestFactory = new SimpleClientHttpRequestFactory();
-        requestFactory.setConnectTimeout(Duration.ofMillis(properties.timeoutMs()));
-        requestFactory.setReadTimeout(Duration.ofMillis(properties.timeoutMs()));
-
-        var restClient = restClientBuilder
-                .requestFactory(requestFactory)
+        var searchPlanClient = restClientBuilder
+                .clone()
+                .requestFactory(requestFactory(properties.timeoutMs()))
+                .build();
+        var summaryClient = restClientBuilder
+                .clone()
+                .requestFactory(requestFactory(properties.summaryTimeoutMs()))
                 .build();
 
-        return new GeminiLlmClient(restClient, properties);
+        return new GeminiLlmClient(searchPlanClient, summaryClient, properties);
+    }
+
+    private SimpleClientHttpRequestFactory requestFactory(long timeoutMs) {
+        var requestFactory = new SimpleClientHttpRequestFactory();
+        requestFactory.setConnectTimeout(Duration.ofMillis(timeoutMs));
+        requestFactory.setReadTimeout(Duration.ofMillis(timeoutMs));
+        return requestFactory;
     }
 }

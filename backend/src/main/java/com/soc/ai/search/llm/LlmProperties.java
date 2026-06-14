@@ -13,6 +13,7 @@ public record LlmProperties(
         String apiKey,
         String model,
         @Min(1_000) long timeoutMs,
+        @Min(1_000) long summaryTimeoutMs,
         @Min(1) int maxAttempts) {
 
     public String effectiveModel() {

@@ -13,6 +13,7 @@ import com.soc.ai.search.llm.LlmClient;
 import com.soc.ai.search.llm.LlmProperties;
 import com.soc.ai.search.llm.LlmResponse;
 import com.soc.ai.search.llm.LlmSearchPlanRequest;
+import com.soc.ai.search.llm.LlmSummaryRequest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.slf4j.Logger;
@@ -31,11 +32,16 @@ public class GeminiLlmClient implements LlmClient {
     private static final Logger LOGGER = LoggerFactory.getLogger(GeminiLlmClient.class);
     private static final ObjectMapper RESPONSE_MAPPER = new ObjectMapper();
 
-    private final RestClient restClient;
+    private final RestClient searchPlanRestClient;
+    private final RestClient summaryRestClient;
     private final LlmProperties properties;
 
-    public GeminiLlmClient(RestClient restClient, LlmProperties properties) {
-        this.restClient = restClient;
+    public GeminiLlmClient(
+            RestClient searchPlanRestClient,
+            RestClient summaryRestClient,
+            LlmProperties properties) {
+        this.searchPlanRestClient = searchPlanRestClient;
+        this.summaryRestClient = summaryRestClient;
         this.properties = properties;
     }
 
@@ -48,7 +54,11 @@ public class GeminiLlmClient implements LlmClient {
 
         for (var attempt = 1; attempt <= maxAttempts; attempt++) {
             try {
-                var responseJson = callGemini(request);
+                var responseJson = callGemini(
+                        searchPlanRestClient,
+                        request.systemPrompt(),
+                        request.userQuestion(),
+                        true);
                 var content = extractText(responseJson);
                 var model = extractModel(responseJson);
                 return new LlmResponse(content, model, elapsedMs(startedAt));
@@ -86,13 +96,41 @@ public class GeminiLlmClient implements LlmClient {
         throw new GeminiLlmException("Gemini provider is unavailable");
     }
 
-    private JsonNode callGemini(LlmSearchPlanRequest request) {
+    @Override
+    public LlmResponse generateSummary(LlmSummaryRequest request) {
+        validateConfiguration();
+        var startedAt = System.nanoTime();
+
+        try {
+            var responseJson = callGemini(
+                    summaryRestClient,
+                    request.systemPrompt(),
+                    request.userContent(),
+                    false);
+            return new LlmResponse(
+                    extractText(responseJson),
+                    extractModel(responseJson),
+                    elapsedMs(startedAt));
+        } catch (RestClientResponseException exception) {
+            throw mapResponseException(exception);
+        } catch (ResourceAccessException exception) {
+            throw new GeminiLlmException("Gemini summary request timed out or is unavailable", exception);
+        } catch (RestClientException exception) {
+            throw new GeminiLlmException("Gemini summary request failed", exception);
+        }
+    }
+
+    private JsonNode callGemini(
+            RestClient restClient,
+            String systemPrompt,
+            String userContent,
+            boolean jsonOutput) {
         var responseBytes = restClient.post()
                 .uri(generateContentUri())
                 .header(HttpHeaders.USER_AGENT, USER_AGENT)
                 .header(API_KEY_HEADER, properties.apiKey())
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(buildRequestBody(request))
+                .body(buildRequestBody(systemPrompt, userContent, jsonOutput))
                 .retrieve()
                 .body(byte[].class);
 
@@ -108,15 +146,23 @@ public class GeminiLlmClient implements LlmClient {
         }
     }
 
-    private Map<String, Object> buildRequestBody(LlmSearchPlanRequest request) {
+    private Map<String, Object> buildRequestBody(
+            String systemPrompt,
+            String userContent,
+            boolean jsonOutput) {
+        var generationConfig = new java.util.LinkedHashMap<String, Object>();
+        generationConfig.put("temperature", 0.1);
+        if (jsonOutput) {
+            generationConfig.put("responseMimeType", MediaType.APPLICATION_JSON_VALUE);
+        }
+
         return Map.of(
                 "systemInstruction", Map.of(
-                        "parts", List.of(Map.of("text", request.systemPrompt()))),
+                        "parts", List.of(Map.of("text", systemPrompt))),
                 "contents", List.of(Map.of(
                         "role", "user",
-                        "parts", List.of(Map.of("text", request.userQuestion())))),
-                "generationConfig", Map.of(
-                        "responseMimeType", MediaType.APPLICATION_JSON_VALUE));
+                        "parts", List.of(Map.of("text", userContent)))),
+                "generationConfig", generationConfig);
     }
 
     private URI generateContentUri() {

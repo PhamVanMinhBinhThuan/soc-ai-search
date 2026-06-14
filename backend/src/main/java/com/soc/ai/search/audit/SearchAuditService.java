@@ -40,7 +40,8 @@ public class SearchAuditService {
             SearchPlan searchPlan,
             Map<String, Object> generatedDsl,
             long resultCount,
-            long latencyMs) {
+            long latencyMs,
+            String summary) {
         persistenceService.save(new SearchQueryLog(
                 queryId,
                 properties.demoUserIdentity(),
@@ -52,7 +53,7 @@ public class SearchAuditService {
                 latencyMs,
                 AuditStatus.SUCCESS,
                 null,
-                null,
+                summary,
                 Instant.now()));
     }
 
