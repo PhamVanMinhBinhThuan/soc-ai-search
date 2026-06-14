@@ -350,7 +350,51 @@ Kết quả review ngày 6:
 - Docker Compose local: PostgreSQL, Elasticsearch, backend và frontend healthy.
 - Search, pagination, event detail và ba aggregation demo hoạt động end-to-end.
 
-Ngày 6 chưa triển khai summary LLM thật, recent history, audit persistence hoặc backend CSV export. Nút CSV trong mock mode chỉ phục vụ kiểm tra UI; các chức năng thật này thuộc ngày 7. Password protection cho website public sẽ được cấu hình tại reverse proxy khi triển khai VPS/domain.
+Ngày 6 chưa triển khai summary LLM thật, recent history, audit persistence hoặc backend CSV export. Các chức năng backend này được bổ sung trong ngày 7. Password protection cho website public sẽ được cấu hình tại reverse proxy khi triển khai VPS/domain.
+
+### CSV export ngày 7
+
+Sau khi `POST /api/v1/search` trả về `query_id`, tải CSV bằng:
+
+```powershell
+New-Item -ItemType Directory -Force ".tmp" | Out-Null
+
+Invoke-WebRequest `
+  -Uri "http://localhost:8081/api/v1/search/{query_id}/export.csv" `
+  -OutFile ".tmp/search-export.csv"
+```
+
+Endpoint:
+
+```text
+GET /api/v1/search/{query_id}/export.csv
+```
+
+CSV search có header:
+
+```text
+event_id,timestamp,source,severity,event_type,user,host,ip,country_code,message
+```
+
+CSV aggregation có header:
+
+```text
+key,value
+```
+
+Quy tắc export:
+
+- chỉ export query `SUCCESS` thuộc `APP_DEMO_USER_IDENTITY` hiện tại;
+- backend đọc lại SearchPlan đã lưu, validate và chạy lại trên Elasticsearch;
+- client không được gửi DSL hoặc SearchPlan mới vào endpoint export;
+- search export theo batch 1.000 event và tối đa 10.000 dòng;
+- response có `X-Export-Truncated: true` khi kết quả hiện tại vượt 10.000 event;
+- `raw` không được export; `message` dài được giới hạn tối đa 4 KB mỗi cell;
+- file dùng UTF-8 BOM và RFC 4180 escaping để mở ổn định trên Excel Windows;
+- timeout Elasticsearch riêng cho export dùng `EXPORT_ES_TIMEOUT_MS`, mặc định `10000`;
+- export không tạo thêm record trong `search_query_logs`.
+
+Export là **live replay**, không phải frozen snapshot. File phản ánh dữ liệu Elasticsearch tại thời điểm tải và có thể khác `result_count` đã lưu khi query ban đầu chạy. Trong MVP không dùng PIT, Scroll API hoặc `search_after`; không nên chạy seed/ingest đồng thời khi kiểm tra export nhiều batch.
 
 ### SearchPlan endpoint ngày 3
 
