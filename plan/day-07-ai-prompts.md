@@ -67,8 +67,8 @@ Yêu cầu:
    - `com.soc.ai.search.audit`
    - `com.soc.ai.search.history`
 4. Map bảng `search_query_logs` bằng Spring Data JPA/Hibernate:
-   - `id`: UUID;
-   - `user_identity`;
+   - `id`: UUID, đồng thời chính là `query_id` của truy vấn;
+   - `user_identity`, map rõ bằng `@Column(name = "user_identity")`;
    - `question`;
    - `search_plan`: JSONB nullable;
    - `generated_dsl`: JSONB nullable;
@@ -83,18 +83,23 @@ Yêu cầu:
    - `SUCCESS`;
    - `FAILED`.
    Database vẫn lưu string rõ ràng.
-6. JSONB phải được lưu bằng mapping JSON có cấu trúc như `JsonNode` hoặc kiểu phù hợp với Hibernate 6. Không tự nối JSON bằng string và không tạo migration mới nếu schema V1 hiện tại đã đủ.
+6. JSONB phải được lưu bằng mapping JSON có cấu trúc, ưu tiên `JsonNode` với Hibernate 6, ví dụ `@JdbcTypeCode(SqlTypes.JSON)`. Không tự nối JSON bằng string, không thêm thư viện JSONB bên ngoài nếu Hibernate hiện tại đã hỗ trợ và không tạo migration mới nếu schema V1 hiện tại đã đủ.
    - luôn lưu `SearchPlan` đầy đủ nếu đã parse/validate thành công;
    - `generated_dsl` chỉ phục vụ debug và JSON đã serialize không được vượt 100 KB tính theo UTF-8 bytes;
+   - đo kích thước bằng serialized bytes, ví dụ `objectMapper.writeValueAsBytes(generatedDsl).length`, không dùng `String.length()`;
+   - serialize và kiểm tra kích thước DSL trước khi gán vào audit entity hoặc gọi repository;
    - nếu DSL vượt 100 KB, không truncate làm hỏng JSON: lưu `generated_dsl = null`, ghi warning nội bộ và vẫn tiếp tục response/audit;
    - không làm search thất bại chỉ vì DSL debug không được lưu.
 7. Thêm cấu hình:
    - `APP_DEMO_USER_IDENTITY`, mặc định `demo-analyst`;
    - cập nhật `application.properties`, `.env.example` và `docker-compose.yml`;
    - không hardcode identity ở nhiều service.
-8. Mỗi lần gọi `POST /api/v1/search` phải có một `query_id` UUID được tạo ở backend.
+8. Mỗi request đã đi vào `NaturalLanguageSearchService.search()` phải có một `query_id` UUID được tạo ở đầu orchestration. Request bị Spring Bean Validation hoặc JSON parsing chặn trước khi vào service có thể không có audit record.
+   - `search_query_logs.id` chính là `query_id`;
+   - không tạo thêm một UUID riêng cho response;
+   - history, audit và CSV API đều expose tên JSON/path là `query_id`, không expose `id` trong API contract.
 9. Truy vấn thành công phải lưu:
-   - identity;
+   - `user_identity` lấy từ cấu hình `APP_DEMO_USER_IDENTITY`;
    - original question;
    - validated SearchPlan;
    - generated DSL;
@@ -106,21 +111,37 @@ Yêu cầu:
    - created_at.
 10. Truy vấn thất bại ở LLM, parser/validator, Elasticsearch hoặc dependency phải cố gắng lưu FAILED:
     - lưu những field đã có tại thời điểm lỗi;
-    - `error_message` phải sanitize, giới hạn độ dài hợp lý và không chứa stack trace, API key, prompt đầy đủ hoặc secret;
+    - `error_message` phải sanitize và giới hạn tối đa 2.000 ký tự;
+    - chỉ lưu thông báo ngắn đã sanitize từ lỗi nghiệp vụ/root cause phù hợp;
+    - không dùng `ExceptionUtils.getStackTrace(...)` hoặc cách tương đương;
+    - không lưu exception class, stack trace, API key, prompt LLM đầy đủ, raw provider response, URL có query secret hoặc credential;
     - không lưu raw event.
 11. Không dùng AOP phức tạp. Giữ orchestration trong service rõ ràng và test được.
-12. Mở rộng response thành công của `/api/v1/search` có:
+12. Transaction boundary phải ngắn và rõ:
+    - không đặt `@Transactional` quanh toàn bộ flow LLM -> Elasticsearch -> PostgreSQL;
+    - không giữ database transaction mở trong lúc chờ network;
+    - mỗi thao tác lưu SUCCESS/FAILED dùng transaction PostgreSQL ngắn riêng tại audit persistence service;
+    - nếu dùng `REQUIRES_NEW`, method transaction phải nằm trong một Spring bean độc lập như `AuditPersistenceService`;
+    - không đặt method `REQUIRES_NEW` trong `NaturalLanguageSearchService` rồi gọi bằng self-invocation vì lời gọi nội bộ không đi qua Spring transaction proxy;
+    - không tạo abstraction phức tạp ngoài MVP.
+13. Quy tắc khi audit persistence lỗi:
+    - nếu search/aggregation đã thành công nhưng không thể lưu audit SUCCESS, trả HTTP 503 có kiểm soát vì MVP yêu cầu audit mọi query đã vào orchestration;
+    - response lỗi dùng message rõ như `Search completed but audit persistence failed`;
+    - nếu flow đã thất bại bởi LLM, parser/validator hoặc Elasticsearch và việc lưu FAILED cũng lỗi, giữ nguyên HTTP/message nghiệp vụ ban đầu; chỉ log thêm lỗi audit nội bộ;
+    - audit exception không được che mất lỗi `429`, `502` hoặc `503` ban đầu;
+    - không lộ stack trace hoặc thông tin PostgreSQL qua API.
+14. Mở rộng response thành công của `/api/v1/search` có:
     - `query_id`;
     - giữ nguyên toàn bộ contract ngày 4-6.
-13. Tạo API có pagination:
+15. Tạo API có pagination:
     - `GET /api/v1/search/history?page=0&size=20`
     - `GET /api/v1/audit-logs?page=0&size=50`
-14. Guardrail pagination:
+16. Guardrail pagination:
     - `page` mặc định 0 và phải `>= 0`;
     - history `size` mặc định 20, audit `size` mặc định 50;
     - `size` từ 1 đến 100;
     - response có `items`, `page`, `size`, `total`, `total_pages`.
-15. History chỉ lấy identity demo hiện tại, sắp xếp `created_at DESC`, mỗi item response gọn gồm:
+17. History chỉ lấy identity demo hiện tại, mỗi item response gọn gồm:
     - query_id;
     - question;
     - mode;
@@ -129,26 +150,40 @@ Yêu cầu:
     - status;
     - created_at.
     Không trả SearchPlan hoặc generated DSL trong history list.
-16. Audit endpoint dùng cùng table nhưng có thể trả thêm `user_identity` và `error_message` đã sanitize. Không trả raw prompt nội bộ, secret hoặc stack trace.
-17. Nếu PostgreSQL persistence lỗi, trả lỗi dependency có kiểm soát; không lộ stack trace qua API.
-18. Thêm Swagger/OpenAPI annotation hữu ích.
-19. Thêm test:
+18. History và audit endpoint đều bắt buộc sắp xếp ổn định theo `created_at DESC, id DESC`. Audit endpoint dùng cùng table nhưng có thể trả thêm `user_identity` và `error_message` đã sanitize. Không trả raw prompt nội bộ, secret hoặc stack trace.
+19. Thêm Swagger/OpenAPI annotation hữu ích.
+20. Thêm test:
     - save SUCCESS search;
     - save SUCCESS aggregation;
     - save FAILED khi LLM lỗi;
     - save FAILED khi Elasticsearch lỗi;
     - JSONB SearchPlan/DSL được round-trip đúng;
+    - entity map đúng cột PostgreSQL `user_identity`;
+    - `id` trong entity là cùng UUID được expose thành `query_id` trong search/history/audit;
+    - không tạo UUID thứ hai cho response;
     - DSL dưới hoặc bằng 100 KB được lưu;
     - DSL vượt 100 KB không bị truncate, được bỏ qua/null và không làm search thất bại;
-    - error message không chứa stack trace/secret;
+    - kích thước DSL được đo bằng UTF-8 serialized bytes;
+    - DSL vượt giới hạn được phát hiện trước khi gán vào entity/repository;
+    - error message tối đa 2.000 ký tự và không chứa stack trace/secret;
     - response search có query_id;
     - history sắp xếp mới nhất trước và lọc theo demo identity;
+    - hai record có cùng `created_at` vẫn phân trang ổn định theo `id DESC`;
+    - history và audit dùng cùng sort `created_at DESC, id DESC`;
     - history/audit trả pagination metadata đúng;
-    - page < 0 hoặc size ngoài 1-100 trả 400;
-    - audit endpoint trả status và error đã sanitize.
-20. Không thêm Testcontainers trong Day 7. Unit/controller test dùng mock; verify JSONB/PostgreSQL thật bằng Docker Compose local và smoke test.
-21. Chạy backend test. Nếu Docker đang chạy, gọi một search thành công và một request lỗi đã đi vào orchestration rồi kiểm tra record bằng API history/audit.
-22. Báo file đã tạo/sửa, lệnh verify và kết quả.
+    - history rỗng trả `items = []`, `total = 0`, `total_pages = 0`;
+    - `page = -1`, `size = 0` hoặc `size = 101` trả 400;
+    - audit endpoint trả status và error đã sanitize;
+    - search thành công nhưng lưu SUCCESS lỗi trả 503 với message `Search completed but audit persistence failed`;
+    - flow LLM lỗi và lưu FAILED cũng lỗi vẫn giữ lỗi LLM ban đầu;
+    - flow Elasticsearch lỗi và lưu FAILED cũng lỗi vẫn giữ lỗi Elasticsearch ban đầu;
+    - audit exception không che lỗi 429/502/503 ban đầu;
+    - nhiều orchestration liên tiếp tạo các `query_id` khác nhau, có thể test với khoảng 10 request hoặc mock/inject UUID generator;
+    - verify orchestration không giữ transaction PostgreSQL mở quanh lời gọi LLM/Elasticsearch;
+    - nếu dùng `REQUIRES_NEW`, verify persistence method nằm ở bean riêng và không phụ thuộc self-invocation.
+21. Không thêm Testcontainers trong Day 7. Unit/controller test dùng mock; verify JSONB/PostgreSQL thật bằng Docker Compose local và smoke test.
+22. Chạy backend test. Nếu Docker đang chạy, gọi một search thành công và một request lỗi đã đi vào orchestration rồi kiểm tra record bằng API history/audit.
+23. Báo file đã tạo/sửa, lệnh verify và kết quả.
 
 Không triển khai summary LLM, CSV hoặc frontend trong prompt này.
 ```
