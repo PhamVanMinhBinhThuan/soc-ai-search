@@ -2,6 +2,7 @@ package com.soc.ai.search.search.nl;
 
 import java.util.List;
 
+import com.soc.ai.search.audit.AuditPersistenceException;
 import com.soc.ai.search.search.execution.SearchErrorResponse;
 import com.soc.ai.search.search.execution.SearchExecutionException;
 import io.swagger.v3.oas.annotations.Operation;
@@ -73,5 +74,12 @@ public class NaturalLanguageSearchController {
         return ResponseEntity
                 .status(HttpStatus.SERVICE_UNAVAILABLE)
                 .body(new SearchErrorResponse("Search dependency is unavailable", List.of("Elasticsearch search failed")));
+    }
+
+    @ExceptionHandler(AuditPersistenceException.class)
+    ResponseEntity<SearchErrorResponse> handleAuditPersistence(AuditPersistenceException exception) {
+        return ResponseEntity
+                .status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(new SearchErrorResponse(exception.getMessage(), List.of("PostgreSQL audit persistence failed")));
     }
 }

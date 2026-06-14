@@ -2,7 +2,11 @@ package com.soc.ai.search.search.nl;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.UUID;
 
+import com.soc.ai.search.audit.AuditPersistenceException;
+import com.soc.ai.search.audit.QueryIdGenerator;
+import com.soc.ai.search.audit.SearchAuditService;
 import com.soc.ai.search.llm.LlmClient;
 import com.soc.ai.search.llm.LlmResponse;
 import com.soc.ai.search.llm.LlmSearchPlanRequest;
@@ -28,48 +32,74 @@ public class NaturalLanguageSearchService {
     private final LlmClient llmClient;
     private final SearchPlanJsonParser searchPlanJsonParser;
     private final SearchPlanExecutor searchPlanExecutor;
+    private final SearchAuditService searchAuditService;
+    private final QueryIdGenerator queryIdGenerator;
 
     public NaturalLanguageSearchService(
             SearchPlanPromptBuilder promptBuilder,
             LlmClient llmClient,
             SearchPlanJsonParser searchPlanJsonParser,
-            SearchPlanExecutor searchPlanExecutor) {
+            SearchPlanExecutor searchPlanExecutor,
+            SearchAuditService searchAuditService,
+            QueryIdGenerator queryIdGenerator) {
         this.promptBuilder = promptBuilder;
         this.llmClient = llmClient;
         this.searchPlanJsonParser = searchPlanJsonParser;
         this.searchPlanExecutor = searchPlanExecutor;
+        this.searchAuditService = searchAuditService;
+        this.queryIdGenerator = queryIdGenerator;
     }
 
     public NaturalLanguageSearchResponse search(NaturalLanguageSearchRequest request) {
+        UUID queryId = queryIdGenerator.generate();
         var startedAt = System.nanoTime();
-        var initialLlmResponse = callLlm(promptBuilder.buildSearchPlanRequest(request.question()));
-        var llmLatencyMs = initialLlmResponse.latencyMs();
-        SearchPlan searchPlan;
+        SearchPlan searchPlan = null;
 
         try {
-            searchPlan = parseWithRequestPagination(initialLlmResponse.content(), request);
-        } catch (SearchPlanJsonParseException initialException) {
-            LOGGER.warn(
-                    "Initial LLM SearchPlan output failed validation; attempting one repair: {}",
-                    initialException.errors());
-            var repairResponse = callLlm(promptBuilder.buildRepairSearchPlanRequest(
-                    request.question(),
-                    initialLlmResponse.content(),
-                    initialException.errors()));
-            llmLatencyMs += repairResponse.latencyMs();
-            searchPlan = parseRepairedOutput(repairResponse.content(), request);
-        }
+            var initialLlmResponse = callLlm(promptBuilder.buildSearchPlanRequest(request.question()));
+            var llmLatencyMs = initialLlmResponse.latencyMs();
 
-        if (searchPlan.mode() == SearchMode.AGGREGATION) {
-            var aggregationResponse = searchPlanExecutor.aggregate(searchPlan);
-            return aggregationResponse(request, searchPlan, llmLatencyMs, startedAt, aggregationResponse);
-        }
+            try {
+                searchPlan = parseWithRequestPagination(initialLlmResponse.content(), request);
+            } catch (SearchPlanJsonParseException initialException) {
+                LOGGER.warn(
+                        "Initial LLM SearchPlan output failed validation; attempting one repair: {}",
+                        initialException.errors());
+                var repairResponse = callLlm(promptBuilder.buildRepairSearchPlanRequest(
+                        request.question(),
+                        initialLlmResponse.content(),
+                        initialException.errors()));
+                llmLatencyMs += repairResponse.latencyMs();
+                searchPlan = parseRepairedOutput(repairResponse.content(), request);
+            }
 
-        var searchResponse = searchPlanExecutor.search(searchPlan);
-        return searchResponse(request, searchPlan, llmLatencyMs, startedAt, searchResponse);
+            if (searchPlan.mode() == SearchMode.AGGREGATION) {
+                var aggregationResponse = searchPlanExecutor.aggregate(searchPlan);
+                var response = aggregationResponse(
+                        queryId,
+                        request,
+                        searchPlan,
+                        llmLatencyMs,
+                        startedAt,
+                        aggregationResponse);
+                saveSuccessAudit(queryId, request, searchPlan, response);
+                return response;
+            }
+
+            var searchResponse = searchPlanExecutor.search(searchPlan);
+            var response = searchResponse(queryId, request, searchPlan, llmLatencyMs, startedAt, searchResponse);
+            saveSuccessAudit(queryId, request, searchPlan, response);
+            return response;
+        } catch (AuditPersistenceException exception) {
+            throw exception;
+        } catch (RuntimeException exception) {
+            saveFailureAudit(queryId, request, searchPlan, startedAt, exception);
+            throw exception;
+        }
     }
 
     private NaturalLanguageSearchResponse searchResponse(
+            UUID queryId,
             NaturalLanguageSearchRequest request,
             SearchPlan searchPlan,
             long llmLatencyMs,
@@ -79,6 +109,7 @@ public class NaturalLanguageSearchService {
         var latencyMs = Math.max(elapsedMs(startedAt), llmLatencyMs + searchLatencyMs);
 
         return new NaturalLanguageSearchResponse(
+                queryId,
                 request.question(),
                 searchResponse.mode(),
                 searchPlan,
@@ -97,6 +128,7 @@ public class NaturalLanguageSearchService {
     }
 
     private NaturalLanguageSearchResponse aggregationResponse(
+            UUID queryId,
             NaturalLanguageSearchRequest request,
             SearchPlan searchPlan,
             long llmLatencyMs,
@@ -106,6 +138,7 @@ public class NaturalLanguageSearchService {
         var latencyMs = Math.max(elapsedMs(startedAt), llmLatencyMs + searchLatencyMs);
 
         return new NaturalLanguageSearchResponse(
+                queryId,
                 request.question(),
                 aggregationResponse.mode(),
                 searchPlan,
@@ -121,6 +154,46 @@ public class NaturalLanguageSearchService {
                 aggregationResponse.aggregationResults(),
                 aggregationResponse.chartMetadata(),
                 List.of());
+    }
+
+    private void saveSuccessAudit(
+            UUID queryId,
+            NaturalLanguageSearchRequest request,
+            SearchPlan searchPlan,
+            NaturalLanguageSearchResponse response) {
+        try {
+            searchAuditService.saveSuccess(
+                    queryId,
+                    request.question(),
+                    searchPlan,
+                    response.generatedDsl(),
+                    response.total(),
+                    response.latencyMs());
+        } catch (AuditPersistenceException exception) {
+            throw new AuditPersistenceException("Search completed but audit persistence failed", exception);
+        }
+    }
+
+    private void saveFailureAudit(
+            UUID queryId,
+            NaturalLanguageSearchRequest request,
+            SearchPlan searchPlan,
+            long startedAt,
+            RuntimeException originalException) {
+        try {
+            searchAuditService.saveFailure(
+                    queryId,
+                    request.question(),
+                    searchPlan,
+                    null,
+                    elapsedMs(startedAt),
+                    originalException);
+        } catch (AuditPersistenceException auditException) {
+            LOGGER.error(
+                    "Failed to persist FAILED audit record; preserving original search error. query_id={}",
+                    queryId,
+                    auditException);
+        }
     }
 
     private SearchPlan parseWithRequestPagination(String rawContent, NaturalLanguageSearchRequest request) {

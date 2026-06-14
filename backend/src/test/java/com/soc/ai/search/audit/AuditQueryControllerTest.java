@@ -1,0 +1,89 @@
+package com.soc.ai.search.audit;
+
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import java.time.Instant;
+import java.util.List;
+import java.util.UUID;
+
+import com.soc.ai.search.search.plan.SearchMode;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
+
+@WebMvcTest(AuditQueryController.class)
+class AuditQueryControllerTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @MockitoBean
+    private AuditQueryService queryService;
+
+    @Test
+    void returnsPaginatedHistory() throws Exception {
+        when(queryService.history(0, 20)).thenReturn(new PagedResponse<>(
+                List.of(new SearchHistoryItem(
+                        UUID.fromString("11111111-1111-1111-1111-111111111111"),
+                        "failed login china",
+                        SearchMode.SEARCH,
+                        3L,
+                        20L,
+                        AuditStatus.SUCCESS,
+                        Instant.parse("2026-06-14T00:00:00Z"))),
+                0,
+                20,
+                1,
+                1));
+
+        mockMvc.perform(get("/api/v1/search/history"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].query_id")
+                        .value("11111111-1111-1111-1111-111111111111"))
+                .andExpect(jsonPath("$.items[0].mode").value("search"))
+                .andExpect(jsonPath("$.total").value(1))
+                .andExpect(jsonPath("$.total_pages").value(1));
+    }
+
+    @Test
+    void returnsPaginatedAuditLogs() throws Exception {
+        when(queryService.auditLogs(0, 50)).thenReturn(new PagedResponse<>(
+                List.of(),
+                0,
+                50,
+                0,
+                0));
+
+        mockMvc.perform(get("/api/v1/audit-logs"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items").isEmpty())
+                .andExpect(jsonPath("$.total").value(0))
+                .andExpect(jsonPath("$.total_pages").value(0));
+    }
+
+    @Test
+    void returnsBadRequestForInvalidPagination() throws Exception {
+        when(queryService.history(-1, 20))
+                .thenThrow(new IllegalArgumentException("page must be greater than or equal to 0"));
+
+        mockMvc.perform(get("/api/v1/search/history").param("page", "-1"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Invalid pagination"));
+    }
+
+    @Test
+    void returnsControlledErrorWhenPostgresLookupFails() throws Exception {
+        when(queryService.auditLogs(0, 50))
+                .thenThrow(new AuditPersistenceException("Audit log lookup failed", new RuntimeException()));
+
+        mockMvc.perform(get("/api/v1/audit-logs"))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.message").value("Audit dependency is unavailable"))
+                .andExpect(jsonPath("$.errors[0]").value("PostgreSQL audit query failed"));
+    }
+}

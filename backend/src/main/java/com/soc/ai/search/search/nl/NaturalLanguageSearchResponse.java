@@ -2,6 +2,7 @@ package com.soc.ai.search.search.nl;
 
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
@@ -14,6 +15,7 @@ import com.soc.ai.search.search.plan.SearchPlan;
 
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public record NaturalLanguageSearchResponse(
+        UUID queryId,
         String originalQuestion,
         SearchMode mode,
         SearchPlan searchPlan,

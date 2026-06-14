@@ -11,7 +11,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
+import com.soc.ai.search.audit.AuditPersistenceException;
 import com.soc.ai.search.search.execution.AggregationResultItem;
 import com.soc.ai.search.search.execution.ChartMetadata;
 import com.soc.ai.search.search.execution.ChartType;
@@ -55,6 +57,7 @@ class NaturalLanguageSearchControllerTest {
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.query_id").value("11111111-1111-1111-1111-111111111111"))
                 .andExpect(jsonPath("$.original_question").value("failed login china"))
                 .andExpect(jsonPath("$.mode").value("search"))
                 .andExpect(jsonPath("$.search_plan.mode").value("search"))
@@ -195,8 +198,30 @@ class NaturalLanguageSearchControllerTest {
                 .andExpect(jsonPath("$.message").value("Search dependency is unavailable"));
     }
 
+    @Test
+    void returnsControlledErrorWhenSuccessAuditPersistenceFails() throws Exception {
+        when(naturalLanguageSearchService.search(any(NaturalLanguageSearchRequest.class)))
+                .thenThrow(new AuditPersistenceException(
+                        "Search completed but audit persistence failed",
+                        new RuntimeException()));
+
+        mockMvc.perform(post("/api/v1/search")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "question": "failed login china",
+                                  "page": 0,
+                                  "size": 5
+                                }
+                                """))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.message").value("Search completed but audit persistence failed"))
+                .andExpect(jsonPath("$.errors[0]").value("PostgreSQL audit persistence failed"));
+    }
+
     private NaturalLanguageSearchResponse response() {
         return new NaturalLanguageSearchResponse(
+                UUID.fromString("11111111-1111-1111-1111-111111111111"),
                 "failed login china",
                 SearchMode.SEARCH,
                 searchPlan(),
@@ -226,6 +251,7 @@ class NaturalLanguageSearchControllerTest {
 
     private NaturalLanguageSearchResponse aggregationResponse() {
         return new NaturalLanguageSearchResponse(
+                UUID.fromString("22222222-2222-2222-2222-222222222222"),
                 "Đếm số lần login thất bại theo từng user trong 7 ngày qua",
                 SearchMode.AGGREGATION,
                 aggregationPlan(),
