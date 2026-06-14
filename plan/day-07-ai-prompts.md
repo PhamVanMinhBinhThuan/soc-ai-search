@@ -14,9 +14,11 @@ Một bảng `search_query_logs` hiện tại đã đủ cho history, audit và 
 - chỉ audit những request đã đi vào orchestration; request bị Spring Bean Validation chặn trước controller service có thể không có audit record;
 - response search thành công cần trả `query_id`;
 - summary phải dùng statistics của toàn bộ tập matched event, không chỉ page hiện tại;
-- không gửi raw log hoặc toàn bộ result vào LLM;
-- summary lỗi phải fallback và không làm search thất bại;
-- CSV phải chạy lại SearchPlan đã lưu, không nhận DSL từ client, và giới hạn 10.000 dòng;
+- không gửi raw log hoặc toàn bộ result vào LLM; payload summary tối đa 5 sample event và 5.000 ký tự;
+- summary là best-effort enhancement, có timeout riêng 5 giây; lỗi phải fallback và không làm search thất bại;
+- lưu SearchPlan đầy đủ; generated DSL chỉ phục vụ debug và không lưu nếu JSON vượt 100 KB;
+- history/audit phải phân trang, không dùng một tham số `limit` đơn lẻ;
+- CSV phải chạy lại SearchPlan đã lưu, không nhận DSL từ client, đọc theo batch và giới hạn 10.000 dòng;
 - mode lưu trong database dùng `search` hoặc `aggregation`, thống nhất với contract hiện tại.
 
 ## 2. Phạm vi và thứ tự thực hiện
@@ -82,6 +84,10 @@ Yêu cầu:
    - `FAILED`.
    Database vẫn lưu string rõ ràng.
 6. JSONB phải được lưu bằng mapping JSON có cấu trúc như `JsonNode` hoặc kiểu phù hợp với Hibernate 6. Không tự nối JSON bằng string và không tạo migration mới nếu schema V1 hiện tại đã đủ.
+   - luôn lưu `SearchPlan` đầy đủ nếu đã parse/validate thành công;
+   - `generated_dsl` chỉ phục vụ debug và JSON đã serialize không được vượt 100 KB tính theo UTF-8 bytes;
+   - nếu DSL vượt 100 KB, không truncate làm hỏng JSON: lưu `generated_dsl = null`, ghi warning nội bộ và vẫn tiếp tục response/audit;
+   - không làm search thất bại chỉ vì DSL debug không được lưu.
 7. Thêm cấu hình:
    - `APP_DEMO_USER_IDENTITY`, mặc định `demo-analyst`;
    - cập nhật `application.properties`, `.env.example` và `docker-compose.yml`;
@@ -106,22 +112,23 @@ Yêu cầu:
 12. Mở rộng response thành công của `/api/v1/search` có:
     - `query_id`;
     - giữ nguyên toàn bộ contract ngày 4-6.
-13. Tạo API:
-    - `GET /api/v1/search/history?limit=20`
-    - `GET /api/v1/audit-logs?limit=50`
-14. Guardrail cho limit:
-    - history mặc định 20, audit mặc định 50;
-    - minimum 1;
-    - maximum 100.
-15. History chỉ lấy identity demo hiện tại, sắp xếp `created_at DESC`, response gọn gồm:
+13. Tạo API có pagination:
+    - `GET /api/v1/search/history?page=0&size=20`
+    - `GET /api/v1/audit-logs?page=0&size=50`
+14. Guardrail pagination:
+    - `page` mặc định 0 và phải `>= 0`;
+    - history `size` mặc định 20, audit `size` mặc định 50;
+    - `size` từ 1 đến 100;
+    - response có `items`, `page`, `size`, `total`, `total_pages`.
+15. History chỉ lấy identity demo hiện tại, sắp xếp `created_at DESC`, mỗi item response gọn gồm:
     - query_id;
     - question;
     - mode;
     - result_count;
     - latency_ms;
     - status;
-    - summary nullable;
     - created_at.
+    Không trả SearchPlan hoặc generated DSL trong history list.
 16. Audit endpoint dùng cùng table nhưng có thể trả thêm `user_identity` và `error_message` đã sanitize. Không trả raw prompt nội bộ, secret hoặc stack trace.
 17. Nếu PostgreSQL persistence lỗi, trả lỗi dependency có kiểm soát; không lộ stack trace qua API.
 18. Thêm Swagger/OpenAPI annotation hữu ích.
@@ -131,10 +138,13 @@ Yêu cầu:
     - save FAILED khi LLM lỗi;
     - save FAILED khi Elasticsearch lỗi;
     - JSONB SearchPlan/DSL được round-trip đúng;
+    - DSL dưới hoặc bằng 100 KB được lưu;
+    - DSL vượt 100 KB không bị truncate, được bỏ qua/null và không làm search thất bại;
     - error message không chứa stack trace/secret;
     - response search có query_id;
     - history sắp xếp mới nhất trước và lọc theo demo identity;
-    - limit > 100 trả 400;
+    - history/audit trả pagination metadata đúng;
+    - page < 0 hoặc size ngoài 1-100 trả 400;
     - audit endpoint trả status và error đã sanitize.
 20. Không thêm Testcontainers trong Day 7. Unit/controller test dùng mock; verify JSONB/PostgreSQL thật bằng Docker Compose local và smoke test.
 21. Chạy backend test. Nếu Docker đang chạy, gọi một search thành công và một request lỗi đã đi vào orchestration rồi kiểm tra record bằng API history/audit.
@@ -150,8 +160,8 @@ cd backend
 .\mvnw.cmd test
 cd ..
 
-Invoke-RestMethod "http://localhost:8081/api/v1/search/history?limit=10"
-Invoke-RestMethod "http://localhost:8081/api/v1/audit-logs?limit=10"
+Invoke-RestMethod "http://localhost:8081/api/v1/search/history?page=0&size=10"
+Invoke-RestMethod "http://localhost:8081/api/v1/audit-logs?page=0&size=10"
 ```
 
 ---
@@ -161,7 +171,7 @@ Invoke-RestMethod "http://localhost:8081/api/v1/audit-logs?limit=10"
 ```text
 Tiếp tục triển khai ngày 7 cho SOC AI Search MVP.
 
-Hãy triển khai summary 3-5 câu cho kết quả search và aggregation, có deterministic fallback.
+Hãy triển khai summary 3-5 câu cho kết quả search và aggregation theo hướng best effort, có deterministic fallback.
 
 Đọc trước:
 - docs/requirement.md
@@ -187,7 +197,9 @@ Yêu cầu:
    - top 5 host;
    - top 5 IP;
    - severity distribution;
-   - tối đa 5 sample event với field cần thiết như timestamp, severity, event_type, user, host, ip, country_code và message.
+   - tối đa 5 sample event với field cần thiết như timestamp, severity, event_type, user, host, ip, country_code và message;
+   - payload cuối cùng trước khi gửi LLM tối đa 5.000 ký tự.
+   Nếu vượt 5.000 ký tự, giảm số sample hoặc cắt ngắn từng `message` theo ranh giới an toàn; không cắt chuỗi JSON đã serialize làm JSON invalid.
 4. Tuyệt đối không đưa vào summary prompt:
    - `raw`;
    - toàn bộ search result;
@@ -204,46 +216,56 @@ Yêu cầu:
    - Gemini dùng cùng provider/config hiện tại;
    - mock provider trả summary deterministic để test không gọi mạng;
    - không phá method NL -> SearchPlan hiện có.
-8. Summary prompt phải yêu cầu:
+8. Thêm cấu hình timeout riêng cho summary:
+   - `LLM_SUMMARY_TIMEOUT_MS`, mặc định `5000`;
+   - cập nhật `application.properties`, `.env.example` và `docker-compose.yml`;
+   - không hạ `LLM_TIMEOUT_MS` chung vì timeout đó còn dùng cho NL -> SearchPlan;
+   - summary có thể chạy đồng bộ trong MVP, nhưng lời gọi summary phải bị giới hạn bởi timeout riêng này.
+9. Summary prompt phải yêu cầu:
    - 3-5 câu ngắn;
    - nêu total, top entities và đặc điểm severity nổi bật nếu có;
    - không bịa dữ liệu ngoài payload;
    - không markdown, không code fence;
    - không đưa ra kết luận chắc chắn vượt quá dữ liệu;
    - ưu tiên trả cùng ngôn ngữ với câu hỏi gốc.
-9. Chỉ gọi LLM summary tối đa một lần cho mỗi search thành công.
-10. Nếu summary LLM gặp timeout, 429, 4xx/5xx, response rỗng hoặc không hợp lệ:
+10. Chỉ gọi LLM summary tối đa một lần cho mỗi search thành công.
+11. Summary là optional/best-effort enhancement. Nếu summary LLM gặp timeout, 429, 4xx/5xx, response rỗng hoặc không hợp lệ:
     - không làm hỏng kết quả search/aggregation;
     - sinh summary deterministic 3-5 câu từ SummaryPayload;
+    - trả `summary_source = "fallback"`;
     - response vẫn HTTP 200.
-11. Mở rộng `NaturalLanguageSearchResponse`:
+12. Mở rộng `NaturalLanguageSearchResponse`:
     - `summary`: string;
     - `summary_source`: `llm` hoặc `fallback`;
     - `summary_latency_ms`;
     - giữ nguyên query_id và contract cũ.
-12. `latency_ms` phải phản ánh toàn bộ flow; không làm sai `llm_latency_ms` và `search_latency_ms` hiện có.
-13. Lưu summary cuối cùng vào cột `summary` của đúng audit record theo `query_id`.
-14. Nếu search không có kết quả:
+13. `latency_ms` phải phản ánh toàn bộ flow; không làm sai `llm_latency_ms` và `search_latency_ms` hiện có.
+14. Lưu summary cuối cùng vào cột `summary` của đúng audit record theo `query_id`.
+15. Nếu search không có kết quả:
     - vẫn trả summary deterministic rõ rằng không tìm thấy event;
     - không cần gọi LLM để tiết kiệm quota.
-15. Thêm test:
+16. Thêm test:
     - summary payload có đúng top user/host/IP và severity;
     - sample tối đa 5;
+    - payload gửi LLM không vượt 5.000 ký tự;
+    - payload dài được giảm sample/cắt ngắn message nhưng vẫn là JSON hợp lệ;
     - payload/prompt không chứa raw hoặc secret;
     - Gemini/mock summary success;
     - LLM summary lỗi dùng fallback và search vẫn 200;
     - LLM trả blank dùng fallback;
+    - summary vượt timeout riêng 5 giây dùng fallback và search vẫn 200;
+    - timeout summary không làm thay đổi timeout NL -> SearchPlan;
     - no-result không gọi LLM summary;
     - summary có 3-5 câu theo cách đếm hợp lý;
     - summary được lưu vào đúng audit record;
     - response search và aggregation đều có summary fields;
     - search behavior ngày 4-6 không bị phá.
-16. Cập nhật Swagger example nếu cần.
-17. Chạy backend test và test thật ít nhất:
+17. Cập nhật Swagger example nếu cần.
+18. Chạy backend test và test thật ít nhất:
     - một search;
     - một aggregation;
     - một lần dùng mock để chứng minh fallback/test không cần API key.
-18. Báo file đã tạo/sửa và kết quả verify.
+19. Báo file đã tạo/sửa và kết quả verify.
 
 Không triển khai history UI, CSV hoặc auth trong prompt này.
 ```
@@ -294,6 +316,9 @@ Yêu cầu:
 6. Tạo execution path riêng cho export:
    - search mode lấy tối đa 10.000 event;
    - đọc theo batch hợp lý, ví dụ 500 hoặc 1000;
+   - mỗi batch phải bảo đảm `from + size <= 10.000`;
+   - không tải một response 10.000 event vào RAM nếu có thể stream theo batch;
+   - không dùng Scroll API hoặc `search_after` trong MVP;
    - không vượt Elasticsearch `max_result_window` mặc định 10.000;
    - aggregation mode export các bucket hiện có, vẫn tuân thủ top_n/default bucket limit.
 7. Search CSV dùng header ổn định:
@@ -320,7 +345,8 @@ Yêu cầu:
 11. Có thể dùng `StreamingResponseBody` để tránh giữ file lớn hoàn toàn trong RAM.
 12. Nếu query có hơn 10.000 event:
     - chỉ export 10.000 dòng;
-    - có header response hoặc metadata/log rõ rằng kết quả đã bị truncate, ví dụ `X-Export-Truncated: true`.
+    - trả `X-Export-Truncated: true`;
+    - không trả lỗi 500 chỉ vì kết quả lớn hơn giới hạn.
 13. Elasticsearch lỗi trả 503 có kiểm soát; không lộ stack trace.
 14. Thêm Swagger/OpenAPI annotation.
 15. Thêm test:
@@ -335,6 +361,8 @@ Yêu cầu:
     - formula injection được neutralize;
     - không có raw column;
     - tối đa 10.000 data row;
+    - export đọc theo batch và không request batch vượt cửa sổ 10.000;
+    - kết quả lớn hơn 10.000 trả `X-Export-Truncated: true`;
     - filename và content type đúng;
     - Elasticsearch lỗi trả lỗi kiểm soát.
 16. Chạy backend test.
@@ -401,15 +429,19 @@ Yêu cầu frontend:
    - có badge nhỏ cho source `LLM` hoặc `FALLBACK`.
 4. Mock mode vẫn hoạt động và mock DTO phải khớp contract mới.
 5. Tích hợp recent history:
-   - gọi `GET /api/v1/search/history?limit=20`;
+   - gọi `GET /api/v1/search/history?page=0&size=20`;
+   - đọc response pagination gồm `items`, `page`, `size`, `total`, `total_pages`;
    - hiển thị trong Sheet/Drawer hoặc panel gọn khi bấm mục `Investigations`/history;
    - mỗi item có question, mode, status, result_count, latency và created_at;
+   - không render SearchPlan hoặc generated DSL dài trong history list;
    - click item sẽ điền lại question và chạy lại search;
+   - có điều khiển trang trước/sau hoặc tương đương dựa trên `page` và `total_pages`;
    - có loading, empty và error state.
 6. Tích hợp CSV:
    - nút Export CSV hoạt động cho API thật bằng query_id;
    - gọi `GET /api/v1/search/{query_id}/export.csv`;
    - tải Blob với filename từ `Content-Disposition` nếu có;
+   - nếu response có `X-Export-Truncated: true`, hiển thị toast/alert rằng file chỉ chứa 10.000 dòng đầu;
    - có loading/disabled/error state;
    - mock mode có thể giữ export mock hiện tại.
 7. Không fetch audit log cho UI nếu không cần; audit endpoint chỉ cần kiểm qua Swagger/smoke test.
@@ -426,12 +458,13 @@ Yêu cầu smoke test:
     - search success trả summary không blank;
     - summary_source là `llm` hoặc `fallback`;
     - aggregation cũng trả summary;
-    - history chứa query vừa chạy;
+    - history pagination hợp lệ và chứa query vừa chạy;
     - audit chứa SUCCESS record;
     - request invalid tạo FAILED audit record nếu flow đã vào orchestration;
     - export search trả HTTP 200, `text/csv`, header đúng và không có raw column;
     - export aggregation có header `key,value`;
     - CSV không vượt 10.000 data row;
+    - nếu có fixture/query vượt giới hạn thì response có `X-Export-Truncated: true`; nếu không có fixture lớn, guardrail này phải được backend test chứng minh;
     - unknown query_id trả 404;
     - frontend URL trả 200.
 13. Smoke test không được phụ thuộc Gemini luôn còn quota:
@@ -440,9 +473,9 @@ Yêu cầu smoke test:
 14. Cập nhật README:
     - audit/history table và demo identity;
     - cách gọi history/audit;
-    - summary LLM + fallback;
+    - summary best effort, timeout riêng 5 giây và deterministic fallback;
     - cách export CSV;
-    - giới hạn 10.000 dòng;
+    - giới hạn 10.000 dòng, batch export và header truncate;
     - cách chạy smoke test ngày 7.
 15. Chạy verify:
     - backend test;
@@ -467,8 +500,8 @@ Không triển khai auth/RBAC, saved query, multi-turn conversation, vector sear
 ## 3. Điều kiện hoàn thành Day 7
 
 - `POST /api/v1/search` trả `query_id` và summary.
-- LLM summary lỗi vẫn trả kết quả bằng fallback.
+- LLM summary lỗi hoặc timeout vẫn trả kết quả bằng fallback.
 - PostgreSQL có audit record cho success và failure.
-- Frontend hiển thị recent history.
-- CSV search và aggregation tải được, không vượt 10.000 dòng.
+- Frontend hiển thị recent history có pagination và chạy lại được câu hỏi.
+- CSV search và aggregation tải được, không vượt 10.000 dòng và báo khi bị truncate.
 - Backend test, frontend lint/build và smoke test ngày 7 đều PASS.

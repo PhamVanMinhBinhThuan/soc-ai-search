@@ -439,32 +439,41 @@ Việc cần làm:
 
 - Lưu mọi search attempt đã đi vào orchestration của `POST /api/v1/search` vào bảng `search_query_logs`, gồm cả thành công và thất bại.
 - Dùng identity demo cấu hình được, mặc định `demo-analyst`; chưa tạo bảng user hoặc auth.
-- Lưu query ID, timestamp, câu hỏi, `SearchPlan`, DSL, mode, result count, latency, status, lỗi đã sanitize và summary nếu có.
+- Lưu query ID, timestamp, câu hỏi, `SearchPlan` đầy đủ, mode, result count, latency, status, lỗi đã sanitize và summary nếu có.
+- Lưu generated DSL để debug nhưng giới hạn JSON đã serialize tối đa 100 KB tính theo UTF-8 bytes. Nếu vượt giới hạn thì không truncate làm hỏng JSON; lưu `null` cho DSL, ghi warning nội bộ và vẫn tiếp tục trả kết quả search.
 - Trả `query_id` trong response search thành công để frontend có thể export lại đúng truy vấn.
-- Tạo endpoint recent history và audit log từ cùng bảng `search_query_logs`; không tạo thêm table trong MVP.
+- Tạo endpoint recent history và audit log có pagination từ cùng bảng `search_query_logs`; không tạo thêm table trong MVP:
+  - history mặc định `page=0&size=20`;
+  - audit mặc định `page=0&size=50`;
+  - `page >= 0`, `size` từ 1 đến 100.
 - Tạo payload summary nhỏ gọn từ Elasticsearch:
   - tổng số event;
   - top user, host và IP;
   - phân bố severity;
-  - tối đa 5 sample event, chỉ chứa field cần thiết.
+  - tối đa 5 sample event, chỉ chứa field cần thiết;
+  - tổng payload gửi LLM tối đa 5.000 ký tự.
 - Không gửi `raw`, toàn bộ event result hoặc secret vào LLM khi summarization.
-- Gọi LLM tối đa một lần để sinh summary 3-5 câu; nếu LLM lỗi, hết quota hoặc output rỗng thì dùng fallback deterministic và vẫn trả kết quả search thành công.
+- Xem AI summary là best-effort enhancement: kết quả search/aggregation luôn được ưu tiên và không được thất bại chỉ vì summary lỗi.
+- Gọi LLM tối đa một lần để sinh summary 3-5 câu, có timeout riêng `LLM_SUMMARY_TIMEOUT_MS=5000`; không hạ timeout chung đang dùng cho NL -> SearchPlan.
+- Nếu summary LLM lỗi, timeout, hết quota hoặc output rỗng thì dùng fallback deterministic, đánh dấu `summary_source=fallback` và vẫn trả HTTP 200 cùng kết quả search.
 - Lưu summary cuối cùng vào `search_query_logs` và hiển thị phía trên kết quả trên frontend.
 - Làm export CSV theo `query_id`:
   - search mode export các field event chính, không export raw log mặc định;
   - aggregation mode export `key,value`;
-  - giới hạn tối đa 10.000 dòng;
-  - chạy lại `SearchPlan` đã validate được lưu trong PostgreSQL, không nhận DSL tùy ý từ client.
-- Hiển thị recent query history trên frontend và cho phép chạy lại câu hỏi.
+  - chạy lại `SearchPlan` đã validate được lưu trong PostgreSQL, không nhận DSL tùy ý từ client;
+  - đọc theo batch 500 hoặc 1.000 dòng, bảo đảm `from + size <= 10.000`;
+  - không dùng Scroll API hoặc `search_after` trong MVP;
+  - nếu kết quả lớn hơn 10.000 thì export 10.000 dòng đầu và trả cảnh báo bị truncate, không trả lỗi 500.
+- Hiển thị recent query history dạng gọn, có chuyển trang, gồm thời gian, câu hỏi, mode, status và result count; cho phép chạy lại câu hỏi, không hiển thị SearchPlan/DSL dài trong danh sách.
 - Kiểm tra history, audit, summary và CSV bằng backend test, Swagger và smoke test ngày 7.
 
 **Điều kiện hoàn thành:**
 
 - Demo end-to-end đủ các mục chức năng của MVP trên máy local.
-- LLM lỗi không làm hỏng kết quả search.
+- LLM summary lỗi hoặc quá 5 giây không làm hỏng kết quả search; fallback deterministic được trả về.
 - Mỗi search attempt đã vào orchestration, dù thành công hoặc thất bại, đều có audit record phù hợp.
-- Recent history hiển thị được câu hỏi, trạng thái, mode, result count và thời gian.
-- CSV tải xuống, mở được và không vượt quá 10.000 dòng dữ liệu.
+- Recent history phân trang và hiển thị được câu hỏi, trạng thái, mode, result count và thời gian.
+- CSV tải xuống, mở được, không vượt quá 10.000 dòng dữ liệu và báo rõ khi kết quả bị truncate.
 
 ### Ngày 8 - Thứ Hai, 08/06: Docker Compose production và EC2
 
