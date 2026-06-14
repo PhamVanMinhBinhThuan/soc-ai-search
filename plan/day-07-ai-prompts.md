@@ -421,6 +421,8 @@ GET /api/v1/search/{query_id}/export.csv
 - docs/requirement.md
 - plan/14-day-mvp-plan.md
 - audit/history implementation từ Prompt 1
+- backend/src/main/java/com/soc/ai/search/audit/SearchQueryLog.java
+- backend/src/main/java/com/soc/ai/search/audit/SearchQueryLogRepository.java
 - backend/src/main/java/com/soc/ai/search/search/execution/SearchPlanExecutor.java
 - backend/src/main/java/com/soc/ai/search/search/compiler/SearchPlanCompiler.java
 - backend/src/main/java/com/soc/ai/search/search/plan/SearchPlan.java
@@ -428,22 +430,57 @@ GET /api/v1/search/{query_id}/export.csv
 Yêu cầu:
 1. Kiểm tra repository và implementation hiện tại trước khi sửa.
 2. Export chỉ nhận `query_id` UUID. Không nhận Elasticsearch DSL, field tùy ý hoặc SearchPlan mới từ client.
-3. Lookup `search_query_logs`:
+3. Lookup `search_query_logs` theo:
+   - `query_id`;
+   - identity hiện tại từ `APP_DEMO_USER_IDENTITY`.
+   Không hardcode `demo-analyst` trong export service.
+4. Không expose repository JPA hoặc entity audit ra package export chỉ để lookup:
+   - ưu tiên tạo bean lookup riêng trong package audit, ví dụ `SearchQueryLogLookupService`;
+   - lookup service chạy transaction read-only ngắn;
+   - trả DTO bất biến chỉ chứa dữ liệu export cần như `queryId`, `userIdentity`, `status`, `mode` và `searchPlan`;
+   - không đổi repository package-private thành public nếu không thật sự cần.
+5. Query chỉ được export khi:
    - query phải tồn tại;
    - status phải là SUCCESS;
    - phải có SearchPlan hợp lệ;
-   - nếu không đạt, trả lỗi 404 hoặc 409 có kiểm soát.
-4. Deserialize SearchPlan đã lưu, validate lại bằng Bean Validation và `SearchPlanValidator`, rồi chạy lại trên index từ `ElasticsearchProperties.indexEvents`.
-5. Không thay đổi guardrail `size <= 100` của search UI.
-6. Tạo execution path riêng cho export:
+   - mode lưu trong record phải khớp mode trong SearchPlan;
+   - unknown query hoặc query không thuộc identity hiện tại trả 404;
+   - FAILED query, thiếu SearchPlan hoặc record không thể export trả 409 có kiểm soát;
+   - `query_id` không phải UUID hợp lệ trả 400.
+6. Deserialize SearchPlan JSONB bằng Jackson structured mapping như `treeToValue`, không thao tác JSON bằng string. Validate lại bằng Bean Validation và `SearchPlanValidator`, rồi chạy lại trên index từ `ElasticsearchProperties.indexEvents`.
+7. Export là live replay:
+   - chạy lại SearchPlan đã lưu trên dữ liệu Elasticsearch hiện tại;
+   - không dùng `result_count` cũ trong PostgreSQL làm total hiện tại;
+   - kết quả CSV có thể khác kết quả lúc query ban đầu chạy nếu dữ liệu Elasticsearch đã thay đổi;
+   - ghi rõ trade-off này trong README;
+   - đây không phải frozen snapshot và trong MVP không thêm PIT, Scroll API hoặc snapshot table.
+8. Không thay đổi guardrail `SearchPlan.size <= 100` của search UI:
+   - không tạo SearchPlan mới với `size = 500`, `1000` hoặc `10000`;
+   - validate SearchPlan gốc như contract hiện tại;
+   - export executor reuse query/filter/sort từ output `SearchPlanCompiler`;
+   - export executor chỉ override execution pagination `from`/`size` theo batch sau khi compile;
+   - không làm yếu `SearchPlanValidator` để phục vụ export.
+9. Tạo execution path riêng cho export, ví dụ `CsvExportService` và `ExportSearchExecutor`:
    - search mode lấy tối đa 10.000 event;
-   - đọc theo batch hợp lý, ví dụ 500 hoặc 1000;
+   - đọc tuần tự theo batch cố định, ưu tiên 1000;
    - mỗi batch phải bảo đảm `from + size <= 10.000`;
-   - không tải một response 10.000 event vào RAM nếu có thể stream theo batch;
+   - reuse query và sort do compiler sinh; không build lại filter/DSL bằng logic thứ hai;
+   - export phải sử dụng đúng sort của query gốc; nếu SearchPlan không khai báo sort thì mặc định `timestamp DESC`; không được đổi sort giữa các batch;
+   - stream từng batch ra CSV, không tích lũy toàn bộ 10.000 event hoặc toàn bộ file CSV trong RAM;
+   - dừng khi đã đạt `min(hits.total, 10.000)` hoặc batch trả về ít hơn batch size;
+   - áp dụng timeout hữu hạn cho mỗi Elasticsearch request, có thể dùng timeout riêng cho export như `EXPORT_ES_TIMEOUT_MS=10000`;
    - không dùng Scroll API hoặc `search_after` trong MVP;
    - không vượt Elasticsearch `max_result_window` mặc định 10.000;
-   - aggregation mode export các bucket hiện có, vẫn tuân thủ top_n/default bucket limit.
-7. Search CSV dùng header ổn định:
+   - vì dùng `from`/`size` trên dữ liệu live và chưa có PIT, export consistency là best effort; không seed/ingest đồng thời trong checkpoint export;
+   - khi client hủy download hoặc output stream lỗi, dừng gọi các batch Elasticsearch tiếp theo và log lỗi ngắn gọn.
+10. Aggregation export:
+   - không đọc bucket giả từ PostgreSQL vì audit chỉ lưu SearchPlan;
+   - chạy lại aggregation SearchPlan trên Elasticsearch hiện tại;
+   - reuse aggregation compiler/executor hiện có;
+   - vẫn tuân thủ `aggregation.top_n` hoặc default bucket limit 20;
+   - GROUP_BY, TOP_N và DATE_HISTOGRAM export bucket hiện tại;
+   - COUNT luôn export một dòng `total,<current hits.total>`, kể cả khi total bằng 0.
+11. Search CSV dùng header ổn định:
    - event_id;
    - timestamp;
    - source;
@@ -454,45 +491,101 @@ Yêu cầu:
    - ip;
    - country_code;
    - message.
-8. Không export `raw` mặc định vì dữ liệu có thể nhạy cảm và làm file quá lớn.
-9. Aggregation CSV dùng header:
+12. Không export `raw` mặc định vì dữ liệu có thể nhạy cảm và làm file quá lớn. Export search phải request source filtering chỉ gồm:
+   - event_id;
+   - timestamp;
+   - source;
+   - severity;
+   - event_type;
+   - user;
+   - host;
+   - ip;
+   - country_code;
+   - message.
+   Không request `raw` hoặc field ngoài danh sách trên.
+   Với `message`, nếu text quá dài thì truncate an toàn ở mức tối đa 4KB và thêm suffix `...`.
+13. Aggregation CSV dùng header:
    - key;
    - value.
-10. CSV phải:
-    - UTF-8;
-    - escape dấu phẩy, quote và newline đúng RFC 4180;
-    - chống CSV formula injection cho cell bắt đầu bằng `=`, `+`, `-`, `@`;
-    - có `Content-Type: text/csv`;
+14. Tạo helper CSV chuyên trách, không nối cell CSV trực tiếp trong controller. CSV phải:
+    - UTF-8 và ưu tiên ghi UTF-8 BOM một lần để Excel trên Windows hiển thị tiếng Việt đúng;
+    - dùng CRLF cho line ending;
+    - escape dấu phẩy, double quote, CR và LF đúng RFC 4180;
+    - chống CSV formula injection cho mọi text cell;
+    - nếu ký tự không phải khoảng trắng đầu tiên là `=`, `+`, `-`, `@`, tab hoặc carriage return thì prefix apostrophe `'` trước khi CSV escaping;
+    - không áp dụng formula neutralization cho numeric aggregation value;
+    - có `Content-Type: text/csv;charset=UTF-8`;
     - có `Content-Disposition` với filename an toàn chứa query_id.
-11. Có thể dùng `StreamingResponseBody` để tránh giữ file lớn hoàn toàn trong RAM.
-12. Nếu query có hơn 10.000 event:
+15. Dùng `ResponseEntity<StreamingResponseBody>` hoặc cách streaming tương đương:
+    - lookup, validation và request Elasticsearch đầu tiên/preflight phải hoàn thành trước khi response body được commit;
+    - dùng `hits.total` của lần export hiện tại để xác định truncation;
+    - set toàn bộ HTTP header, gồm `X-Export-Truncated`, trước khi streaming bắt đầu;
+    - lỗi Elasticsearch trước khi response bắt đầu trả 503 có kiểm soát;
+    - nếu Elasticsearch lỗi ở batch sau khi HTTP 200/header đã gửi thì dừng stream và log lỗi; không giả định có thể đổi status thành 503 sau khi response đã commit;
+    - không lộ stack trace hoặc response nội bộ vào file CSV.
+16. Nếu query hiện tại có hơn 10.000 event:
     - chỉ export 10.000 dòng;
     - trả `X-Export-Truncated: true`;
+    - nếu không bị truncate, trả `X-Export-Truncated: false`;
     - không trả lỗi 500 chỉ vì kết quả lớn hơn giới hạn.
-13. Elasticsearch lỗi trả 503 có kiểm soát; không lộ stack trace.
-14. Thêm Swagger/OpenAPI annotation.
-15. Thêm test:
+17. Export không tạo thêm record mới trong `search_query_logs`:
+    - `query_id` tiếp tục tham chiếu audit record của query gốc;
+    - không insert bất kỳ record mới nào vào `search_query_logs`;
+    - không insert record thứ hai hoặc reuse cùng UUID gây trùng primary key;
+    - có thể ghi application log ngắn cho hoạt động export, không log nội dung CSV hoặc raw event.
+18. Thêm Swagger/OpenAPI annotation, mô tả rõ search/aggregation CSV, giới hạn 10.000 dòng và live replay trade-off.
+19. Thêm test:
     - export search thành công;
     - export aggregation thành công;
+    - lookup dùng cả query_id và demo identity hiện tại;
+    - query thuộc identity khác không export được;
     - unknown query_id trả 404;
+    - query_id sai format trả 400;
     - FAILED query trả 409;
     - invalid stored SearchPlan bị từ chối;
+    - mode trong audit record không khớp SearchPlan bị từ chối;
+    - deserialize SearchPlan dùng structured Jackson mapping;
     - search CSV đúng header;
     - aggregation CSV đúng header;
+    - COUNT total > 0 export `total,<value>`;
+    - COUNT total = 0 export `total,0`;
     - comma/quote/newline được escape;
-    - formula injection được neutralize;
+    - CSV dùng UTF-8 BOM và CRLF;
+    - formula injection bắt đầu trực tiếp hoặc sau khoảng trắng được neutralize;
+    - tab/CR đầu cell được neutralize;
     - không có raw column;
+    - source filtering chỉ request đúng các field export cho search;
+    - `message` dài hơn 4KB được truncate an toàn và có suffix `...`;
     - tối đa 10.000 data row;
-    - export đọc theo batch và không request batch vượt cửa sổ 10.000;
+    - export đọc theo batch với offset đúng như 0, 1000, ..., 9000 và không request batch vượt cửa sổ 10.000;
+    - batch size export không làm thay đổi SearchPlan.size và không làm yếu validator size <= 100;
+    - query/filter/sort dùng trực tiếp output compiler, không build lại DSL lần thứ hai;
+    - export dùng sort của query gốc hoặc mặc định `timestamp DESC` nếu SearchPlan không khai báo sort;
+    - export dừng khi batch cuối ít hơn batch size;
+    - truncation dùng `hits.total` hiện tại từ Elasticsearch, không dùng `result_count` cũ trong DB;
     - kết quả lớn hơn 10.000 trả `X-Export-Truncated: true`;
+    - kết quả không vượt giới hạn trả `X-Export-Truncated: false`;
+    - no-result search trả file chỉ có header;
     - filename và content type đúng;
-    - Elasticsearch lỗi trả lỗi kiểm soát.
-16. Chạy backend test.
-17. Nếu Docker đang chạy:
+    - `Content-Disposition` an toàn dù query_id có ký tự bất thường;
+    - preflight Elasticsearch lỗi trả 503 trước khi response commit;
+    - lỗi output stream/client disconnect dừng các batch tiếp theo;
+    - export không tạo audit record mới.
+20. Chạy backend test.
+21. Nếu Docker đang chạy:
+    - dùng `LLM_PROVIDER=mock` cho checkpoint deterministic, không phụ thuộc Gemini/API key/quota;
     - gọi `/api/v1/search` lấy query_id;
     - tải `/api/v1/search/{query_id}/export.csv`;
-    - kiểm tra file mở được và có header đúng.
-18. Báo file đã tạo/sửa, lệnh verify và kết quả.
+    - kiểm tra file mở được, encoding UTF-8 và có header đúng;
+    - chạy thêm một aggregation query rồi kiểm tra CSV `key,value`;
+    - replay export khi Elasticsearch current total khác `result_count` cũ trong DB thì CSV phải phản ánh dữ liệu ES hiện tại.
+22. Cập nhật README ngắn gọn:
+    - cách export theo query_id;
+    - search/aggregation CSV headers;
+    - giới hạn 10.000 dòng và `X-Export-Truncated`;
+    - live replay có thể khác kết quả query ban đầu;
+    - không ingest/seed đồng thời khi kiểm tra export nhiều batch trong MVP.
+23. Báo file đã tạo/sửa, lệnh verify và kết quả.
 
 Không triển khai frontend hoặc auth trong prompt này.
 ```
@@ -510,9 +603,13 @@ $search = Invoke-RestMethod `
     size = 20
   } | ConvertTo-Json)
 
+New-Item -ItemType Directory -Force ".tmp" | Out-Null
+
 Invoke-WebRequest `
   -Uri "http://localhost:8081/api/v1/search/$($search.query_id)/export.csv" `
   -OutFile ".tmp/day-07-export.csv"
+
+Get-Content -Encoding utf8 ".tmp/day-07-export.csv" -TotalCount 3
 ```
 
 ---
