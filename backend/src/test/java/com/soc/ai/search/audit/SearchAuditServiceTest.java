@@ -12,6 +12,7 @@ import com.soc.ai.search.search.plan.SearchFilters;
 import com.soc.ai.search.search.plan.SearchMode;
 import com.soc.ai.search.search.plan.SearchPlan;
 import com.soc.ai.search.search.plan.TimeRange;
+import com.soc.ai.search.security.CurrentUserService;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -19,15 +20,18 @@ class SearchAuditServiceTest {
 
     private final AuditPersistenceService persistenceService =
             org.mockito.Mockito.mock(AuditPersistenceService.class);
+    private final CurrentUserService currentUserService =
+            org.mockito.Mockito.mock(CurrentUserService.class);
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final SearchAuditService service = new SearchAuditService(
             persistenceService,
-            new AuditProperties("demo-analyst"),
+            currentUserService,
             new AuditErrorSanitizer(),
             objectMapper);
 
     @Test
     void savesSuccessWithSameQueryIdAndStructuredJson() throws Exception {
+        org.mockito.Mockito.when(currentUserService.currentIdentity()).thenReturn("demo-analyst");
         var queryId = UUID.fromString("11111111-1111-1111-1111-111111111111");
         var plan = searchPlan();
         var dsl = Map.<String, Object>of("query", Map.of("match_all", Map.of()), "size", 5);
@@ -52,6 +56,7 @@ class SearchAuditServiceTest {
 
     @Test
     void omitsGeneratedDslThatExceedsUtf8ByteLimit() {
+        org.mockito.Mockito.when(currentUserService.currentIdentity()).thenReturn("demo-analyst");
         var oversizedDsl = Map.<String, Object>of("query", "á".repeat(60_000));
 
         service.saveSuccess(
@@ -70,6 +75,7 @@ class SearchAuditServiceTest {
 
     @Test
     void savesSanitizedFailureWithoutSearchPlan() {
+        org.mockito.Mockito.when(currentUserService.currentIdentity()).thenReturn("demo-analyst");
         service.saveFailure(
                 UUID.randomUUID(),
                 "question",

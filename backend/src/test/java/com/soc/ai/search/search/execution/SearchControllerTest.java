@@ -15,14 +15,17 @@ import java.util.Map;
 import com.soc.ai.search.search.plan.AggregationType;
 import com.soc.ai.search.search.plan.SearchMode;
 import com.soc.ai.search.search.plan.SearchPlan;
+import com.soc.ai.search.security.SecurityConfig;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest(SearchController.class)
+@Import(SecurityConfig.class)
 class SearchControllerTest {
 
     @Autowired

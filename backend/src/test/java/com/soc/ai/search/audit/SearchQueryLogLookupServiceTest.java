@@ -10,17 +10,20 @@ import java.util.UUID;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.soc.ai.search.search.plan.SearchMode;
+import com.soc.ai.search.security.CurrentUserService;
 import org.junit.jupiter.api.Test;
 
 class SearchQueryLogLookupServiceTest {
 
     private final SearchQueryLogRepository repository =
             org.mockito.Mockito.mock(SearchQueryLogRepository.class);
+    private final CurrentUserService currentUserService =
+            org.mockito.Mockito.mock(CurrentUserService.class);
     private final SearchQueryLogLookupService service =
-            new SearchQueryLogLookupService(repository, new AuditProperties("demo-analyst"));
+            new SearchQueryLogLookupService(repository, currentUserService);
 
     @Test
-    void lookupUsesQueryIdAndConfiguredIdentityWithoutExposingEntity() {
+    void lookupUsesQueryIdAndCurrentIdentityWithoutExposingEntity() {
         var queryId = UUID.fromString("11111111-1111-1111-1111-111111111111");
         var searchPlan = new ObjectMapper().createObjectNode().put("mode", "search");
         var log = new SearchQueryLog(
@@ -36,6 +39,7 @@ class SearchQueryLogLookupServiceTest {
                 null,
                 null,
                 Instant.parse("2026-06-14T00:00:00Z"));
+        when(currentUserService.currentIdentity()).thenReturn("demo-analyst");
         when(repository.findByIdAndUserIdentity(queryId, "demo-analyst"))
                 .thenReturn(Optional.of(log));
 

@@ -8,6 +8,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.soc.ai.search.search.plan.SearchPlan;
+import com.soc.ai.search.security.CurrentUserService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -19,17 +20,17 @@ public class SearchAuditService {
     private static final int MAX_GENERATED_DSL_BYTES = 100 * 1024;
 
     private final AuditPersistenceService persistenceService;
-    private final AuditProperties properties;
+    private final CurrentUserService currentUserService;
     private final AuditErrorSanitizer errorSanitizer;
     private final ObjectMapper objectMapper;
 
     public SearchAuditService(
             AuditPersistenceService persistenceService,
-            AuditProperties properties,
+            CurrentUserService currentUserService,
             AuditErrorSanitizer errorSanitizer,
             ObjectMapper objectMapper) {
         this.persistenceService = persistenceService;
-        this.properties = properties;
+        this.currentUserService = currentUserService;
         this.errorSanitizer = errorSanitizer;
         this.objectMapper = objectMapper;
     }
@@ -44,7 +45,7 @@ public class SearchAuditService {
             String summary) {
         persistenceService.save(new SearchQueryLog(
                 queryId,
-                properties.demoUserIdentity(),
+                currentUserService.currentIdentity(),
                 question,
                 toJsonNode(searchPlan),
                 toLimitedDslNode(queryId, generatedDsl),
@@ -66,7 +67,7 @@ public class SearchAuditService {
             RuntimeException exception) {
         persistenceService.save(new SearchQueryLog(
                 queryId,
-                properties.demoUserIdentity(),
+                currentUserService.currentIdentity(),
                 question,
                 toJsonNode(searchPlan),
                 toLimitedDslNode(queryId, generatedDsl),

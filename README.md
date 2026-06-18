@@ -544,3 +544,22 @@ Tạo `.env` trước lần chạy Docker đầu tiên. PostgreSQL chỉ dùng `
 - [Tech stack](docs/tech-stack.md)
 - [Kiến trúc hệ thống](docs/architecture.md)
 - [Kế hoạch MVP 14 ngày](plan/14-day-mvp-plan.md)
+## Day 8 backend auth notes
+
+- Mac dinh `APP_AUTH_ENABLED=false` de local/dev/test chay nhu cac ngay truoc.
+- Khi `APP_AUTH_ENABLED=true`, cac business API yeu cau JWT Bearer token tu Keycloak.
+- Health va Swagger van permit trong local/dev: `/api/v1/health/**`, `/swagger-ui/**`, `/v3/api-docs/**`.
+- Backend verify JWT bang `KEYCLOAK_ISSUER_URI` va map role Keycloak thanh `ROLE_SOC_VIEWER`, `ROLE_SOC_ANALYST`, `ROLE_SOC_ADMIN`.
+- Khi chay backend trong Docker, dung `KEYCLOAK_JWK_SET_URI=http://keycloak:8080/realms/soc-ai-search/protocol/openid-connect/certs` de backend lay JWKS qua network noi bo Docker.
+- Endpoint kiem tra user hien tai: `GET /api/v1/auth/me`.
+- Khi auth tat, `/api/v1/auth/me` tra demo identity `demo-analyst` va role `SOC_ANALYST`.
+- Khi auth bat ma khong co token, `/api/v1/auth/me` tra `401 Unauthorized`.
+
+Vi du bat backend auth local:
+
+```powershell
+$env:APP_AUTH_ENABLED="true"
+$env:KEYCLOAK_ISSUER_URI="http://localhost:8082/realms/soc-ai-search"
+cd backend
+.\mvnw.cmd spring-boot:run
+```

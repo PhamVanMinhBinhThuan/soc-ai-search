@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.UUID;
 
 import com.soc.ai.search.search.plan.SearchMode;
+import com.soc.ai.search.security.CurrentUserService;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.data.domain.PageImpl;
@@ -19,11 +20,14 @@ class AuditQueryServiceTest {
 
     private final SearchQueryLogRepository repository =
             org.mockito.Mockito.mock(SearchQueryLogRepository.class);
+    private final CurrentUserService currentUserService =
+            org.mockito.Mockito.mock(CurrentUserService.class);
     private final AuditQueryService service =
-            new AuditQueryService(repository, new AuditProperties("demo-analyst"));
+            new AuditQueryService(repository, currentUserService);
 
     @Test
     void historyUsesStableSortAndMapsQueryId() {
+        when(currentUserService.currentIdentity()).thenReturn("demo-analyst");
         var log = queryLog(UUID.fromString("11111111-1111-1111-1111-111111111111"));
         when(repository.findByUserIdentity(
                 org.mockito.ArgumentMatchers.eq("demo-analyst"),
@@ -45,6 +49,7 @@ class AuditQueryServiceTest {
 
     @Test
     void emptyHistoryHasZeroTotalPages() {
+        when(currentUserService.currentIdentity()).thenReturn("demo-analyst");
         when(repository.findByUserIdentity(
                 org.mockito.ArgumentMatchers.eq("demo-analyst"),
                 org.mockito.ArgumentMatchers.any(Pageable.class)))

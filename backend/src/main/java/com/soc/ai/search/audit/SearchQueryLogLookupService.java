@@ -7,23 +7,25 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.soc.ai.search.security.CurrentUserService;
+
 @Service
 public class SearchQueryLogLookupService {
 
     private final SearchQueryLogRepository repository;
-    private final AuditProperties properties;
+    private final CurrentUserService currentUserService;
 
     public SearchQueryLogLookupService(
             SearchQueryLogRepository repository,
-            AuditProperties properties) {
+            CurrentUserService currentUserService) {
         this.repository = repository;
-        this.properties = properties;
+        this.currentUserService = currentUserService;
     }
 
     @Transactional(readOnly = true)
     public Optional<StoredSearchQuery> findForExport(UUID queryId) {
         try {
-            return repository.findByIdAndUserIdentity(queryId, properties.demoUserIdentity())
+            return repository.findByIdAndUserIdentity(queryId, currentUserService.currentIdentity())
                     .map(log -> new StoredSearchQuery(
                             log.getId(),
                             log.getUserIdentity(),

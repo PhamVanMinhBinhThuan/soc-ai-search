@@ -53,6 +53,7 @@ services:
       APP_DEMO_USER_IDENTITY: ${APP_DEMO_USER_IDENTITY:-demo-analyst}
       APP_AUTH_ENABLED: ${APP_AUTH_ENABLED:-false}
       KEYCLOAK_ISSUER_URI: ${KEYCLOAK_ISSUER_URI:-http://localhost:8082/realms/soc-ai-search}
+      KEYCLOAK_JWK_SET_URI: ${KEYCLOAK_JWK_SET_URI:-http://keycloak:8080/realms/soc-ai-search/protocol/openid-connect/certs}
       ELASTICSEARCH_URL: http://elasticsearch:9200
       ELASTICSEARCH_USERNAME: ${ELASTICSEARCH_USERNAME:-}
       ELASTICSEARCH_PASSWORD: ${ELASTICSEARCH_PASSWORD:-}

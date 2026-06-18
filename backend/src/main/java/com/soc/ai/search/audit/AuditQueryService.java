@@ -7,6 +7,8 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.soc.ai.search.security.CurrentUserService;
+
 @Service
 public class AuditQueryService {
 
@@ -15,11 +17,11 @@ public class AuditQueryService {
             Sort.Order.desc("id"));
 
     private final SearchQueryLogRepository repository;
-    private final AuditProperties properties;
+    private final CurrentUserService currentUserService;
 
-    public AuditQueryService(SearchQueryLogRepository repository, AuditProperties properties) {
+    public AuditQueryService(SearchQueryLogRepository repository, CurrentUserService currentUserService) {
         this.repository = repository;
-        this.properties = properties;
+        this.currentUserService = currentUserService;
     }
 
     @Transactional(readOnly = true)
@@ -28,7 +30,7 @@ public class AuditQueryService {
         final Page<SearchQueryLog> result;
         try {
             result = repository.findByUserIdentity(
-                    properties.demoUserIdentity(),
+                    currentUserService.currentIdentity(),
                     PageRequest.of(page, size, AUDIT_SORT));
         } catch (DataAccessException exception) {
             throw new AuditPersistenceException("Audit history lookup failed", exception);
