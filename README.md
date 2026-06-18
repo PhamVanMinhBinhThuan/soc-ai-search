@@ -593,3 +593,101 @@ Chay smoke test Day 8:
 # Khi backend da bat APP_AUTH_ENABLED=true va ban co access token that:
 .\scripts\smoke-test-day-08.ps1 -AuthEnabled -AccessToken "<access_token>"
 ```
+
+## Day 9 RBAC notes
+
+Day 9 adds role-based access control on top of the Day 8 Keycloak foundation.
+Keycloak is still the source of users and roles. The app does not create a
+local user table.
+
+### Role matrix
+
+| Role | Search | Event metadata | Raw log | CSV export | Own history | Audit logs | Ingest |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `SOC_VIEWER` | Yes | Yes | No | No | No | No | No |
+| `SOC_ANALYST` | Yes | Yes | Yes | Yes | Yes | No | No |
+| `SOC_ADMIN` | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
+
+Role hierarchy is enforced in backend:
+
+```text
+ROLE_SOC_ADMIN > ROLE_SOC_ANALYST
+ROLE_SOC_ANALYST > ROLE_SOC_VIEWER
+```
+
+That means an admin does not need to be assigned analyst/viewer roles again in
+Keycloak just to pass `SOC_ANALYST` endpoints.
+
+Frontend permission is UX only. It hides or disables actions such as Export,
+History, Raw Log and Admin Console based on the token role. Backend RBAC is the
+real protection and returns `401`/`403` if a caller bypasses the UI.
+
+### Create demo users in Keycloak
+
+Self-registration remains disabled. Create users manually from the Keycloak
+Admin Console:
+
+1. Open `http://localhost:8082/admin`.
+2. Switch to realm `soc-ai-search`.
+3. Create users:
+   - `viewer.demo`
+   - `analyst.demo`
+   - `admin.demo`
+4. Assign exactly one realm role:
+   - `viewer.demo` -> `SOC_VIEWER`
+   - `analyst.demo` -> `SOC_ANALYST`
+   - `admin.demo` -> `SOC_ADMIN`
+5. Set a temporary password locally, or configure SMTP and send required
+   actions email for `VERIFY_EMAIL` and `UPDATE_PASSWORD`.
+
+### Test UI by role
+
+Run the stack with auth enabled, then log in as each demo user:
+
+```powershell
+docker compose --profile auth up -d
+docker compose up -d
+```
+
+Expected UI behavior:
+
+- Viewer can run search and open event metadata, but Raw Log is locked, Export
+  is disabled, History is hidden, and Admin Console is hidden.
+- Analyst can run search, view raw logs, export CSV and open Recent
+  Investigations, but cannot see Audit/Admin entry.
+- Admin can do everything analyst can do and also sees the Admin Console entry.
+
+### Run Day 9 RBAC smoke test
+
+Base smoke test without tokens:
+
+```powershell
+.\scripts\smoke-test-day-09-rbac.ps1
+```
+
+This checks backend health, frontend HTTP 200, OpenAPI paths and no-token auth
+behavior. It does not invent credentials and does not hardcode passwords.
+
+To run full role checks, pass real Keycloak access tokens:
+
+```powershell
+.\scripts\smoke-test-day-09-rbac.ps1 `
+  -ViewerToken "<viewer-access-token>" `
+  -AnalystToken "<analyst-access-token>" `
+  -AdminToken "<admin-access-token>" `
+  -RequireTokens
+```
+
+Manual token workflow for local testing:
+
+1. Start Keycloak and frontend with auth enabled.
+2. Log in as the target demo user.
+3. Open browser DevTools -> Application -> Session Storage.
+4. Find `oidc.user:<authority>:soc-ai-search-frontend`.
+5. Copy the `access_token` value.
+
+The smoke test verifies:
+
+- viewer raw log redaction and forbidden export/history/audit;
+- analyst raw log, export and history access, but forbidden audit;
+- admin audit access plus inherited analyst permissions.
