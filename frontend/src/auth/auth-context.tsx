@@ -1,8 +1,10 @@
 /* eslint-disable react-refresh/only-export-components */
 import {
   createContext,
+  useEffect,
   useContext,
   useMemo,
+  useState,
   type ReactNode,
 } from 'react'
 import {
@@ -12,6 +14,7 @@ import {
 import type { User } from 'oidc-client-ts'
 
 import { authEnabled, oidcConfig } from '@/auth/auth-config'
+import { apiUrl, errorPayload } from '@/services/api-client'
 
 export type SocAuthState = {
   enabled: boolean
@@ -42,6 +45,20 @@ const demoAuthState: SocAuthState = {
 }
 
 const SocAuthContext = createContext<SocAuthState>(demoAuthState)
+
+type BackendCurrentUser = {
+  authenticated: boolean
+  identity: string
+  username: string | null
+  email: string | null
+  roles: string[]
+}
+
+type BackendCurrentUserState = {
+  accessToken: string | null
+  user: BackendCurrentUser | null
+  errorMessage: string | null
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -77,26 +94,123 @@ function rolesFromProfile(profile: User['profile']) {
   return [...roles].sort()
 }
 
+function isBackendCurrentUser(value: unknown): value is BackendCurrentUser {
+  return (
+    isRecord(value) &&
+    typeof value.authenticated === 'boolean' &&
+    typeof value.identity === 'string' &&
+    (typeof value.username === 'string' || value.username === null) &&
+    (typeof value.email === 'string' || value.email === null) &&
+    Array.isArray(value.roles) &&
+    value.roles.every((role) => typeof role === 'string')
+  )
+}
+
+async function fetchBackendCurrentUser(
+  accessToken: string,
+  signal: AbortSignal,
+) {
+  const response = await fetch(apiUrl('/api/v1/auth/me'), {
+    signal,
+    headers: {
+      Accept: 'application/json',
+      Authorization: `Bearer ${accessToken}`,
+    },
+  })
+  const contentType = response.headers.get('content-type') ?? ''
+  const payload = contentType.includes('application/json')
+    ? await response.json()
+    : null
+
+  if (!response.ok) {
+    const parsed = errorPayload(payload)
+    throw new Error(parsed.message)
+  }
+
+  if (!isBackendCurrentUser(payload)) {
+    throw new Error('The backend returned an invalid auth/me response')
+  }
+
+  return payload
+}
+
 function OidcAuthBridge({ children }: { children: ReactNode }) {
   const oidc = useOidcAuth()
   const user = oidc.user
+  const accessToken = user?.access_token ?? null
+  const [backendUserState, setBackendUserState] =
+    useState<BackendCurrentUserState>({
+      accessToken: null,
+      user: null,
+      errorMessage: null,
+    })
+
+  useEffect(() => {
+    if (!oidc.isAuthenticated || !accessToken) {
+      return
+    }
+
+    const controller = new AbortController()
+
+    fetchBackendCurrentUser(accessToken, controller.signal)
+      .then((currentUser) => {
+        if (!controller.signal.aborted) {
+          setBackendUserState({
+            accessToken,
+            user: currentUser,
+            errorMessage: null,
+          })
+        }
+      })
+      .catch((error: unknown) => {
+        if (!controller.signal.aborted) {
+          setBackendUserState({
+            accessToken,
+            user: null,
+            errorMessage:
+              error instanceof Error
+                ? error.message
+                : 'Unable to load current user permissions',
+          })
+        }
+      })
+
+    return () => controller.abort()
+  }, [accessToken, oidc.isAuthenticated])
 
   const value = useMemo<SocAuthState>(() => {
+    const backendStateMatchesToken =
+      backendUserState.accessToken === accessToken
+    const backendUser = backendStateMatchesToken
+      ? backendUserState.user
+      : null
+    const backendUserError = backendStateMatchesToken
+      ? backendUserState.errorMessage
+      : null
+    const backendUserLoading = Boolean(
+      oidc.isAuthenticated &&
+        accessToken &&
+        !backendStateMatchesToken,
+    )
     const username = stringClaim(user?.profile.preferred_username)
     const email = stringClaim(user?.profile.email)
     const subject = stringClaim(user?.profile.sub)
     const identity = username ?? email ?? subject ?? 'unknown-user'
+    const tokenRoles = user ? rolesFromProfile(user.profile) : []
 
     return {
       enabled: true,
-      loading: oidc.isLoading || oidc.activeNavigator !== undefined,
+      loading:
+        oidc.isLoading ||
+        oidc.activeNavigator !== undefined ||
+        backendUserLoading,
       authenticated: Boolean(oidc.isAuthenticated && user?.access_token),
-      identity,
-      username,
-      email,
-      roles: user ? rolesFromProfile(user.profile) : [],
-      accessToken: user?.access_token ?? null,
-      errorMessage: oidc.error?.message ?? null,
+      identity: backendUser?.identity ?? identity,
+      username: backendUser?.username ?? username,
+      email: backendUser?.email ?? email,
+      roles: backendUser?.roles ?? tokenRoles,
+      accessToken,
+      errorMessage: oidc.error?.message ?? backendUserError,
       signIn: () => {
         void oidc.signinRedirect()
       },
@@ -104,7 +218,7 @@ function OidcAuthBridge({ children }: { children: ReactNode }) {
         void oidc.signoutRedirect()
       },
     }
-  }, [oidc, user])
+  }, [accessToken, backendUserState, oidc, user])
 
   return (
     <SocAuthContext.Provider value={value}>
