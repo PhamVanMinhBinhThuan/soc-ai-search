@@ -10,6 +10,7 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -29,9 +30,10 @@ public class SearchController {
     }
 
     @PostMapping("/plan")
+    @PreAuthorize("@rbacPermissionService.authDisabled() or hasRole('SOC_VIEWER')")
     @Operation(
             summary = "Execute a validated SearchPlan",
-            description = "Technical endpoint for deterministic search or aggregation SearchPlan execution.")
+            description = "Requires SOC_VIEWER. Technical endpoint for deterministic search or aggregation SearchPlan execution.")
     public Object searchByPlan(@Valid @RequestBody SearchPlan searchPlan) {
         return searchPlanExecutor.execute(searchPlan);
     }

@@ -11,6 +11,7 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -30,9 +31,11 @@ public class NaturalLanguageSearchController {
     }
 
     @PostMapping
+    @PreAuthorize("@rbacPermissionService.authDisabled() or hasRole('SOC_VIEWER')")
     @Operation(
             summary = "Search SOC events with a natural-language question",
-            description = "Uses an LLM to convert the question into a validated SearchPlan, then executes Elasticsearch search.")
+            description = "Requires SOC_VIEWER. Uses an LLM to convert the question into a validated SearchPlan, "
+                    + "then executes Elasticsearch search.")
     public NaturalLanguageSearchResponse search(@Valid @RequestBody NaturalLanguageSearchRequest request) {
         return naturalLanguageSearchService.search(request);
     }

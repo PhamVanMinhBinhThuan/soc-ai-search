@@ -7,6 +7,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
+import org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl;
 import org.springframework.boot.autoconfigure.security.oauth2.resource.OAuth2ResourceServerProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -16,6 +19,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -27,6 +31,7 @@ import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.firewall.HttpFirewall;
 import org.springframework.security.web.firewall.StrictHttpFirewall;
 import org.springframework.web.cors.CorsConfiguration;
@@ -35,6 +40,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.util.StringUtils;
 
 @Configuration
+@EnableMethodSecurity
 @EnableConfigurationProperties(AuthProperties.class)
 public class SecurityConfig {
 
@@ -52,11 +58,15 @@ public class SecurityConfig {
             HttpSecurity http,
             AuthProperties authProperties,
             JwtAuthenticationConverter jwtAuthenticationConverter,
-            AuthenticationEntryPoint authenticationEntryPoint) throws Exception {
+            AuthenticationEntryPoint authenticationEntryPoint,
+            AccessDeniedHandler accessDeniedHandler) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
                 .cors(Customizer.withDefaults())
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint(authenticationEntryPoint)
+                        .accessDeniedHandler(accessDeniedHandler));
 
         if (!authProperties.enabled()) {
             http.authorizeHttpRequests(authorize -> authorize.anyRequest().permitAll());
@@ -83,6 +93,18 @@ public class SecurityConfig {
     }
 
     @Bean
+    RoleHierarchy roleHierarchy() {
+        return RoleHierarchyImpl.fromHierarchy(String.join("\n",
+                RoleNames.ROLE_ADMIN + " > " + RoleNames.ROLE_ANALYST,
+                RoleNames.ROLE_ANALYST + " > " + RoleNames.ROLE_VIEWER));
+    }
+
+    @Bean
+    RbacPermissionService rbacPermissionService(AuthProperties authProperties, RoleHierarchy roleHierarchy) {
+        return new RbacPermissionService(authProperties, roleHierarchy);
+    }
+
+    @Bean
     JwtDecoder jwtDecoder(OAuth2ResourceServerProperties properties) {
         var jwt = properties.getJwt();
         if (!StringUtils.hasText(jwt.getJwkSetUri())) {
@@ -99,6 +121,11 @@ public class SecurityConfig {
     @Bean
     AuthenticationEntryPoint authenticationEntryPoint(ObjectMapper objectMapper) {
         return new JsonAuthenticationEntryPoint(objectMapper);
+    }
+
+    @Bean
+    AccessDeniedHandler accessDeniedHandler(ObjectMapper objectMapper) {
+        return new JsonAccessDeniedHandler(objectMapper);
     }
 
     @Bean
@@ -152,6 +179,27 @@ public class SecurityConfig {
             objectMapper.writeValue(
                     response.getOutputStream(),
                     new AuthErrorResponse("Unauthorized", List.of("Authentication is required")));
+        }
+    }
+
+    private static final class JsonAccessDeniedHandler implements AccessDeniedHandler {
+
+        private final ObjectMapper objectMapper;
+
+        private JsonAccessDeniedHandler(ObjectMapper objectMapper) {
+            this.objectMapper = objectMapper;
+        }
+
+        @Override
+        public void handle(
+                HttpServletRequest request,
+                HttpServletResponse response,
+                AccessDeniedException accessDeniedException) throws IOException, ServletException {
+            response.setStatus(HttpStatus.FORBIDDEN.value());
+            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+            objectMapper.writeValue(
+                    response.getOutputStream(),
+                    new AuthErrorResponse("Forbidden", List.of("Insufficient role")));
         }
     }
 }

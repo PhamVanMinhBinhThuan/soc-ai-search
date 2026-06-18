@@ -14,6 +14,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -37,9 +38,10 @@ public class CsvExportController {
     }
 
     @GetMapping(value = "/{queryId}/export.csv", produces = "text/csv")
+    @PreAuthorize("@rbacPermissionService.authDisabled() or hasRole('SOC_ANALYST')")
     @Operation(
             summary = "Export an audited search query as CSV",
-            description = "Replays the stored SearchPlan against current Elasticsearch data. "
+            description = "Requires SOC_ANALYST. Replays the stored SearchPlan against current Elasticsearch data. "
                     + "Search exports are capped at 10,000 rows; aggregation exports contain current buckets.")
     public ResponseEntity<StreamingResponseBody> export(@PathVariable UUID queryId) {
         var prepared = exportService.prepare(queryId);

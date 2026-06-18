@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -23,7 +24,10 @@ public class AuditQueryController {
     }
 
     @GetMapping("/api/v1/search/history")
-    @Operation(summary = "Get recent query history for the demo analyst")
+    @PreAuthorize("@rbacPermissionService.authDisabled() or hasRole('SOC_ANALYST')")
+    @Operation(
+            summary = "Get recent query history for the current analyst",
+            description = "Requires SOC_ANALYST. Results are scoped to the current identity.")
     public PagedResponse<SearchHistoryItem> history(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
@@ -31,7 +35,8 @@ public class AuditQueryController {
     }
 
     @GetMapping("/api/v1/audit-logs")
-    @Operation(summary = "Get paginated application audit logs")
+    @PreAuthorize("@rbacPermissionService.authDisabled() or hasRole('SOC_ADMIN')")
+    @Operation(summary = "Get paginated application audit logs", description = "Requires SOC_ADMIN.")
     public PagedResponse<AuditLogItem> auditLogs(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "50") int size) {
