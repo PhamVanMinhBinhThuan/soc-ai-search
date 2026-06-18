@@ -25,8 +25,21 @@ export class ApiError extends Error {
 const configuredBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim() ?? ''
 const apiBaseUrl = configuredBaseUrl.replace(/\/+$/, '')
 
+let accessTokenProvider: (() => string | null) | null = null
+
+export function setAccessTokenProvider(
+  provider: (() => string | null) | null,
+) {
+  accessTokenProvider = provider
+}
+
 export function apiUrl(path: string) {
   return `${apiBaseUrl}${path}`
+}
+
+export function authHeaders(): HeadersInit {
+  const token = accessTokenProvider?.()
+  return token ? { Authorization: `Bearer ${token}` } : {}
 }
 
 export function isRecord(
@@ -67,6 +80,7 @@ export async function requestJson(
       ...init,
       headers: {
         Accept: 'application/json',
+        ...authHeaders(),
         ...init.headers,
       },
     })

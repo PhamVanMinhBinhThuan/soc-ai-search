@@ -2,10 +2,13 @@ import {
   Activity,
   Circle,
   FlaskConical,
+  LogOut,
   ScrollText,
+  ShieldCheck,
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
+import { useSocAuth } from '@/auth/use-auth'
 import { EventDetailDrawer } from '@/components/soc/event-detail-drawer'
 import { HistorySheet } from '@/components/soc/history-sheet'
 import { MetricsSummary } from '@/components/soc/metrics-summary'
@@ -22,12 +25,13 @@ import {
 } from '@/components/soc/search-status'
 import { SocSidebar } from '@/components/soc/soc-sidebar'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { initialScenario, mockScenarios } from '@/lib/mock-data'
 import {
   downloadMockCsv,
   formatTimeRangeLabel,
 } from '@/lib/mock-presentation'
-import { ApiError } from '@/services/api-client'
+import { ApiError, setAccessTokenProvider } from '@/services/api-client'
 import {
   downloadCsvBlob,
   exportSearchCsv,
@@ -82,6 +86,7 @@ function isAbortError(error: unknown) {
 }
 
 function App() {
+  const auth = useSocAuth()
   const [question, setQuestion] = useState(
     isMockMode ? initialScenario.question : '',
   )
@@ -121,6 +126,11 @@ function App() {
   const exportAbortRef = useRef<AbortController | null>(null)
   const historyOpenRef = useRef(false)
   const historyPageRef = useRef(0)
+
+  useEffect(() => {
+    setAccessTokenProvider(() => auth.accessToken)
+    return () => setAccessTokenProvider(null)
+  }, [auth.accessToken])
 
   useEffect(
     () => () => {
@@ -393,7 +403,12 @@ function App() {
 
   return (
     <div className="dark flex min-h-svh bg-background text-foreground">
-      <SocSidebar onOpenHistory={openHistory} />
+      <SocSidebar
+        identity={auth.identity}
+        roles={auth.roles}
+        authEnabled={auth.enabled}
+        onOpenHistory={openHistory}
+      />
 
       <div className="min-w-0 flex-1">
         <header className="sticky top-0 z-30 flex h-16 min-w-0 items-center gap-3 overflow-hidden border-b border-border bg-background/85 px-4 backdrop-blur-xl sm:gap-4 sm:px-6">
@@ -418,6 +433,31 @@ function App() {
                 <Activity className="size-4 text-cyan-300" />
                 {response.total.toLocaleString('en-US')} events
               </span>
+            ) : null}
+            <span className="hidden items-center gap-2 rounded-full border border-border bg-secondary/40 px-2.5 py-1 text-xs text-muted-foreground lg:inline-flex">
+              <ShieldCheck className="size-3 text-emerald-300" />
+              <span className="max-w-32 truncate text-foreground">
+                {auth.identity}
+              </span>
+              {auth.roles[0] ? (
+                <Badge
+                  variant="outline"
+                  className="h-5 border-cyan-400/25 bg-cyan-400/10 px-2 text-[10px] text-cyan-200"
+                >
+                  {auth.roles[0]}
+                </Badge>
+              ) : null}
+            </span>
+            {auth.enabled ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={auth.signOut}
+                aria-label="Sign out"
+              >
+                <LogOut />
+                <span className="hidden sm:inline">Logout</span>
+              </Button>
             ) : null}
             <span
               className={

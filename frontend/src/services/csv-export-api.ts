@@ -1,6 +1,7 @@
 import {
   ApiError,
   apiUrl,
+  authHeaders,
   errorPayload,
 } from '@/services/api-client'
 
@@ -75,6 +76,7 @@ export async function exportSearchCsv(
         signal,
         headers: {
           Accept: 'text/csv, application/json',
+          ...authHeaders(),
         },
       },
     )

@@ -52,12 +52,25 @@ function CollapsedTooltip({
 }
 
 export function SocSidebar({
+  identity,
+  roles,
+  authEnabled,
   onOpenHistory,
 }: {
+  identity: string
+  roles: string[]
+  authEnabled: boolean
   onOpenHistory: () => void
 }) {
   const [expanded, setExpanded] = useState(false)
   const collapsed = !expanded
+  const initials = identity
+    .split(/[.@_\-\s]+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join('') || 'DA'
+  const roleLabel = roles[0] ?? (authEnabled ? 'Authenticated' : 'SOC Analyst')
 
   return (
     <TooltipProvider>
@@ -176,7 +189,7 @@ export function SocSidebar({
             )}
           >
             <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-secondary text-xs font-semibold ring-1 ring-border">
-              DA
+              {initials}
             </div>
             <div
               className={cn(
@@ -186,9 +199,11 @@ export function SocSidebar({
                   : 'ml-0 w-0 opacity-0',
               )}
             >
-              <span className="block text-xs font-medium">demo-analyst</span>
+              <span className="block max-w-32 truncate text-xs font-medium">
+                {identity}
+              </span>
               <span className="block text-[10px] text-muted-foreground">
-                SOC Analyst
+                {roleLabel}
               </span>
             </div>
           </div>

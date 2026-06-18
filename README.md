@@ -563,3 +563,33 @@ $env:KEYCLOAK_ISSUER_URI="http://localhost:8082/realms/soc-ai-search"
 cd backend
 .\mvnw.cmd spring-boot:run
 ```
+
+## Day 8 frontend OIDC notes
+
+- Frontend dung `react-oidc-context` + `oidc-client-ts` cho Authorization Code + PKCE.
+- OIDC state/token duoc luu bang `sessionStorage` trong MVP, khong dung `localStorage`.
+- Mac dinh `VITE_AUTH_ENABLED=false`, dashboard vao thang voi demo identity.
+- Khi `VITE_AUTH_ENABLED=true`, user phai login bang Keycloak truoc khi vao dashboard.
+- Frontend tu gan `Authorization: Bearer <access_token>` vao backend API request khi da login.
+- Mock mode `VITE_USE_MOCK=true` van khong can token.
+- Header/sidebar hien identity va role; RBAC chi tiet theo role se lam o Day 9.
+
+Frontend env local:
+
+```powershell
+VITE_AUTH_ENABLED=false
+VITE_KEYCLOAK_AUTHORITY=http://localhost:8082/realms/soc-ai-search
+VITE_KEYCLOAK_CLIENT_ID=soc-ai-search-frontend
+VITE_KEYCLOAK_REDIRECT_URI=http://localhost:3000/auth/callback
+VITE_KEYCLOAK_POST_LOGOUT_REDIRECT_URI=http://localhost:3000
+VITE_KEYCLOAK_SCOPE=openid profile email
+```
+
+Chay smoke test Day 8:
+
+```powershell
+.\scripts\smoke-test-day-08.ps1
+
+# Khi backend da bat APP_AUTH_ENABLED=true va ban co access token that:
+.\scripts\smoke-test-day-08.ps1 -AuthEnabled -AccessToken "<access_token>"
+```
