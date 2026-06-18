@@ -7,12 +7,19 @@ import {
   DatabaseZap,
   Download,
   FileSearch,
+  LoaderCircle,
   Table2,
+  TriangleAlert,
 } from 'lucide-react'
-import { lazy, Suspense, useState } from 'react'
+import { lazy, Suspense } from 'react'
 
 import { CountryCode } from '@/components/soc/country-code'
 import { SeverityBadge } from '@/components/soc/severity-badge'
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import {
@@ -29,10 +36,10 @@ import {
   TabsList,
   TabsTrigger,
 } from '@/components/ui/tabs'
-import { downloadMockCsv } from '@/lib/mock-presentation'
 import type {
   AggregationResultItemDto,
   ChartMetadataDto,
+  ExportStatus,
   SearchEventDto,
   SearchMode,
 } from '@/types/soc'
@@ -72,11 +79,9 @@ function EmptyModeState({
 function AnalyticsView({
   aggregationResults,
   chartMetadata,
-  summary,
 }: {
   aggregationResults: AggregationResultItemDto[]
   chartMetadata: ChartMetadataDto | null
-  summary: string | null
 }) {
   if (aggregationResults.length === 0) {
     return (
@@ -90,12 +95,6 @@ function AnalyticsView({
 
   return (
     <div className="space-y-4">
-      {summary ? (
-        <div className="rounded-xl border border-violet-400/20 bg-violet-500/5 px-4 py-3">
-          <p className="text-xs leading-5 text-foreground/80">{summary}</p>
-        </div>
-      ) : null}
-
       <Suspense
         fallback={
           <div className="h-80 animate-pulse rounded-xl border border-border bg-secondary/20" />
@@ -285,43 +284,41 @@ export function ResultTabs({
   events,
   aggregationResults,
   chartMetadata,
-  summary,
   total,
   page,
   size,
   totalPages,
   isMockMode,
+  queryId,
+  exportStatus,
+  exportMessage,
+  exportDisabled,
   timeRangeLabel,
   onTabChange,
   onPageChange,
   onSelectEvent,
+  onExport,
 }: {
   mode: SearchMode
   activeTab: ResultTab
   events: SearchEventDto[]
   aggregationResults: AggregationResultItemDto[]
   chartMetadata: ChartMetadataDto | null
-  summary: string | null
   total: number
   page: number
   size: number
   totalPages: number
   isMockMode: boolean
+  queryId: string | null
+  exportStatus: ExportStatus
+  exportMessage: string | null
+  exportDisabled: boolean
   timeRangeLabel: string
   onTabChange: (tab: ResultTab) => void
   onPageChange: (page: number) => void
   onSelectEvent: (eventId: string) => void
+  onExport: () => void
 }) {
-  const [exported, setExported] = useState(false)
-  const hasExportData =
-    mode === 'search' ? events.length > 0 : aggregationResults.length > 0
-
-  const exportCsv = () => {
-    downloadMockCsv({ mode, events, aggregationResults })
-    setExported(true)
-    window.setTimeout(() => setExported(false), 1400)
-  }
-
   return (
     <Card className="gap-0 overflow-hidden border border-border bg-card py-0">
       <div className="flex flex-wrap items-center gap-2 border-b border-border px-4 py-3">
@@ -332,20 +329,58 @@ export function ResultTabs({
         <span className="rounded-lg border border-border bg-background/35 px-3 py-1.5 text-xs text-muted-foreground">
           Mode: <strong className="text-foreground">{mode}</strong>
         </span>
-        {isMockMode ? (
-          <Button
-            variant="outline"
-            size="sm"
-            className="ml-auto"
-            disabled={!hasExportData}
-            onClick={exportCsv}
-            aria-live="polite"
-          >
-            {exported ? <Check className="text-emerald-300" /> : <Download />}
-            {exported ? 'Exported' : 'Export Mock CSV'}
-          </Button>
-        ) : null}
+        <Button
+          variant="outline"
+          size="sm"
+          className="ml-auto"
+          disabled={exportDisabled}
+          onClick={onExport}
+          aria-label={
+            isMockMode ? 'Export mock results as CSV' : 'Export results as CSV'
+          }
+          aria-live="polite"
+          title={queryId ? `Export query ${queryId}` : 'No query available'}
+        >
+          {exportStatus === 'loading' ? (
+            <LoaderCircle className="animate-spin" />
+          ) : exportStatus === 'success' ? (
+            <Check className="text-emerald-300" />
+          ) : (
+            <Download />
+          )}
+          {exportStatus === 'loading'
+            ? 'Exporting...'
+            : exportStatus === 'success'
+              ? 'Exported'
+              : isMockMode
+                ? 'Export Mock CSV'
+                : 'Export CSV'}
+        </Button>
       </div>
+
+      {exportMessage ? (
+        <div className="px-4 pt-3" aria-live="polite">
+          <Alert
+            className={
+              exportStatus === 'error'
+                ? 'border-rose-400/30 bg-rose-500/5'
+                : 'border-emerald-400/25 bg-emerald-500/5'
+            }
+          >
+            {exportStatus === 'error' ? (
+              <TriangleAlert className="mr-2 inline size-4 text-rose-300" />
+            ) : (
+              <Check className="mr-2 inline size-4 text-emerald-300" />
+            )}
+            <AlertTitle className="inline">
+              {exportStatus === 'error'
+                ? 'CSV export failed'
+                : 'CSV export ready'}
+            </AlertTitle>
+            <AlertDescription>{exportMessage}</AlertDescription>
+          </Alert>
+        </div>
+      ) : null}
 
       <Tabs
         value={activeTab}
@@ -367,7 +402,6 @@ export function ResultTabs({
           <AnalyticsView
             aggregationResults={aggregationResults}
             chartMetadata={chartMetadata}
-            summary={summary}
           />
         </TabsContent>
         <TabsContent value="raw">

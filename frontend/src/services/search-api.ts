@@ -1,4 +1,8 @@
-import { ApiError, requestJson } from '@/services/api-client'
+import {
+  ApiError,
+  isRecord,
+  requestJson,
+} from '@/services/api-client'
 import {
   getMockEventDetail,
   searchMockEvents,
@@ -12,8 +16,15 @@ import type {
 export const isMockMode =
   import.meta.env.VITE_USE_MOCK === 'true'
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
+const uuidPattern =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+
+function isNonNegativeNumber(value: unknown) {
+  return (
+    typeof value === 'number' &&
+    Number.isFinite(value) &&
+    value >= 0
+  )
 }
 
 function assertSearchResponse(
@@ -21,9 +32,23 @@ function assertSearchResponse(
 ): asserts payload is NaturalLanguageSearchResponseDto {
   if (
     !isRecord(payload) ||
+    typeof payload.query_id !== 'string' ||
+    !uuidPattern.test(payload.query_id) ||
     (payload.mode !== 'search' && payload.mode !== 'aggregation') ||
     !isRecord(payload.search_plan) ||
     !isRecord(payload.generated_dsl) ||
+    typeof payload.summary !== 'string' ||
+    payload.summary.trim().length === 0 ||
+    (payload.summary_source !== 'llm' &&
+      payload.summary_source !== 'fallback') ||
+    !isNonNegativeNumber(payload.summary_latency_ms) ||
+    !isNonNegativeNumber(payload.total) ||
+    !isNonNegativeNumber(payload.page) ||
+    !isNonNegativeNumber(payload.size) ||
+    !isNonNegativeNumber(payload.total_pages) ||
+    !isNonNegativeNumber(payload.llm_latency_ms) ||
+    !isNonNegativeNumber(payload.search_latency_ms) ||
+    !isNonNegativeNumber(payload.latency_ms) ||
     !Array.isArray(payload.events) ||
     !Array.isArray(payload.aggregation_results)
   ) {

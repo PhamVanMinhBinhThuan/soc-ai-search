@@ -640,78 +640,174 @@ Yêu cầu frontend:
    - summary;
    - summary_source;
    - summary_latency_ms;
-   - history/audit DTO cần thiết.
-2. Hiển thị summary 3-5 câu phía trên query transparency và bảng/chart.
-3. Khi chạy API thật:
-   - label là `AI Summary` hoặc `Fallback Summary`;
-   - không hiển thị `Mock AI Summary` hoặc `STATIC DEMO DATA`;
-   - có badge nhỏ cho source `LLM` hoặc `FALLBACK`.
-4. Mock mode vẫn hoạt động và mock DTO phải khớp contract mới.
-5. Tích hợp recent history:
+   - `summary_source` chỉ gồm `"llm"` hoặc `"fallback"`;
+   - history DTO cần thiết;
+   - không tạo audit DTO cho frontend nếu UI không gọi audit API.
+   Contract history phải phản ánh FAILED record có field nullable:
+   - `query_id`: string UUID;
+   - `question`: string;
+   - `mode`: `"search"` hoặc `"aggregation"` hoặc null;
+   - `result_count`: number hoặc null;
+   - `latency_ms`: number hoặc null;
+   - `status`: `"SUCCESS"` hoặc `"FAILED"`;
+   - `created_at`: ISO-8601 string.
+2. Cập nhật runtime response assertion trong frontend:
+   - kiểm tra `query_id` là UUID string hợp lệ;
+   - kiểm tra `summary` là string không blank;
+   - kiểm tra `summary_source` là `llm` hoặc `fallback`;
+   - kiểm tra `summary_latency_ms >= 0`;
+   - giữ các kiểm tra mode, SearchPlan, generated DSL, events và aggregation hiện tại;
+   - response sai contract phải trở thành `ApiError` có kiểm soát.
+3. Frontend phải dùng trực tiếp `response.summary`, `response.summary_source` và `response.summary_latency_ms` cho cả API thật và mock:
+   - xóa flow lấy summary bằng `mockSummaryForQuestion(...)` trong `App.tsx`;
+   - summary trong mock mode cũng phải nằm trực tiếp trong `NaturalLanguageSearchResponseDto`;
+   - hiển thị summary 3-5 câu một lần phía trên Query Transparency và bảng/chart;
+   - không render lại cùng summary lần thứ hai trong Analytics View.
+4. Quy tắc label summary:
+   - API thật với `summary_source = "llm"`: label `AI Summary`, badge `LLM`;
+   - API thật với `summary_source = "fallback"`: label `Fallback Summary`, badge `FALLBACK`;
+   - mock mode có thể dùng label `Mock AI Summary` và badge `MOCK`;
+   - `STATIC DEMO DATA` hoặc `Mock AI Summary` tuyệt đối không xuất hiện khi `VITE_USE_MOCK=false`;
+   - hiển thị `summary_latency_ms` gọn bên cạnh badge;
+   - giữ hiệu ứng glow hiện tại nhưng không thêm animation gây mất tập trung hoặc ảnh hưởng accessibility.
+5. Mock mode vẫn hoạt động và không gọi backend:
+   - mock response phải có `query_id` UUID deterministic;
+   - mock response có `summary`, `summary_source` và `summary_latency_ms`;
+   - mock DTO dùng cùng contract với API thật;
+   - history mock dùng dữ liệu local deterministic, không gọi `/api/v1/search/history`;
+   - khi `VITE_USE_MOCK=true`, nhãn `No API calls` phải đúng sự thật.
+6. Tích hợp recent history:
    - gọi `GET /api/v1/search/history?page=0&size=20`;
    - đọc response pagination gồm `items`, `page`, `size`, `total`, `total_pages`;
-   - hiển thị trong Sheet/Drawer hoặc panel gọn khi bấm mục `Investigations`/history;
+   - tạo service riêng như `getSearchHistory(page, size, signal)`;
+   - validate runtime response history trước khi render;
+   - hiển thị trong Sheet/Drawer gọn khi bấm mục `Investigations`;
+   - cập nhật `SocSidebar` để nhận callback như `onOpenHistory`, không để nút Investigations chỉ là nút tĩnh;
+   - vì sidebar ẩn trên mobile, thêm nút mở history trong header mobile hoặc vị trí responsive tương đương;
    - mỗi item có question, mode, status, result_count, latency và created_at;
+   - render an toàn khi mode/result_count/latency_ms là null;
    - không render SearchPlan hoặc generated DSL dài trong history list;
-   - click item sẽ điền lại question và chạy lại search;
+   - click item đóng Sheet, điền lại question và chạy lại search với `page = 0`, giữ search page size hiện tại;
    - có điều khiển trang trước/sau hoặc tương đương dựa trên `page` và `total_pages`;
    - có loading, empty và error state.
-6. Tích hợp CSV:
+   - chỉ fetch history khi người dùng mở Sheet hoặc đổi trang;
+   - sau khi một search mới hoàn tất thành công hoặc thất bại, chỉ refresh trang history hiện tại nếu History Sheet đang mở;
+   - nếu History Sheet đang đóng thì không gọi history API, tránh phát sinh request dư khi người dùng search liên tục;
+   - dùng `AbortController` hoặc guard tương đương để request cũ không overwrite state mới khi đóng/mở nhanh.
+7. Tích hợp CSV:
+   - `requestJson(...)` hiện chỉ dành cho JSON; không ép Blob qua helper này;
+   - tạo API function riêng, ví dụ `exportSearchCsv(queryId, signal)`;
    - nút Export CSV hoạt động cho API thật bằng query_id;
    - gọi `GET /api/v1/search/{query_id}/export.csv`;
-   - tải Blob với filename từ `Content-Disposition` nếu có;
+   - API function trả tối thiểu `{ blob, filename, truncated }`;
+   - đọc `Content-Disposition`, hỗ trợ cả `filename` và `filename*`, rồi sanitize filename trước khi download;
+   - fallback filename an toàn là `soc-search-{query_id}.csv`;
+   - đọc `X-Export-Truncated` thành boolean;
+   - nếu response lỗi và content type là JSON, parse `SearchErrorResponse` thành `ApiError`;
+   - nếu response lỗi không phải JSON, trả `ApiError` chung có kiểm soát;
+   - tải Blob bằng object URL, click link ẩn và luôn revoke object URL sau khi download;
    - nếu response có `X-Export-Truncated: true`, hiển thị toast/alert rằng file chỉ chứa 10.000 dòng đầu;
-   - có loading/disabled/error state;
-   - mock mode có thể giữ export mock hiện tại.
-7. Không fetch audit log cho UI nếu không cần; audit endpoint chỉ cần kiểm qua Swagger/smoke test.
-8. Không thêm router/state-management library nếu chưa cần.
-9. Giữ dark SOC UI, responsive và accessibility hiện tại.
+   - có trạng thái export `idle`, `loading`, `success`, `error`;
+   - disable nút khi đang export, chưa có query_id hoặc search request hiện tại đang loading;
+   - không cho export query_id cũ trong lúc một search mới đang chạy;
+   - vẫn cho export no-result vì backend có thể trả header-only CSV hoặc `total,0`;
+   - API mode dùng backend export; mock mode giữ local mock CSV hiện tại.
+8. Tách trách nhiệm component vừa đủ:
+   - `App.tsx` giữ orchestration search/history/export ở mức cần thiết;
+   - `HistorySheet` chịu trách nhiệm trình bày history;
+   - `ResultTabs` nhận query_id, export state và callback, không tự gọi API;
+   - `MetricsSummary` nhận summary source/latency thay vì hardcode label mock.
+9. Không fetch audit log cho UI; audit endpoint chỉ kiểm qua Swagger/smoke test.
+10. Không thêm router, state-management library, toast library hoặc dependency mới nếu chưa cần. Có thể dùng Alert/inline status hiện có cho export feedback.
+11. Giữ dark SOC UI, responsive và accessibility hiện tại:
+    - Sheet có title/description và focus management từ Radix;
+    - nút history/export có aria-label phù hợp;
+    - loading state dùng `aria-live` hoặc text rõ;
+    - không phá keyboard navigation của event table/sidebar.
+12. Giữ runtime contract strict cho summary source:
+    - chỉ chấp nhận `summary_source = "llm"` hoặc `"fallback"` từ backend;
+    - giá trị lạ không được render thành badge `UNKNOWN`;
+    - response có source lạ phải bị runtime assertion chuyển thành `ApiError` có kiểm soát, không làm ứng dụng crash.
+13. Quy tắc API origin và CSV response header:
+    - ưu tiên giữ `VITE_API_BASE_URL` rỗng và gọi `/api` qua Vite proxy khi development, Nginx proxy khi chạy Docker;
+    - với cách chạy same-origin hiện tại, không thêm CORS configuration chỉ để đọc CSV header;
+    - nếu project thực sự hỗ trợ `VITE_API_BASE_URL` trỏ sang origin khác, cấu hình Spring CORS expose chính xác `Content-Disposition` và `X-Export-Truncated`;
+    - trong trường hợp cross-origin, thêm verify rằng frontend đọc được filename và trạng thái truncated từ hai response header này;
+    - không dùng wildcard CORS origin/header tùy tiện và không mở rộng CORS nếu ứng dụng chỉ chạy same-origin.
 
 Yêu cầu smoke test:
-10. Tạo `scripts/smoke-test-day-07.ps1`, giữ style nhất quán với smoke test trước.
-11. Script giả định Docker Compose đang chạy và dataset đã seed.
-12. Verify:
+14. Tạo `scripts/smoke-test-day-07.ps1`, giữ style nhất quán với smoke test trước.
+15. Script giả định Docker Compose đang chạy, dataset đã seed và backend dùng provider mock để checkpoint deterministic:
+    - trước khi chạy smoke test, dùng:
+      `$env:LLM_PROVIDER="mock"`
+      `docker compose up -d --build --force-recreate backend`;
+    - script phải in rõ expected provider là mock;
+    - không sửa file `.env` hoặc ghi đè API key;
+    - sau smoke test, báo rõ nếu người dùng muốn quay lại Gemini thì chạy lại backend theo `.env`.
+16. Verify:
     - backend health;
+    - Elasticsearch health;
     - OpenAPI có history, audit và export endpoints;
+    - OpenAPI export path thực tế là `/api/v1/search/{queryId}/export.csv`;
     - search success trả query_id UUID;
     - search success trả summary không blank;
     - summary_source là `llm` hoặc `fallback`;
+    - summary_latency_ms >= 0;
     - aggregation cũng trả summary;
     - history pagination hợp lệ và chứa query vừa chạy;
     - audit chứa SUCCESS record;
-    - request invalid tạo FAILED audit record nếu flow đã vào orchestration;
+    - tạo một question duy nhất không được mock hỗ trợ, ví dụ `unsupported audit smoke {guid}`, để request đi vào orchestration rồi thất bại;
+    - không dùng blank question hoặc size > 100 để chứng minh FAILED audit vì các request đó bị Bean Validation chặn trước service;
+    - sau request unsupported, audit endpoint phải chứa record đúng question với `status = FAILED`;
+    - FAILED audit response không chứa stack trace, API key hoặc secret;
     - export search trả HTTP 200, `text/csv`, header đúng và không có raw column;
     - export aggregation có header `key,value`;
-    - CSV không vượt 10.000 data row;
+    - dùng `curl.exe -D <headers-file> -o <csv-file>` hoặc cách tương đương ổn định với streaming response; không dùng `Invoke-WebRequest -OutFile -PassThru` vì có thể lỗi trên Windows PowerShell;
+    - kiểm tra UTF-8 BOM, `Content-Disposition`, `Content-Type` và `X-Export-Truncated`;
+    - parse CSV bằng `Import-Csv` để đếm data row; không dùng `Get-Content` đếm dòng vì message có thể chứa newline hợp lệ trong quoted cell;
+    - search CSV không vượt 10.000 data row;
+    - search CSV exact header là `event_id,timestamp,source,severity,event_type,user,host,ip,country_code,message`;
+    - search CSV không có `raw` column;
+    - aggregation CSV exact header là `key,value`;
     - nếu có fixture/query vượt giới hạn thì response có `X-Export-Truncated: true`; nếu không có fixture lớn, guardrail này phải được backend test chứng minh;
     - unknown query_id trả 404;
-    - frontend URL trả 200.
-13. Smoke test không được phụ thuộc Gemini luôn còn quota:
-    - có thể chạy backend với mock provider cho checkpoint deterministic;
+    - frontend URL trả 200;
+    - sau khi chạy frontend build, `frontend/dist/index.html` phải tồn tại, ví dụ kiểm tra bằng `Test-Path frontend/dist/index.html`.
+17. Smoke test không được phụ thuộc Gemini luôn còn quota:
+    - backend checkpoint bắt buộc dùng mock provider;
     - phải có test backend chứng minh summary fallback khi Gemini lỗi.
-14. Cập nhật README:
+18. Cập nhật README:
     - audit/history table và demo identity;
     - cách gọi history/audit;
     - summary best effort, timeout riêng 5 giây và deterministic fallback;
     - cách export CSV;
     - giới hạn 10.000 dòng, batch export và header truncate;
+    - frontend history, rerun query và export UI;
     - cách chạy smoke test ngày 7.
-15. Chạy verify:
+    - sửa hoặc thay thế các câu cũ ghi rằng summary/history/CSV "sẽ làm từ ngày 7"; không chỉ nối thêm section mới khiến README tự mâu thuẫn.
+19. Chạy verify:
     - backend test;
     - frontend lint;
     - frontend build;
     - npm audit high;
     - docker compose config;
     - smoke test ngày 7.
-16. Sửa lỗi nhỏ nếu phát hiện nhưng không mở rộng ngoài MVP.
-17. Báo checklist PASS/FAIL:
+20. Thêm frontend test chỉ khi project đã có test runner. Nếu chưa có test runner, không thêm Vitest/Playwright trong Prompt 4; verify bằng TypeScript build, lint, smoke API và kiểm tra UI thủ công.
+21. Kiểm tra UI thủ công trên desktop và mobile:
+    - summary label đúng LLM/FALLBACK/MOCK;
+    - history Sheet mở được, phân trang và rerun query;
+    - export loading/success/error/truncated feedback;
+    - không có horizontal overflow mới;
+    - keyboard mở được history, export và history item.
+22. Sửa lỗi nhỏ nếu phát hiện nhưng không mở rộng ngoài MVP.
+23. Báo checklist PASS/FAIL:
     - audit success/failed;
     - history UI;
     - summary LLM/fallback;
     - CSV search/aggregation;
     - frontend;
     - test và Docker.
-18. Liệt kê việc ngày 8 nhưng không triển khai deployment trong prompt này.
+24. Liệt kê việc ngày 8 nhưng không triển khai deployment trong prompt này.
 
 Không triển khai auth/RBAC, saved query, multi-turn conversation, vector search, advanced dashboard hoặc feature khuyến khích.
 ```

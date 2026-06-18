@@ -51,7 +51,11 @@ function CollapsedTooltip({
   )
 }
 
-export function SocSidebar() {
+export function SocSidebar({
+  onOpenHistory,
+}: {
+  onOpenHistory: () => void
+}) {
   const [expanded, setExpanded] = useState(false)
   const collapsed = !expanded
 
@@ -91,6 +95,11 @@ export function SocSidebar() {
                 type="button"
                 aria-label={item.label}
                 aria-current={item.active ? 'page' : undefined}
+                onClick={
+                  item.label === 'Investigations'
+                    ? onOpenHistory
+                    : undefined
+                }
                 className={cn(
                   'relative flex h-10 w-full shrink-0 items-center rounded-xl transition-colors',
                   expanded ? 'justify-start px-3' : 'justify-center',

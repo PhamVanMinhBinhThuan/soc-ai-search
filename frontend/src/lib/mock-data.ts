@@ -180,7 +180,7 @@ export const mockScenarios: MockScenario[] = [
     aggregation_results: [],
     events: failedLoginSearchEvents,
     summary:
-      '312 failed login events matched the last 24 hours. The repeated source IP 203.0.113.45 appears across failed login, account lockout, and privilege escalation activity.',
+      '312 failed login events matched the last 24 hours. The repeated source IP 203.0.113.45 appears across failed login, account lockout, and privilege escalation activity. Analysts should prioritize this source and review the affected privileged accounts.',
   },
   {
     shortLabel: 'Critical alerts',
@@ -216,7 +216,7 @@ export const mockScenarios: MockScenario[] = [
     aggregation_results: [],
     events: criticalSearchEvents,
     summary:
-      '337 critical events were found in the last 7 days. The visible sample contains malware and privilege escalation activity that should be investigated first.',
+      '337 critical events were found in the last 7 days. The visible sample contains malware and privilege escalation activity that should be investigated first. Correlate the affected hosts and users before closing these alerts.',
   },
   {
     shortLabel: 'Failed login by user',
@@ -271,7 +271,7 @@ export const mockScenarios: MockScenario[] = [
     },
     events: [],
     summary:
-      'Showing failed login counts grouped by user for the last 7 days. The admin account is the highest-volume target with 558 matching events.',
+      'Showing failed login counts grouped by user for the last 7 days. The admin account is the highest-volume target with 558 matching events. Review repeated source IPs and related account lockouts for the leading users.',
   },
   {
     shortLabel: 'Top source IPs',
@@ -324,7 +324,7 @@ export const mockScenarios: MockScenario[] = [
     },
     events: [],
     summary:
-      'Showing the highest-volume source IP addresses in the last 30 days. The leading source has 622 events and should be reviewed for repeated attack patterns.',
+      'Showing the highest-volume source IP addresses in the last 30 days. The leading source has 622 events and should be reviewed for repeated attack patterns. Compare these addresses with firewall blocks and authentication failures.',
   },
   {
     shortLabel: 'Events by hour',
@@ -383,7 +383,7 @@ export const mockScenarios: MockScenario[] = [
     },
     events: [],
     summary:
-      'Event volume peaked between 08:00 and 09:00 UTC. The hourly trend can help analysts correlate alert bursts with authentication and endpoint activity.',
+      'Event volume peaked between 08:00 and 09:00 UTC. The hourly trend can help analysts correlate alert bursts with authentication and endpoint activity. Investigate the peak window alongside critical severity events.',
   },
 ]
 

@@ -8,7 +8,7 @@ import {
 } from 'lucide-react'
 
 import { Card } from '@/components/ui/card'
-import type { SearchMode } from '@/types/soc'
+import type { SearchMode, SummarySource } from '@/types/soc'
 
 const metricStyles = [
   {
@@ -39,12 +39,18 @@ export function MetricsSummary({
   llmLatencyMs,
   searchLatencyMs,
   summary,
+  summarySource,
+  summaryLatencyMs,
+  isMockMode,
 }: {
   mode: SearchMode
   total: number
   llmLatencyMs: number
   searchLatencyMs: number
-  summary: string | null
+  summary: string
+  summarySource: SummarySource
+  summaryLatencyMs: number
+  isMockMode: boolean
 }) {
   const metrics = [
     {
@@ -76,6 +82,16 @@ export function MetricsSummary({
   const isBruteForceRisk =
     summary?.toLowerCase().includes('failed login') ||
     summary?.toLowerCase().includes('brute force')
+  const summaryLabel = isMockMode
+    ? 'Mock AI Summary'
+    : summarySource === 'llm'
+      ? 'AI Summary'
+      : 'Fallback Summary'
+  const summaryBadge = isMockMode
+    ? 'MOCK'
+    : summarySource === 'llm'
+      ? 'LLM'
+      : 'FALLBACK'
 
   return (
     <section className="space-y-3">
@@ -115,27 +131,28 @@ export function MetricsSummary({
         })}
       </div>
 
-      {summary ? (
-        <div className="ai-summary-glow relative overflow-hidden rounded-xl p-px">
-          <div className="relative rounded-[11px] bg-card/95 px-4 py-3 backdrop-blur-sm">
-            <div className="mb-2 flex flex-wrap items-center gap-2 text-sm font-semibold">
-              <Sparkles className="size-4 text-violet-300" />
-              Mock AI Summary
-              <span className="hidden flex-1 sm:block" />
-              {isBruteForceRisk ? (
-                <span className="risk-badge-pulse inline-flex items-center gap-1 rounded-full border border-rose-400/40 bg-rose-500/15 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-rose-200">
-                  <ShieldAlert className="size-3" />
-                  BRUTE FORCE RISK
-                </span>
-              ) : null}
-              <span className="rounded-full border border-violet-400/25 bg-violet-500/10 px-2 py-0.5 text-[10px] font-medium text-violet-200">
-                STATIC DEMO DATA
+      <div className="ai-summary-glow relative overflow-hidden rounded-xl p-px">
+        <div className="relative rounded-[11px] bg-card/95 px-4 py-3 backdrop-blur-sm">
+          <div className="mb-2 flex flex-wrap items-center gap-2 text-sm font-semibold">
+            <Sparkles className="size-4 text-violet-300" />
+            {summaryLabel}
+            <span className="hidden flex-1 sm:block" />
+            {isBruteForceRisk ? (
+              <span className="risk-badge-pulse inline-flex items-center gap-1 rounded-full border border-rose-400/40 bg-rose-500/15 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-rose-200">
+                <ShieldAlert className="size-3" />
+                BRUTE FORCE RISK
               </span>
-            </div>
-            <p className="text-sm leading-6 text-foreground/85">{summary}</p>
+            ) : null}
+            <span className="rounded-full border border-violet-400/25 bg-violet-500/10 px-2 py-0.5 text-[10px] font-medium text-violet-200">
+              {summaryBadge}
+            </span>
+            <span className="font-mono text-[10px] font-normal text-muted-foreground">
+              {summaryLatencyMs}ms
+            </span>
           </div>
+          <p className="text-sm leading-6 text-foreground/85">{summary}</p>
         </div>
-      ) : null}
+      </div>
     </section>
   )
 }

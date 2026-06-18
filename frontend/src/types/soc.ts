@@ -2,6 +2,10 @@ export type SearchMode = 'search' | 'aggregation'
 
 export type Severity = 'low' | 'medium' | 'high' | 'critical'
 
+export type SummarySource = 'llm' | 'fallback'
+
+export type AuditStatus = 'SUCCESS' | 'FAILED'
+
 export type AggregationType =
   | 'count'
   | 'group_by'
@@ -73,6 +77,7 @@ export type NaturalLanguageSearchRequestDto = {
 }
 
 export type NaturalLanguageSearchResponseDto = {
+  query_id: string
   original_question: string
   mode: SearchMode
   search_plan: SearchPlanDto
@@ -83,11 +88,32 @@ export type NaturalLanguageSearchResponseDto = {
   total_pages: number
   llm_latency_ms: number
   search_latency_ms: number
+  summary_latency_ms: number
   latency_ms: number
+  summary: string
+  summary_source: SummarySource
   aggregation_type: AggregationType | null
   aggregation_results: AggregationResultItemDto[]
   chart_metadata: ChartMetadataDto | null
   events: SearchEventDto[]
+}
+
+export type SearchHistoryItemDto = {
+  query_id: string
+  question: string
+  mode: SearchMode | null
+  result_count: number | null
+  latency_ms: number | null
+  status: AuditStatus
+  created_at: string
+}
+
+export type SearchHistoryPageDto = {
+  items: SearchHistoryItemDto[]
+  page: number
+  size: number
+  total: number
+  total_pages: number
 }
 
 export type SearchErrorResponseDto = {
@@ -107,6 +133,15 @@ export type RequestStatus =
   | 'error'
 
 export type DetailStatus = 'idle' | 'loading' | 'success' | 'error'
+
+export type HistoryStatus =
+  | 'idle'
+  | 'loading'
+  | 'success'
+  | 'empty'
+  | 'error'
+
+export type ExportStatus = 'idle' | 'loading' | 'success' | 'error'
 
 export type UiError = {
   status: number

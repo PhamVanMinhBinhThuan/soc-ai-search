@@ -25,11 +25,17 @@ export class ApiError extends Error {
 const configuredBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim() ?? ''
 const apiBaseUrl = configuredBaseUrl.replace(/\/+$/, '')
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+export function apiUrl(path: string) {
+  return `${apiBaseUrl}${path}`
+}
+
+export function isRecord(
+  value: unknown,
+): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
-function errorPayload(payload: unknown) {
+export function errorPayload(payload: unknown) {
   if (!isRecord(payload)) {
     return {
       message: 'The server returned an unexpected error response',
@@ -57,7 +63,7 @@ export async function requestJson(
   let response: Response
 
   try {
-    response = await fetch(`${apiBaseUrl}${path}`, {
+    response = await fetch(apiUrl(path), {
       ...init,
       headers: {
         Accept: 'application/json',

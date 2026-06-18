@@ -4,9 +4,9 @@
 
 ## Trạng thái
 
-Repository đã hoàn thành **ngày 6** cho MVP: backend/frontend scaffold, Docker Compose local, Elasticsearch mapping/bootstrap, PostgreSQL/Flyway, API ingest single/bulk event, script seed synthetic dataset, SearchPlan validator/compiler/executor, endpoint search kỹ thuật, event detail, LLM abstraction, mock/Gemini provider, natural language search, aggregation MVP và giao diện SOC kết nối API thật.
+Repository đã hoàn thành **ngày 7** cho MVP: backend/frontend scaffold, Docker Compose local, Elasticsearch mapping/bootstrap, PostgreSQL/Flyway, API ingest single/bulk event, script seed synthetic dataset, SearchPlan validator/compiler/executor, endpoint search kỹ thuật, event detail, LLM abstraction, mock/Gemini provider, natural language search, aggregation, summary best-effort, audit/history, CSV export và giao diện SOC kết nối API thật.
 
-Frontend hiện có search box, trạng thái loading/empty/error, bảng event có pagination, event detail drawer hiển thị raw log, SearchPlan/DSL transparency, aggregation table và biểu đồ Recharts. Summary LLM thật, query history, audit persistence, backend CSV export, CI/CD và triển khai VPS sẽ được thực hiện từ ngày 7 trở đi.
+Frontend hiện có search box, trạng thái loading/empty/error, bảng event có pagination, event detail drawer hiển thị raw log, SearchPlan/DSL transparency, aggregation table, biểu đồ Recharts, summary LLM/fallback, recent investigation history, chạy lại truy vấn và tải CSV. CI/CD và triển khai VPS nằm ở các ngày tiếp theo.
 
 ## Kiến trúc
 
@@ -285,7 +285,7 @@ VITE_API_BASE_URL=
 
 Sau khi đổi biến `VITE_*`, cần restart Vite dev server hoặc build lại frontend container.
 
-#### Chạy frontend ngày 6
+#### Chạy frontend local
 
 Chạy toàn bộ stack bằng Docker:
 
@@ -324,8 +324,11 @@ npm run dev
    - `Top 10 IP có nhiều alert nhất tháng này`
    - `Số event theo giờ trong 24h qua`
 6. Kiểm tra Summary Table và chart lần lượt dùng bar, bar và line.
+7. Kiểm tra **AI Summary** hoặc **Fallback Summary** phía trên Query Transparency.
+8. Mở **Investigations** để xem history, phân trang và chạy lại một câu hỏi.
+9. Bấm **Export CSV** để tải kết quả search hoặc aggregation theo `query_id`.
 
-#### Verify frontend ngày 6
+#### Verify frontend
 
 ```powershell
 cd frontend
@@ -342,15 +345,52 @@ Invoke-WebRequest http://localhost:3000 -UseBasicParsing
 Invoke-RestMethod http://localhost:8081/api/v1/health/live
 ```
 
-Kết quả review ngày 6:
+Kết quả review frontend:
 
 - Frontend lint/build: PASS.
 - `npm audit --audit-level=high`: không có vulnerability mức high.
 - Backend test: PASS.
 - Docker Compose local: PostgreSQL, Elasticsearch, backend và frontend healthy.
-- Search, pagination, event detail và ba aggregation demo hoạt động end-to-end.
+- Search, pagination, event detail, summary, history, CSV và ba aggregation demo hoạt động end-to-end.
 
-Ngày 6 chưa triển khai summary LLM thật, recent history, audit persistence hoặc backend CSV export. Các chức năng backend này được bổ sung trong ngày 7. Password protection cho website public sẽ được cấu hình tại reverse proxy khi triển khai VPS/domain.
+Password protection cho website public sẽ được cấu hình tại reverse proxy khi triển khai VPS/domain.
+
+### Summary, audit và query history ngày 7
+
+Mỗi request đã đi vào orchestration của `POST /api/v1/search` có một `query_id` UUID. UUID này đồng thời là khóa của record trong bảng PostgreSQL `search_query_logs` và được dùng cho history, audit và CSV export.
+
+Identity demo local:
+
+```env
+APP_DEMO_USER_IDENTITY=demo-analyst
+```
+
+Query history:
+
+```powershell
+Invoke-RestMethod "http://localhost:8081/api/v1/search/history?page=0&size=20"
+```
+
+Audit log:
+
+```powershell
+Invoke-RestMethod "http://localhost:8081/api/v1/audit-logs?page=0&size=50"
+```
+
+History và audit dùng cùng bảng `search_query_logs`, phân trang theo `created_at DESC, id DESC`. Status MVP gồm `SUCCESS` và `FAILED`; record thất bại có thể có `mode`, `result_count` hoặc `latency_ms` bằng null.
+
+Summary là enhancement **best effort**:
+
+- kết quả Elasticsearch luôn được ưu tiên;
+- summary output là plain text 3-5 câu;
+- timeout riêng dùng `LLM_SUMMARY_TIMEOUT_MS`, mặc định `5000`;
+- nếu LLM, payload builder hoặc summary query lỗi, response search vẫn trả HTTP 200 với deterministic fallback;
+- `summary_source` là `llm` hoặc `fallback`;
+- search mode chỉ chạy tối đa một summary query Elasticsearch bổ sung;
+- aggregation mode dùng trực tiếp tối đa 10 `aggregation_results`, không chạy summary query thứ hai;
+- payload gửi LLM được giới hạn kích thước và không chứa raw log.
+
+Frontend hiển thị summary source và latency, mở history qua menu **Investigations**, hỗ trợ phân trang và chạy lại câu hỏi. Mock mode dùng history local deterministic và không gọi backend.
 
 ### CSV export ngày 7
 
@@ -359,9 +399,11 @@ Sau khi `POST /api/v1/search` trả về `query_id`, tải CSV bằng:
 ```powershell
 New-Item -ItemType Directory -Force ".tmp" | Out-Null
 
-Invoke-WebRequest `
-  -Uri "http://localhost:8081/api/v1/search/{query_id}/export.csv" `
-  -OutFile ".tmp/search-export.csv"
+curl.exe `
+  --fail-with-body `
+  -D ".tmp/search-export.headers.txt" `
+  -o ".tmp/search-export.csv" `
+  "http://localhost:8081/api/v1/search/{query_id}/export.csv"
 ```
 
 Endpoint:
@@ -395,6 +437,35 @@ Quy tắc export:
 - export không tạo thêm record trong `search_query_logs`.
 
 Export là **live replay**, không phải frozen snapshot. File phản ánh dữ liệu Elasticsearch tại thời điểm tải và có thể khác `result_count` đã lưu khi query ban đầu chạy. Trong MVP không dùng PIT, Scroll API hoặc `search_after`; không nên chạy seed/ingest đồng thời khi kiểm tra export nhiều batch.
+
+Frontend gọi export bằng `query_id`, đọc filename từ `Content-Disposition` và cảnh báo khi `X-Export-Truncated: true`. Khi `VITE_API_BASE_URL` để trống, Vite/Nginx proxy `/api` tạo luồng same-origin nên frontend đọc được các header này. Nếu chủ động cấu hình API sang origin khác, Spring CORS phải expose `Content-Disposition` và `X-Export-Truncated`.
+
+### Smoke test ngày 7
+
+Checkpoint Day 7 dùng mock provider để không phụ thuộc quota Gemini:
+
+```powershell
+$env:LLM_PROVIDER="mock"
+docker compose up -d --build --force-recreate backend
+
+cd frontend
+npm run lint
+npm run build
+npm audit --audit-level=high
+cd ..
+
+docker compose config --quiet
+.\scripts\smoke-test-day-07.ps1
+```
+
+Smoke test kiểm tra health, OpenAPI, summary search/aggregation, history, audit `SUCCESS`/`FAILED`, CSV search/aggregation, giới hạn 10.000 dòng, frontend URL và build artifact.
+
+Để quay lại Gemini theo file `.env`:
+
+```powershell
+Remove-Item Env:LLM_PROVIDER -ErrorAction SilentlyContinue
+docker compose up -d --build --force-recreate backend
+```
 
 ### SearchPlan endpoint ngày 3
 
