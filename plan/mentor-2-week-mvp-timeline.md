@@ -12,6 +12,7 @@ Phạm vi chỉ tập trung vào các chức năng MVP:
 - Bảng kết quả, pagination, event detail, biểu đồ và export CSV.
 - AI summarization 3-5 câu.
 - Query history và audit log.
+- Đăng nhập và phân quyền RBAC bằng Keycloak với role `SOC_VIEWER`, `SOC_ANALYST`, `SOC_ADMIN`.
 - Swagger/OpenAPI, Docker Compose, test coverage tối thiểu 50%.
 - CI/CD GitHub Actions và deploy VPS để có thể truy cập bản demo.
 
@@ -50,7 +51,7 @@ Thông tin chính được lưu:
 - Số kết quả, latency, trạng thái, lỗi nếu có.
 - Summary và thời điểm truy vấn.
 
-Chưa cần bảng user riêng vì auth đầy đủ không thuộc phạm vi MVP.
+Không tạo bảng user riêng trong app. User, đăng nhập và role được quản lý bởi Keycloak; PostgreSQL chỉ lưu identity từ JWT vào audit/history.
 
 ### Công cụ hỗ trợ local
 
@@ -71,17 +72,17 @@ Chưa cần bảng user riêng vì auth đầy đủ không thuộc phạm vi MV
 | Ngày 6 | Xây dựng frontend bằng Tailwind CSS và shadcn/ui: search box, bảng kết quả, pagination, event detail, bảng thống kê và biểu đồ | Demo được search và aggregation trên giao diện |
 | Ngày 7 | Bổ sung AI summary, query history, audit log và export CSV; tích hợp toàn bộ luồng local | MVP chạy end-to-end trên máy local |
 
-### Tuần 2 - Testing, Deployment và Hoàn thiện Demo
+### Tuần 2 - Auth/RBAC, Testing, Deployment và Hoàn thiện Demo
 
 | Ngày | Công việc trọng tâm | Kết quả cần đạt |
 | --- | --- | --- |
-| Ngày 8 | Tạo cấu hình production Docker Compose; chuẩn bị EC2 Ubuntu, Nginx và volume dữ liệu | Deploy thủ công được lên VPS |
-| Ngày 9 | Trỏ domain, cấu hình SSL bằng Certbot, seed dataset với số lượng phù hợp môi trường mentor và chạy smoke test | Website HTTPS truy cập được |
-| Ngày 10 | Viết unit test và integration test cho ingest, search, aggregation, audit và export | Coverage backend đạt tối thiểu 50% |
-| Ngày 11 | Hoàn thiện Swagger/OpenAPI, README và GitHub Actions CI | Push code chạy test và build tự động |
-| Ngày 12 | Cấu hình GitHub Actions CD deploy lên EC2 | Push `main` có thể cập nhật bản demo |
-| Ngày 13 | Test end-to-end, kiểm tra lỗi, dữ liệu sau restart và diễn tập demo | Luồng demo ổn định |
-| Ngày 14 | Buffer sửa lỗi, chốt tài liệu, tạo release và gửi mentor | Bàn giao link GitHub và URL demo |
+| Ngày 8 | Tích hợp Keycloak foundation: realm/client/roles, Spring Security Resource Server, frontend login/logout; tắt self-registration | Đăng nhập được, API protected trả 401 nếu chưa login |
+| Ngày 9 | Hoàn thiện RBAC và UI permission cho 3 role `SOC_VIEWER`, `SOC_ANALYST`, `SOC_ADMIN`; audit/history lấy identity từ JWT | 3 role demo hoạt động khác nhau và có smoke test |
+| Ngày 10 | Viết unit/integration/regression test cho ingest, search, aggregation, audit, export và RBAC | Coverage backend đạt tối thiểu 50%, frontend lint/build pass |
+| Ngày 11 | Deploy đơn giản trong 1 ngày: production Docker Compose, VPS, Nginx, HTTPS, Keycloak, seed dataset và GitHub Actions CI/CD cơ bản | Website HTTPS truy cập được, login hoạt động, push/deploy được hoặc có lệnh deploy ngắn gọn |
+| Ngày 12 | Hardening, kiểm tra secret/port/volume/restart, smoke test domain và hoàn thiện README deploy/Auth | Bản demo public ổn định, có tài liệu chạy và rollback |
+| Ngày 13 | Viết report, slide, chụp screenshot và quay video dự phòng | Có report/slide draft và kịch bản demo 7-10 phút |
+| Ngày 14 | Diễn tập demo, buffer sửa lỗi, tạo release và gửi mentor | Bàn giao link GitHub, URL demo, credential riêng, report/slide draft |
 
 ## 4. Kết quả Bàn Giao
 
@@ -92,6 +93,7 @@ Chưa cần bảng user riêng vì auth đầy đủ không thuộc phạm vi MV
 - Swagger/OpenAPI.
 - Docker Compose local và production.
 - GitHub Actions CI/CD.
+- Keycloak login/RBAC demo.
 - Test coverage backend tối thiểu 50%.
 - README hướng dẫn chạy và kịch bản demo.
 
