@@ -723,3 +723,56 @@ backend/target/site/jacoco/index.html
 
 Backend automated tests use mocks/stubs and must not call Gemini or require a
 real `LLM_API_KEY` in CI.
+
+Frontend regression checks:
+
+```powershell
+cd frontend
+npm test
+npm run lint
+npm run build
+cd ..
+```
+
+Docker Compose config validation:
+
+```powershell
+docker compose config --quiet
+```
+
+GitHub Actions CI is defined in:
+
+```text
+.github/workflows/ci.yml
+```
+
+The CI workflow runs backend `mvn verify`, frontend `npm ci`, `npm test`,
+`npm run lint`, `npm run build`, and `docker compose config --quiet`.
+CI forces `LLM_PROVIDER=mock`, does not require `LLM_API_KEY`, and does not call
+Gemini.
+
+Local Day 10 smoke regression:
+
+```powershell
+.\scripts\smoke-test-day-10-regression.ps1
+```
+
+The runner calls the main smoke tests from Day 2, 3, 4, 5, 7, 8 and 9 when the
+local stack is compatible. If backend auth is enabled, older no-token smoke
+tests are skipped with an explicit reason; use this mode to validate the current
+RBAC-protected stack. To require every smoke script to run with no skips:
+
+```powershell
+.\scripts\smoke-test-day-10-regression.ps1 -RequireFullRegression
+```
+
+Token-based RBAC smoke remains manual/local because it needs real Keycloak
+access tokens:
+
+```powershell
+.\scripts\smoke-test-day-09-rbac.ps1 `
+  -ViewerToken "<viewer-access-token>" `
+  -AnalystToken "<analyst-access-token>" `
+  -AdminToken "<admin-access-token>" `
+  -RequireTokens
+```
