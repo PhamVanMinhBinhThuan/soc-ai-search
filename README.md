@@ -51,6 +51,7 @@ Các URL local:
 - Swagger UI: `http://localhost:8081/swagger-ui.html`
 - Elasticsearch: `http://localhost:9200`
 - PostgreSQL for pgAdmin Desktop: `localhost:5433`
+- Keycloak Admin Console, khi bật profile `auth`: `http://localhost:8082/admin`
 
 Kibana chỉ là công cụ debug Elasticsearch tùy chọn:
 
@@ -59,6 +60,32 @@ docker compose --profile tools up -d kibana
 ```
 
 Kibana mở tại `http://localhost:5601`. Các cổng quản trị local chỉ bind vào `127.0.0.1`.
+
+### Keycloak auth foundation ngày 8
+
+Keycloak dùng để chuẩn bị login/RBAC cho bản demo public. Mặc định stack local không bật auth để không làm chậm luồng phát triển và test hiện tại.
+
+Bật Keycloak local:
+
+```powershell
+docker compose --profile auth up -d keycloak
+```
+
+Keycloak mở tại:
+
+- Admin Console: `http://localhost:8082/admin`
+- Realm issuer: `http://localhost:8082/realms/soc-ai-search`
+- OpenID configuration: `http://localhost:8082/realms/soc-ai-search/.well-known/openid-configuration`
+
+Realm `soc-ai-search`, frontend client `soc-ai-search-frontend` và 3 role `SOC_VIEWER`, `SOC_ANALYST`, `SOC_ADMIN` được auto-import từ:
+
+```text
+infra/keycloak/realm-export/soc-ai-search-realm.json
+```
+
+Self-registration được tắt. Quy trình cấp tài khoản MVP là admin tạo user trong Keycloak, gán role, rồi gửi required actions email `VERIFY_EMAIL` và `UPDATE_PASSWORD`. Chi tiết xem [infra/keycloak/README.md](infra/keycloak/README.md).
+
+Prompt đầu của ngày 8 chỉ chuẩn bị hạ tầng Keycloak. Backend JWT verification, frontend OIDC login và RBAC chi tiết được triển khai ở các prompt sau.
 
 ### Kiểm tra service
 
