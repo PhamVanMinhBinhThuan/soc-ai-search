@@ -1,9 +1,14 @@
 import '@testing-library/jest-dom/vitest'
 
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { ResultTabs } from '@/components/soc/result-tabs'
+import type {
+  AggregationResultItemDto,
+  ChartMetadataDto,
+  SearchEventDto,
+} from '@/types/soc'
 
 afterEach(() => cleanup())
 
@@ -29,6 +34,30 @@ const baseProps = {
   onExport: vi.fn(),
 }
 
+const event: SearchEventDto = {
+  event_id: 'seed-42-1001',
+  timestamp: '2026-06-18T01:02:03Z',
+  source: 'windows-auth',
+  severity: 'critical',
+  event_type: 'failed_login',
+  user: 'admin',
+  host: 'dc-prod-01',
+  ip: '203.0.113.45',
+  country_code: 'CN',
+  message: 'Failed login detected',
+}
+
+const aggregationResults: AggregationResultItemDto[] = [
+  { key: 'admin', value: 42 },
+  { key: 'root', value: 12 },
+]
+
+const chartMetadata: ChartMetadataDto = {
+  chart_type: 'BAR',
+  x_axis_label: 'User',
+  y_axis_label: 'Events',
+}
+
 describe('ResultTabs RBAC rendering', () => {
   it('disables CSV export for viewer role', () => {
     render(
@@ -51,5 +80,84 @@ describe('ResultTabs RBAC rendering', () => {
     expect(
       screen.getByRole('button', { name: /export results as csv/i }),
     ).toBeEnabled()
+  })
+
+  it('disables CSV export while the parent marks export unavailable', () => {
+    render(
+      <ResultTabs
+        {...baseProps}
+        canExportCsv
+        queryId={null}
+        exportDisabled
+      />,
+    )
+
+    expect(
+      screen.getByRole('button', { name: /export results as csv/i }),
+    ).toBeDisabled()
+    expect(screen.getByTitle(/no query available/i)).toBeInTheDocument()
+  })
+})
+
+describe('ResultTabs polymorphic rendering', () => {
+  it('activates raw events for search mode and disables analytics', () => {
+    const onSelectEvent = vi.fn()
+    render(
+      <ResultTabs
+        {...baseProps}
+        canExportCsv
+        events={[event]}
+        total={1}
+        totalPages={1}
+        onSelectEvent={onSelectEvent}
+      />,
+    )
+
+    expect(
+      screen.getByRole('tab', { name: /raw events/i }),
+    ).toBeEnabled()
+    expect(
+      screen.getByRole('tab', { name: /analytics view/i }),
+    ).toBeDisabled()
+    expect(screen.getByText('Source')).toBeInTheDocument()
+    expect(screen.getByText('windows-auth')).toBeInTheDocument()
+
+    fireEvent.click(
+      screen.getByRole('row', { name: /open event seed-42-1001/i }),
+    )
+    expect(onSelectEvent).toHaveBeenCalledWith('seed-42-1001')
+  })
+
+  it('activates analytics for aggregation mode and disables raw events', () => {
+    render(
+      <ResultTabs
+        {...baseProps}
+        mode="aggregation"
+        activeTab="analytics"
+        canExportCsv
+        aggregationResults={aggregationResults}
+        chartMetadata={chartMetadata}
+        total={54}
+      />,
+    )
+
+    expect(
+      screen.getByRole('tab', { name: /analytics view/i }),
+    ).toBeEnabled()
+    expect(
+      screen.getByRole('tab', { name: /raw events/i }),
+    ).toBeDisabled()
+    expect(screen.getByText(/summary table/i)).toBeInTheDocument()
+    expect(screen.getByText('admin')).toBeInTheDocument()
+    expect(screen.getByText('42')).toBeInTheDocument()
+  })
+
+  it('renders empty state for successful search with no events', () => {
+    render(<ResultTabs {...baseProps} canExportCsv />)
+
+    expect(screen.getByText(/no matching events/i)).toBeInTheDocument()
+    expect(
+      screen.getByText(/no raw events matched the validated SearchPlan/i),
+    ).toBeInTheDocument()
   })
 })
