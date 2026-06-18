@@ -20,6 +20,7 @@
     <properties>
         <java.version>21</java.version>
         <elasticsearch-java.version>9.4.2</elasticsearch-java.version>
+        <jacoco.version>0.8.12</jacoco.version>
         <springdoc-openapi.version>2.8.17</springdoc-openapi.version>
     </properties>
 
@@ -97,6 +98,75 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>${jacoco.version}</version>
+                <configuration>
+                    <excludes>
+                        <exclude>com/soc/ai/search/SocAiSearchApplication.class</exclude>
+                        <exclude>com/soc/ai/search/**/**Config*.class</exclude>
+                        <exclude>com/soc/ai/search/**/**Properties*.class</exclude>
+                        <exclude>com/soc/ai/search/**/**Request*.class</exclude>
+                        <exclude>com/soc/ai/search/**/**Response*.class</exclude>
+                        <exclude>com/soc/ai/search/**/**Error*.class</exclude>
+                        <exclude>com/soc/ai/search/**/**Exception*.class</exclude>
+                        <exclude>com/soc/ai/search/search/plan/**/*.class</exclude>
+                        <exclude>com/soc/ai/search/audit/SearchQueryLog.class</exclude>
+                        <exclude>com/soc/ai/search/audit/StoredSearchQuery.class</exclude>
+                        <exclude>com/soc/ai/search/audit/PagedResponse.class</exclude>
+                        <exclude>com/soc/ai/search/audit/SearchHistoryItem.class</exclude>
+                        <exclude>com/soc/ai/search/audit/AuditLogItem.class</exclude>
+                        <exclude>com/soc/ai/search/csv/Prepared*.class</exclude>
+                        <exclude>com/soc/ai/search/llm/Llm*.class</exclude>
+                        <exclude>com/soc/ai/search/search/execution/*Result*.class</exclude>
+                        <exclude>com/soc/ai/search/search/execution/SearchEvent.class</exclude>
+                        <exclude>com/soc/ai/search/search/execution/ChartMetadata.class</exclude>
+                        <exclude>com/soc/ai/search/summary/*Payload*.class</exclude>
+                        <exclude>com/soc/ai/search/summary/*Bucket*.class</exclude>
+                        <exclude>com/soc/ai/search/summary/*Result*.class</exclude>
+                        <exclude>com/soc/ai/search/summary/*SampleEvent*.class</exclude>
+                        <exclude>com/soc/ai/search/summary/SearchSummaryData.class</exclude>
+                        <exclude>com/soc/ai/search/security/CurrentUser.class</exclude>
+                    </excludes>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>prepare-agent</id>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>check</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <rule>
+                                    <element>BUNDLE</element>
+                                    <limits>
+                                        <limit>
+                                            <counter>INSTRUCTION</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>0.50</minimum>
+                                        </limit>
+                                    </limits>
+                                </rule>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

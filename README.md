@@ -691,3 +691,35 @@ The smoke test verifies:
 - viewer raw log redaction and forbidden export/history/audit;
 - analyst raw log, export and history access, but forbidden audit;
 - admin audit access plus inherited analyst permissions.
+
+## Day 10 backend regression and coverage
+
+Day 10 adds a backend JaCoCo coverage gate for regression safety. The gate is
+set to at least 50% instruction coverage and excludes DTO/entity/configuration
+style classes so coverage is measured against business logic rather than simple
+data holders.
+
+Run backend tests:
+
+```powershell
+cd backend
+.\mvnw.cmd test
+cd ..
+```
+
+Run backend tests plus coverage check:
+
+```powershell
+cd backend
+.\mvnw.cmd verify
+cd ..
+```
+
+The HTML coverage report is generated at:
+
+```text
+backend/target/site/jacoco/index.html
+```
+
+Backend automated tests use mocks/stubs and must not call Gemini or require a
+real `LLM_API_KEY` in CI.
