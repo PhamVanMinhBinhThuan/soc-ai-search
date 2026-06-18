@@ -32,7 +32,8 @@ export type AggregationResultItemDto = {
 
 export type EventDetailResponseDto = SearchEventDto & {
   index_name: string
-  raw: string
+  raw: string | null
+  raw_visible: boolean
 }
 
 export type SearchFiltersDto = {

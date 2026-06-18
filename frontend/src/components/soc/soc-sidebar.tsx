@@ -9,10 +9,16 @@ import {
   ScrollText,
   Search,
   Settings,
+  ShieldCheck,
   ShieldHalf,
 } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 
+import {
+  canViewAuditLogs,
+  canViewHistory,
+  highestSocRole,
+} from '@/auth/permissions'
 import {
   Tooltip,
   TooltipContent,
@@ -54,23 +60,33 @@ function CollapsedTooltip({
 export function SocSidebar({
   identity,
   roles,
+  authLoading,
   authEnabled,
   onOpenHistory,
 }: {
   identity: string
   roles: string[]
+  authLoading: boolean
   authEnabled: boolean
   onOpenHistory: () => void
 }) {
   const [expanded, setExpanded] = useState(false)
   const collapsed = !expanded
+  const permissionContext = { roles, loading: authLoading }
+  const historyVisible = canViewHistory(permissionContext)
+  const adminVisible = canViewAuditLogs(permissionContext)
+  const visiblePrimaryNav = primaryNav.filter(
+    (item) => item.label !== 'Investigations' || historyVisible,
+  )
   const initials = identity
     .split(/[.@_\-\s]+/)
     .filter(Boolean)
     .slice(0, 2)
     .map((part) => part[0]?.toUpperCase())
     .join('') || 'DA'
-  const roleLabel = roles[0] ?? (authEnabled ? 'Authenticated' : 'SOC Analyst')
+  const roleLabel = authLoading
+    ? 'Loading role'
+    : highestSocRole(roles) ?? (authEnabled ? 'Authenticated' : 'SOC Analyst')
 
   return (
     <TooltipProvider>
@@ -98,7 +114,7 @@ export function SocSidebar({
         </div>
 
         <nav className="flex flex-1 flex-col gap-1.5 px-3">
-          {primaryNav.map((item) => (
+          {visiblePrimaryNav.map((item) => (
             <CollapsedTooltip
               key={item.label}
               collapsed={collapsed}
@@ -150,6 +166,43 @@ export function SocSidebar({
         </nav>
 
         <div className="flex flex-col gap-1.5 px-3">
+          {adminVisible ? (
+            <CollapsedTooltip
+              collapsed={collapsed}
+              label="Admin Console"
+            >
+              <button
+                type="button"
+                aria-label="Admin Console"
+                title="Open Keycloak Admin Console"
+                onClick={() =>
+                  window.open(
+                    import.meta.env.VITE_KEYCLOAK_ADMIN_URL ??
+                      'http://localhost:8080/admin/master/console/#/soc-ai-search',
+                    '_blank',
+                    'noopener,noreferrer',
+                  )
+                }
+                className={cn(
+                  'flex h-10 w-full shrink-0 items-center rounded-xl border border-amber-400/15 bg-amber-400/8 text-amber-200 transition-colors hover:bg-amber-400/15 hover:text-amber-100',
+                  expanded ? 'justify-start px-3' : 'justify-center',
+                )}
+              >
+                <ShieldCheck className="size-5 shrink-0" />
+                <span
+                  className={cn(
+                    'overflow-hidden whitespace-nowrap text-sm transition-[width,opacity,margin] duration-300',
+                    expanded
+                      ? 'ml-3 w-36 opacity-100'
+                      : 'ml-0 w-0 opacity-0',
+                  )}
+                >
+                  Admin Console
+                </span>
+              </button>
+            </CollapsedTooltip>
+          ) : null}
+
           {[
             { icon: Settings, label: 'Settings' },
             { icon: CircleHelp, label: 'Help & Support' },

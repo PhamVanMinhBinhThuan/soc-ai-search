@@ -67,7 +67,8 @@ function assertEventDetail(
     !isRecord(payload) ||
     typeof payload.event_id !== 'string' ||
     typeof payload.index_name !== 'string' ||
-    typeof payload.raw !== 'string'
+    (typeof payload.raw !== 'string' && payload.raw !== null) ||
+    typeof payload.raw_visible !== 'boolean'
   ) {
     throw new ApiError({
       status: 502,

@@ -5,6 +5,7 @@ import {
   Database,
   FileText,
   Globe2,
+  LockKeyhole,
   Monitor,
   Network,
   RotateCcw,
@@ -74,14 +75,21 @@ export function EventDetailDrawer({
   open,
   onOpenChange,
   onRetry,
+  canViewRawLog,
 }: {
   event: EventDetailResponseDto | null
   status: DetailStatus
   error: UiError | null
+  canViewRawLog: boolean
   open: boolean
   onOpenChange: (open: boolean) => void
   onRetry: () => void
 }) {
+  const rawLocked =
+    status === 'success' &&
+    event !== null &&
+    (!canViewRawLog || !event.raw_visible || event.raw === null)
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent>
@@ -163,11 +171,34 @@ export function EventDetailDrawer({
                 <FileText className="size-3.5" />
                 Formatted Fields
               </TabsTrigger>
-              <TabsTrigger value="raw" className="flex-1">
+              <TabsTrigger
+                value="raw"
+                className="flex-1"
+                disabled={rawLocked}
+                title={
+                  rawLocked
+                    ? 'Raw log requires SOC_ANALYST or SOC_ADMIN role'
+                    : undefined
+                }
+              >
                 <Braces className="size-3.5" />
                 Raw Log
               </TabsTrigger>
             </TabsList>
+
+            {rawLocked ? (
+              <Alert className="border-amber-400/25 bg-amber-500/8">
+                <LockKeyhole className="mr-2 inline size-4 text-amber-300" />
+                <AlertTitle className="inline text-amber-200">
+                  Raw log locked
+                </AlertTitle>
+                <AlertDescription>
+                  This account can view event metadata, but raw log access
+                  requires SOC_ANALYST or SOC_ADMIN. The dashboard does not
+                  render placeholder raw data.
+                </AlertDescription>
+              </Alert>
+            ) : null}
 
             <TabsContent
               value="formatted"
@@ -209,9 +240,11 @@ export function EventDetailDrawer({
               value="raw"
               className="min-h-0 overflow-auto rounded-xl border border-border bg-[#090b10]"
             >
-              <pre className="min-w-max p-4 font-mono text-xs leading-6 text-cyan-200">
-                {event.raw}
-              </pre>
+              {rawLocked ? null : (
+                <pre className="min-w-max p-4 font-mono text-xs leading-6 text-cyan-200">
+                  {event.raw}
+                </pre>
+              )}
             </TabsContent>
           </Tabs>
         ) : null}

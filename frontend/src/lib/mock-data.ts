@@ -129,6 +129,7 @@ export const mockEventDetails: Record<string, EventDetailResponseDto> =
         ...event,
         index_name: 'soc-events-v1',
         raw: rawLogFor(event),
+        raw_visible: true,
       },
     ]),
   )

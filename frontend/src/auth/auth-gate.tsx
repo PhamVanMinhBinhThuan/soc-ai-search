@@ -54,7 +54,8 @@ export function AuthGateView({
 
           <p className="mb-6 text-sm leading-6 text-zinc-300">
             Sign in with Keycloak to continue. User management and roles are
-            handled by Keycloak; fine-grained RBAC is scheduled for Day 9.
+            handled by Keycloak; backend RBAC and UI permissions are enforced
+            from the issued token.
           </p>
 
           {auth.errorMessage ? (

@@ -292,6 +292,7 @@ export function ResultTabs({
   queryId,
   exportStatus,
   exportMessage,
+  canExportCsv,
   exportDisabled,
   timeRangeLabel,
   onTabChange,
@@ -312,6 +313,7 @@ export function ResultTabs({
   queryId: string | null
   exportStatus: ExportStatus
   exportMessage: string | null
+  canExportCsv: boolean
   exportDisabled: boolean
   timeRangeLabel: string
   onTabChange: (tab: ResultTab) => void
@@ -336,10 +338,20 @@ export function ResultTabs({
           disabled={exportDisabled}
           onClick={onExport}
           aria-label={
-            isMockMode ? 'Export mock results as CSV' : 'Export results as CSV'
+            !canExportCsv
+              ? 'CSV export requires analyst role'
+              : isMockMode
+                ? 'Export mock results as CSV'
+                : 'Export results as CSV'
           }
           aria-live="polite"
-          title={queryId ? `Export query ${queryId}` : 'No query available'}
+          title={
+            !canExportCsv
+              ? 'Requires SOC_ANALYST or SOC_ADMIN role'
+              : queryId
+                ? `Export query ${queryId}`
+                : 'No query available'
+          }
         >
           {exportStatus === 'loading' ? (
             <LoaderCircle className="animate-spin" />
@@ -352,9 +364,11 @@ export function ResultTabs({
             ? 'Exporting...'
             : exportStatus === 'success'
               ? 'Exported'
-              : isMockMode
-                ? 'Export Mock CSV'
-                : 'Export CSV'}
+              : !canExportCsv
+                ? 'Export Locked'
+                : isMockMode
+                  ? 'Export Mock CSV'
+                  : 'Export CSV'}
         </Button>
       </div>
 

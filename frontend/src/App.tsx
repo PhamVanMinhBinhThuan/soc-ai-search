@@ -8,6 +8,12 @@ import {
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
+import {
+  canExportCsv,
+  canViewBasicEventDetail,
+  canViewHistory,
+  canViewRawLog,
+} from '@/auth/permissions'
 import { useSocAuth } from '@/auth/use-auth'
 import { EventDetailDrawer } from '@/components/soc/event-detail-drawer'
 import { HistorySheet } from '@/components/soc/history-sheet'
@@ -31,7 +37,8 @@ import {
   downloadMockCsv,
   formatTimeRangeLabel,
 } from '@/lib/mock-presentation'
-import { ApiError, setAccessTokenProvider } from '@/services/api-client'
+import { setAccessTokenProvider } from '@/services/api-client'
+import { toUiError } from '@/services/api-error-messages'
 import {
   downloadCsvBlob,
   exportSearchCsv,
@@ -65,28 +72,20 @@ const initialRequest: NaturalLanguageSearchRequestDto | null = initialResponse
     }
   : null
 
-function toUiError(error: unknown): UiError {
-  if (error instanceof ApiError) {
-    return {
-      status: error.status,
-      message: error.message,
-      errors: error.errors,
-    }
-  }
-
-  return {
-    status: 0,
-    message: 'An unexpected client error occurred',
-    errors: [],
-  }
-}
-
 function isAbortError(error: unknown) {
   return error instanceof DOMException && error.name === 'AbortError'
 }
 
 function App() {
   const auth = useSocAuth()
+  const permissionContext = {
+    roles: auth.roles,
+    loading: auth.loading,
+  }
+  const canUseSearch = canViewBasicEventDetail(permissionContext)
+  const canUseHistory = canViewHistory(permissionContext)
+  const canUseExport = canExportCsv(permissionContext)
+  const canUseRawLog = canViewRawLog(permissionContext)
   const [question, setQuestion] = useState(
     isMockMode ? initialScenario.question : '',
   )
@@ -143,6 +142,16 @@ function App() {
   )
 
   const loadHistory = async (page: number) => {
+    if (!canUseHistory) {
+      setHistoryStatus('idle')
+      setHistoryError({
+        status: 403,
+        message: 'You do not have permission to view search history.',
+        errors: [],
+      })
+      return
+    }
+
     historyAbortRef.current?.abort()
     const controller = new AbortController()
     historyAbortRef.current = controller
@@ -248,13 +257,28 @@ function App() {
       if (searchAbortRef.current === controller) {
         searchAbortRef.current = null
       }
-      if (!controller.signal.aborted && historyOpenRef.current) {
+      if (
+        !controller.signal.aborted &&
+        historyOpenRef.current &&
+        canUseHistory
+      ) {
         void loadHistory(historyPageRef.current)
       }
     }
   }
 
   const loadEventDetail = async (eventId: string) => {
+    if (!canUseSearch) {
+      setEventDetail(null)
+      setDetailError({
+        status: 403,
+        message: 'You do not have permission to view event details.',
+        errors: [],
+      })
+      setDetailStatus('error')
+      return
+    }
+
     detailAbortRef.current?.abort()
     const controller = new AbortController()
     detailAbortRef.current = controller
@@ -320,18 +344,30 @@ function App() {
   }
 
   const openHistory = () => {
+    if (!canUseHistory) {
+      return
+    }
+
     historyOpenRef.current = true
     setHistoryOpen(true)
     void loadHistory(historyPageRef.current)
   }
 
   const changeHistoryPage = (page: number) => {
+    if (!canUseHistory) {
+      return
+    }
+
     const nextPage = Math.max(page, 0)
     historyPageRef.current = nextPage
     void loadHistory(nextPage)
   }
 
   const retryHistory = () => {
+    if (!canUseHistory) {
+      return
+    }
+
     void loadHistory(historyPageRef.current)
   }
 
@@ -348,6 +384,12 @@ function App() {
 
   const handleExport = async () => {
     if (!response || requestStatus === 'loading') {
+      return
+    }
+
+    if (!canUseExport) {
+      setExportStatus('error')
+      setExportMessage('You do not have permission to export CSV files.')
       return
     }
 
@@ -406,6 +448,7 @@ function App() {
       <SocSidebar
         identity={auth.identity}
         roles={auth.roles}
+        authLoading={auth.loading}
         authEnabled={auth.enabled}
         onOpenHistory={openHistory}
       />
@@ -419,15 +462,17 @@ function App() {
             </p>
           </div>
           <div className="ml-auto flex shrink-0 items-center gap-2 sm:gap-3">
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              className="md:hidden"
-              aria-label="Open recent investigations"
-              onClick={openHistory}
-            >
-              <ScrollText />
-            </Button>
+            {canUseHistory ? (
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                className="md:hidden"
+                aria-label="Open recent investigations"
+                onClick={openHistory}
+              >
+                <ScrollText />
+              </Button>
+            ) : null}
             {response ? (
               <span className="hidden items-center gap-2 text-xs text-muted-foreground sm:flex">
                 <Activity className="size-4 text-cyan-300" />
@@ -534,10 +579,12 @@ function App() {
                 queryId={response.query_id}
                 exportStatus={exportStatus}
                 exportMessage={exportMessage}
+                canExportCsv={canUseExport}
                 exportDisabled={
                   requestStatus === 'loading' ||
                   exportStatus === 'loading' ||
-                  !response.query_id
+                  !response.query_id ||
+                  !canUseExport
                 }
                 timeRangeLabel={timeRangeLabel}
                 onTabChange={setActiveTab}
@@ -554,6 +601,7 @@ function App() {
         event={eventDetail}
         status={detailStatus}
         error={detailError}
+        canViewRawLog={canUseRawLog}
         open={detailOpen}
         onOpenChange={(open) => {
           if (!open) {
@@ -564,14 +612,15 @@ function App() {
       />
 
       <HistorySheet
-        open={historyOpen}
+        open={historyOpen && canUseHistory}
         status={historyStatus}
         response={historyResponse}
         error={historyError}
         onOpenChange={(open) => {
-          historyOpenRef.current = open
-          setHistoryOpen(open)
-          if (!open) {
+          const nextOpen = open && canUseHistory
+          historyOpenRef.current = nextOpen
+          setHistoryOpen(nextOpen)
+          if (!nextOpen) {
             historyAbortRef.current?.abort()
             historyAbortRef.current = null
           } else {
