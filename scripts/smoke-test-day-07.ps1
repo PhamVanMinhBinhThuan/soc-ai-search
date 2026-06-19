@@ -1,4 +1,4 @@
-param(
+﻿param(
     [string]$BackendUrl = "http://localhost:8081",
     [string]$ElasticsearchUrl = "http://localhost:9200",
     [string]$FrontendUrl = "http://localhost:3000",
@@ -15,6 +15,13 @@ $startedAt = Get-Date
 $tempDirectory = Join-Path ".tmp" ("day-07-smoke-" + [guid]::NewGuid().ToString("N"))
 New-Item -ItemType Directory -Force -Path $tempDirectory | Out-Null
 
+function Get-CurlCommand {
+    if ($env:OS -eq "Windows_NT" -and (Get-Command curl.exe -ErrorAction SilentlyContinue)) {
+        return "curl.exe"
+    }
+
+    return "curl"
+}
 function Write-Pass {
     param([string]$Message)
     Write-Host "[PASS] $Message" -ForegroundColor Green
@@ -141,7 +148,8 @@ function Export-CsvWithCurl {
 
     $headersPath = Join-Path $tempDirectory "$Name.headers.txt"
     $csvPath = Join-Path $tempDirectory "$Name.csv"
-    & curl `
+    $curlCommand = Get-CurlCommand
+    & $curlCommand `
         --silent `
         --show-error `
         --fail-with-body `

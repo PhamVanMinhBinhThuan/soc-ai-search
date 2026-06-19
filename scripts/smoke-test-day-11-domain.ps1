@@ -1,4 +1,4 @@
-param(
+﻿param(
     [string]$AppUrl = "https://soc-ai-search.app",
     [string]$ApiUrl = "https://api.soc-ai-search.app",
     [string]$AuthUrl = "https://auth.soc-ai-search.app",
@@ -13,7 +13,7 @@ $AppUrl = $AppUrl.TrimEnd("/")
 $ApiUrl = $ApiUrl.TrimEnd("/")
 $AuthUrl = $AuthUrl.TrimEnd("/")
 $startedAt = Get-Date
-$script:CurlCommonArgs = @("--noproxy=*")
+$script:CurlCommonArgs = @("--noproxy", "*")
 $isWindowsRuntime = $env:OS -eq "Windows_NT"
 $isWindowsVariable = Get-Variable -Name IsWindows -ErrorAction SilentlyContinue
 if ($null -ne $isWindowsVariable) {
@@ -25,6 +25,13 @@ if ($isWindowsRuntime) {
 $tempDirectory = Join-Path ".tmp" ("day-11-domain-smoke-" + [guid]::NewGuid().ToString("N"))
 New-Item -ItemType Directory -Force -Path $tempDirectory | Out-Null
 
+function Get-CurlCommand {
+    if ($env:OS -eq "Windows_NT" -and (Get-Command curl.exe -ErrorAction SilentlyContinue)) {
+        return "curl.exe"
+    }
+
+    return "curl"
+}
 function Write-Pass {
     param([string]$Message)
     Write-Host "[PASS] $Message" -ForegroundColor Green
@@ -59,7 +66,8 @@ function Invoke-CurlStatus {
         "--write-out", "%{http_code}"
     ) + $ExtraArgs + @($Uri)
 
-    $statusText = & curl @curlArgs
+    $curlCommand = Get-CurlCommand
+    $statusText = & $curlCommand @curlArgs
     if ($LASTEXITCODE -ne 0) {
         throw "[FAIL] $ScenarioName curl failed with exit code $LASTEXITCODE"
     }
@@ -135,7 +143,8 @@ try {
         "--write-out", "%{http_code}",
         "$ApiUrl/api/v1/search"
     )
-    $preflightStatusText = & curl @preflightArgs
+    $curlCommand = Get-CurlCommand
+    $preflightStatusText = & $curlCommand @preflightArgs
 
     if ($LASTEXITCODE -ne 0) {
         throw "[FAIL] CORS preflight curl failed with exit code $LASTEXITCODE"
