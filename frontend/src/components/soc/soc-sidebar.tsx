@@ -1,8 +1,6 @@
 import {
   BellRing,
   Bot,
-  ChevronLeft,
-  ChevronRight,
   CircleHelp,
   LayoutDashboard,
   Network,
@@ -97,9 +95,22 @@ export function SocSidebar({
         )}
       >
         <div className="mb-5 flex h-10 shrink-0 items-center px-3">
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-cyan-400/10 text-cyan-300 shadow-[0_0_22px_-8px_#22d3ee] ring-1 ring-cyan-400/25">
-            <ShieldHalf className="size-5" />
-          </div>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                aria-label="Expand sidebar"
+                aria-expanded={expanded}
+                onClick={() => setExpanded(true)}
+                className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-cyan-400/10 text-cyan-300 shadow-[0_0_22px_-8px_#22d3ee] ring-1 ring-cyan-400/25 transition-colors hover:bg-cyan-400/15 hover:text-cyan-100"
+              >
+                <ShieldHalf className="size-5" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="right">
+              Expand sidebar
+            </TooltipContent>
+          </Tooltip>
           <div
             className={cn(
               'overflow-hidden whitespace-nowrap transition-[width,opacity,margin] duration-300',
@@ -111,6 +122,25 @@ export function SocSidebar({
               AI Event Search
             </span>
           </div>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                aria-label="Collapse sidebar"
+                aria-expanded={expanded}
+                onClick={() => setExpanded(false)}
+                className={cn(
+                  'ml-auto flex size-7 shrink-0 items-center justify-center rounded-lg border border-border/70 bg-background/30 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground',
+                  expanded ? 'opacity-100' : 'pointer-events-none opacity-0',
+                )}
+              >
+                <span aria-hidden="true" className="text-base leading-none">
+                  {'<'}
+                </span>
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="right">Collapse sidebar</TooltipContent>
+          </Tooltip>
         </div>
 
         <nav className="flex flex-1 flex-col gap-1.5 px-3">
@@ -191,7 +221,7 @@ export function SocSidebar({
                 <ShieldCheck className="size-5 shrink-0" />
                 <span
                   className={cn(
-                    'overflow-hidden whitespace-nowrap text-sm transition-[width,opacity,margin] duration-300',
+                    'overflow-hidden whitespace-nowrap text-left text-sm transition-[width,opacity,margin] duration-300',
                     expanded
                       ? 'ml-3 w-36 opacity-100'
                       : 'ml-0 w-0 opacity-0',
@@ -223,7 +253,7 @@ export function SocSidebar({
                 <item.icon className="size-5 shrink-0" />
                 <span
                   className={cn(
-                    'overflow-hidden whitespace-nowrap text-sm transition-[width,opacity,margin] duration-300',
+                    'overflow-hidden whitespace-nowrap text-left text-sm transition-[width,opacity,margin] duration-300',
                     expanded
                       ? 'ml-3 w-36 opacity-100'
                       : 'ml-0 w-0 opacity-0',
@@ -260,38 +290,6 @@ export function SocSidebar({
               </span>
             </div>
           </div>
-
-          <CollapsedTooltip
-            collapsed={collapsed}
-            label="Expand sidebar"
-          >
-            <button
-              type="button"
-              aria-label={expanded ? 'Collapse sidebar' : 'Expand sidebar'}
-              aria-expanded={expanded}
-              onClick={() => setExpanded((current) => !current)}
-              className={cn(
-                'mt-2 flex h-9 w-full items-center rounded-lg border border-border bg-background/30 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground',
-                expanded ? 'justify-start px-3' : 'justify-center',
-              )}
-            >
-              {expanded ? (
-                <ChevronLeft className="size-4 shrink-0" />
-              ) : (
-                <ChevronRight className="size-4 shrink-0" />
-              )}
-              <span
-                className={cn(
-                  'overflow-hidden whitespace-nowrap text-xs transition-[width,opacity,margin] duration-300',
-                  expanded
-                    ? 'ml-3 w-28 opacity-100'
-                    : 'ml-0 w-0 opacity-0',
-                )}
-              >
-                Collapse sidebar
-              </span>
-            </button>
-          </CollapsedTooltip>
         </div>
       </aside>
     </TooltipProvider>
