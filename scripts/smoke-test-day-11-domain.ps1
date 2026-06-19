@@ -13,7 +13,7 @@ $AppUrl = $AppUrl.TrimEnd("/")
 $ApiUrl = $ApiUrl.TrimEnd("/")
 $AuthUrl = $AuthUrl.TrimEnd("/")
 $startedAt = Get-Date
-$script:CurlCommonArgs = @("--noproxy", "*")
+$script:CurlCommonArgs = @("--noproxy=*")
 $isWindowsRuntime = $env:OS -eq "Windows_NT"
 $isWindowsVariable = Get-Variable -Name IsWindows -ErrorAction SilentlyContinue
 if ($null -ne $isWindowsVariable) {

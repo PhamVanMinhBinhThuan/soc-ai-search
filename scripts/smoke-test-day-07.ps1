@@ -1,4 +1,4 @@
-﻿param(
+param(
     [string]$BackendUrl = "http://localhost:8081",
     [string]$ElasticsearchUrl = "http://localhost:9200",
     [string]$FrontendUrl = "http://localhost:3000",
@@ -228,7 +228,7 @@ $searchResponse = Invoke-NaturalLanguageSearch -Question $searchQuestion -Size 5
 Assert-SearchSummary -Response $searchResponse -ScenarioName "search"
 Assert-True -Condition ([string]$searchResponse.mode -eq "search") -Message "Search response mode is search"
 
-$aggregationQuestion = "Top 10 IP có nhiều alert nhất tháng này"
+$aggregationQuestion = "Top 10 IP c� nhi?u alert nh?t th�ng n�y"
 $aggregationResponse = Invoke-NaturalLanguageSearch -Question $aggregationQuestion -Size 5
 Assert-SearchSummary -Response $aggregationResponse -ScenarioName "aggregation"
 Assert-True -Condition ([string]$aggregationResponse.mode -eq "aggregation") -Message "Aggregation response mode is aggregation"
