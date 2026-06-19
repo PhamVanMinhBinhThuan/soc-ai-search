@@ -29,6 +29,7 @@ import {
   SearchIdleState,
   SearchLoadingState,
 } from '@/components/soc/search-status'
+import { SocHero } from '@/components/hero/soc-hero'
 import { SocSidebar } from '@/components/soc/soc-sidebar'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -443,18 +444,66 @@ function App() {
     ? formatTimeRangeLabel(response.search_plan)
     : 'All Time'
 
+  const isLandingPage = !submittedRequest && !response
+
   return (
     <div className="dark flex min-h-svh bg-background text-foreground">
-      <SocSidebar
-        identity={auth.identity}
-        roles={auth.roles}
-        authLoading={auth.loading}
-        authEnabled={auth.enabled}
-        onOpenHistory={openHistory}
-      />
+      {!isLandingPage ? (
+        <SocSidebar
+          identity={auth.identity}
+          roles={auth.roles}
+          authLoading={auth.loading}
+          authEnabled={auth.enabled}
+          onOpenHistory={openHistory}
+        />
+      ) : null}
 
-      <div className="min-w-0 flex-1">
-        <header className="sticky top-0 z-30 flex h-16 min-w-0 items-center gap-3 overflow-hidden border-b border-border bg-background/85 px-4 backdrop-blur-xl sm:gap-4 sm:px-6">
+      {isLandingPage ? (
+        <div className="flex-1 w-full relative">
+          <SocHero
+            topRightContent={
+              <div className="flex items-center gap-3">
+                {canUseHistory ? (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={openHistory}
+                    className="text-zinc-300 hover:text-white hover:bg-white/10"
+                  >
+                    <ScrollText className="size-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Investigations</span>
+                  </Button>
+                ) : null}
+                {auth.enabled ? (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={auth.signOut}
+                    className="text-zinc-300 hover:text-white hover:bg-white/10"
+                  >
+                    <LogOut className="size-4 mr-2" />
+                    Logout
+                  </Button>
+                ) : null}
+              </div>
+            }
+          >
+            <div className="w-full text-left">
+              <SearchSection
+                question={question}
+                scenarios={mockScenarios}
+                isLoading={requestStatus === 'loading'}
+                isMockMode={isMockMode}
+                onQuestionChange={setQuestion}
+                onSubmitQuestion={submitQuestion}
+                onSelectSuggestion={submitQuestion}
+              />
+            </div>
+          </SocHero>
+        </div>
+      ) : (
+        <div className="min-w-0 flex-1">
+          <header className="sticky top-0 z-30 flex h-16 min-w-0 items-center gap-3 overflow-hidden border-b border-border bg-background/85 px-4 backdrop-blur-xl sm:gap-4 sm:px-6">
           <div className="min-w-0">
             <h1 className="text-sm font-semibold">Event Search</h1>
             <p className="truncate text-xs text-muted-foreground">
@@ -596,6 +645,7 @@ function App() {
           ) : null}
         </main>
       </div>
+      )}
 
       <EventDetailDrawer
         event={eventDetail}
