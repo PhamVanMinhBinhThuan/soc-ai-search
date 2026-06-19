@@ -80,7 +80,7 @@ Không tạo bảng user riêng trong app. User, đăng nhập và role được
 | Ngày 9 | Hoàn thiện RBAC và UI permission cho 3 role `SOC_VIEWER`, `SOC_ANALYST`, `SOC_ADMIN`; audit/history lấy identity từ JWT | 3 role demo hoạt động khác nhau và có smoke test |
 | Ngày 10 | Viết unit/integration/regression test cho ingest, search, aggregation, audit, export và RBAC | Coverage backend đạt tối thiểu 50%, frontend lint/build pass |
 | Ngày 11 | Deploy đơn giản trong 1 ngày: production Docker Compose, DigitalOcean VPS, Caddy HTTPS, Keycloak, seed dataset và GitHub Actions CI/CD cơ bản | Website HTTPS truy cập được, login hoạt động, push/deploy được hoặc có lệnh deploy ngắn gọn |
-| Ngày 12 | Hardening, kiểm tra secret/port/volume/restart, smoke test domain và hoàn thiện README deploy/Auth | Bản demo public ổn định, có tài liệu chạy và rollback |
+| Ngày 12 | Hardening public demo, kiểm tra secret/port/volume/restart, smoke test domain, viết lại README chuyên nghiệp và đồng bộ toàn bộ `docs/` theo hệ thống hiện tại | Bản demo public ổn định, README/docs đủ dùng cho mentor, report và slide |
 | Ngày 13 | Viết report, slide, chụp screenshot và quay video dự phòng | Có report/slide draft và kịch bản demo 7-10 phút |
 | Ngày 14 | Diễn tập demo, buffer sửa lỗi, tạo release và gửi mentor | Bàn giao link GitHub, URL demo, credential riêng, report/slide draft |
 

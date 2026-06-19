@@ -628,38 +628,53 @@ Việc cần làm:
 - Có cách deploy lại từ GitHub Actions hoặc command SSH ngắn gọn đã ghi trong README.
 - Biết cách rollback về image/tag hoặc commit trước.
 
-### Ngày 12 - Thứ Sáu, 12/06: Hardening, tài liệu kỹ thuật và demo data
+### Ngày 12 - Thứ Sáu, 12/06: Hardening, README chuyên nghiệp và đồng bộ tài liệu kỹ thuật
 
-**Mục tiêu:** làm bản deploy đủ chắc để mentor/hội đồng dùng thử.
+**Mục tiêu:** làm bản deploy đủ chắc để mentor/hội đồng dùng thử, đồng thời biến README và `docs/` thành bộ tài liệu bàn giao đúng với hệ thống hiện tại.
 
 Việc cần làm:
 
 - Chạy toàn bộ test và smoke test local + domain.
-- Kiểm tra không lộ secret bằng `git grep`, GitHub Actions log và README.
+- Kiểm tra không lộ secret bằng `git grep`, GitHub Actions log, README và toàn bộ tài liệu.
 - Kiểm tra container restart, volumes và dataset còn tồn tại sau reboot/restart.
 - Kiểm tra Caddy HTTPS, redirect HTTP -> HTTPS, CORS và exposed headers cho CSV.
 - Kiểm tra port exposure:
   - Elasticsearch `9200` không public;
-  - PostgreSQL `5432` không public;
+  - PostgreSQL `5432/5433` không public;
   - Kibana `5601` không public;
   - backend port không public trực tiếp;
   - Keycloak chỉ đi qua Caddy.
-- Chuẩn hóa README:
-  - chạy local;
-  - bật Keycloak;
-  - tạo user demo;
+- Viết lại README theo chuẩn bàn giao chuyên nghiệp:
+  - project overview và demo value;
+  - architecture ngắn gọn;
+  - tech stack hiện tại;
+  - feature list MVP;
+  - API và response contract chính;
+  - chạy local bằng Docker;
+  - bật Keycloak và tạo user demo;
   - seed data;
-  - chạy test;
-  - deploy;
+  - chạy test/coverage/smoke;
+  - deploy DigitalOcean + Name.com + Caddy;
+  - CI/CD GitHub Actions;
   - rollback;
-  - URL demo và credential gửi riêng.
-- Chuẩn bị bộ câu hỏi demo cố định và dataset seed ổn định.
+  - troubleshooting;
+  - URL demo và credential gửi riêng, không commit secret.
+- Cập nhật toàn bộ `docs/` để khớp project đã làm hiện tại, không còn tài liệu khởi tạo/cũ:
+  - `docs/requirement.md`;
+  - `docs/tech-stack.md`;
+  - `docs/architecture.md`;
+  - `docs/sequence-flow.md`;
+  - `docs/search-engine-decision.md` nếu cần.
+- Sửa các lỗi encoding tiếng Việt trong tài liệu nếu có.
+- Chuẩn bị bộ câu hỏi demo cố định, role demo, dataset seed ổn định và checklist mentor review.
 
 **Điều kiện hoàn thành:**
 
 - Một người khác có thể đọc README và chạy local.
+- Tài liệu `docs/` mô tả đúng hệ thống hiện tại: React/Vite, Spring Boot, Elasticsearch, PostgreSQL, Gemini/mock LLM, Keycloak/RBAC, Caddy, DigitalOcean, GitHub Actions CI/CD.
 - Domain chạy ổn sau restart.
 - Demo account và role đã sẵn sàng.
+- Không có secret thật hoặc credential demo trong Git-tracked docs.
 
 ### Ngày 13 - Thứ Bảy, 13/06: Report, slide và video dự phòng
 
