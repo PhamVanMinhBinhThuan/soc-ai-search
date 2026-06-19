@@ -211,6 +211,7 @@ function LandingView({ auth }: { auth: SocAuthState }) {
           <motion.div variants={slideUp} className="flex flex-col gap-3">
             <motion.button
               id="keycloak-signin-btn"
+              aria-label="Access Console"
               onClick={auth.signIn}
               whileTap={{ scale: 0.97 }}
               transition={{ type: 'spring', stiffness: 350, damping: 20 }}
