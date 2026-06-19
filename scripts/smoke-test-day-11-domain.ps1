@@ -1,4 +1,4 @@
-﻿param(
+param(
     [string]$AppUrl = "https://soc-ai-search.app",
     [string]$ApiUrl = "https://api.soc-ai-search.app",
     [string]$AuthUrl = "https://auth.soc-ai-search.app",
@@ -26,11 +26,16 @@ $tempDirectory = Join-Path ".tmp" ("day-11-domain-smoke-" + [guid]::NewGuid().To
 New-Item -ItemType Directory -Force -Path $tempDirectory | Out-Null
 
 function Get-CurlCommand {
-    if ($env:OS -eq "Windows_NT" -and (Get-Command curl.exe -ErrorAction SilentlyContinue)) {
-        return "curl.exe"
+    $command = Get-Command curl.exe -ErrorAction SilentlyContinue | Where-Object { $_.CommandType -eq "Application" } | Select-Object -First 1
+    if ($null -eq $command) {
+        $command = Get-Command curl -ErrorAction SilentlyContinue | Where-Object { $_.CommandType -eq "Application" } | Select-Object -First 1
     }
 
-    return "curl"
+    if ($null -eq $command) {
+        throw "curl executable not found"
+    }
+
+    return $command.Source
 }
 function Write-Pass {
     param([string]$Message)
@@ -58,6 +63,7 @@ function Invoke-CurlStatus {
     )
 
     $bodyPath = Join-Path $tempDirectory (([guid]::NewGuid().ToString("N")) + ".body")
+    $statusPath = Join-Path $tempDirectory (([guid]::NewGuid().ToString("N")) + ".status")
     $curlArgs = $script:CurlCommonArgs + @(
         "--location",
         "--silent",
@@ -67,12 +73,21 @@ function Invoke-CurlStatus {
     ) + $ExtraArgs + @($Uri)
 
     $curlCommand = Get-CurlCommand
-    $statusText = & $curlCommand @curlArgs
+    $statusText = & $curlCommand @curlArgs 1> $statusPath
     if ($LASTEXITCODE -ne 0) {
         throw "[FAIL] $ScenarioName curl failed with exit code $LASTEXITCODE"
     }
 
-    $status = [int]([string]$statusText | Select-Object -Last 1)
+    if (Test-Path $statusPath) {
+        $statusText = Get-Content -Path $statusPath -Raw
+    }
+
+    $statusText = [string]$statusText
+    if ($statusText -notmatch '^\s*\d{3}\s*$') {
+        throw "[FAIL] $ScenarioName curl returned an unexpected HTTP status payload: $statusText"
+    }
+
+    $status = [int]$statusText.Trim()
     Assert-True -Condition ($status -ge 200 -and $status -lt 300) -Message "$ScenarioName returns 2xx ($status)"
     return $status
 }
@@ -144,13 +159,23 @@ try {
         "$ApiUrl/api/v1/search"
     )
     $curlCommand = Get-CurlCommand
-    $preflightStatusText = & $curlCommand @preflightArgs
+    $preflightStatusPath = Join-Path $tempDirectory "cors-preflight.status"
+    $preflightStatusText = & $curlCommand @preflightArgs 1> $preflightStatusPath
 
     if ($LASTEXITCODE -ne 0) {
         throw "[FAIL] CORS preflight curl failed with exit code $LASTEXITCODE"
     }
 
-    $preflightStatus = [int]([string]$preflightStatusText | Select-Object -Last 1)
+    if (Test-Path $preflightStatusPath) {
+        $preflightStatusText = Get-Content -Path $preflightStatusPath -Raw
+    }
+
+    $preflightStatusText = [string]$preflightStatusText
+    if ($preflightStatusText -notmatch '^\s*\d{3}\s*$') {
+        throw "[FAIL] CORS preflight returned an unexpected HTTP status payload: $preflightStatusText"
+    }
+
+    $preflightStatus = [int]$preflightStatusText.Trim()
     Assert-True `
         -Condition ($preflightStatus -ge 200 -and $preflightStatus -lt 300) `
         -Message "CORS preflight to POST /api/v1/search returns 2xx ($preflightStatus)"
@@ -170,7 +195,4 @@ try {
 finally {
     Remove-Item -LiteralPath $tempDirectory -Recurse -Force -ErrorAction SilentlyContinue
 }
-
-
-
 

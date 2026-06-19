@@ -16,11 +16,16 @@ $tempDirectory = Join-Path ".tmp" ("day-07-smoke-" + [guid]::NewGuid().ToString(
 New-Item -ItemType Directory -Force -Path $tempDirectory | Out-Null
 
 function Get-CurlCommand {
-    if ($env:OS -eq "Windows_NT" -and (Get-Command curl.exe -ErrorAction SilentlyContinue)) {
-        return "curl.exe"
+    $command = Get-Command curl.exe -ErrorAction SilentlyContinue | Where-Object { $_.CommandType -eq "Application" } | Select-Object -First 1
+    if ($null -eq $command) {
+        $command = Get-Command curl -ErrorAction SilentlyContinue | Where-Object { $_.CommandType -eq "Application" } | Select-Object -First 1
     }
 
-    return "curl"
+    if ($null -eq $command) {
+        throw "curl executable not found"
+    }
+
+    return $command.Source
 }
 function Write-Pass {
     param([string]$Message)
