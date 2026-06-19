@@ -1,4 +1,4 @@
-﻿param(
+param(
     [string]$AppUrl = "https://soc-ai-search.app",
     [string]$ApiUrl = "https://api.soc-ai-search.app",
     [string]$AuthUrl = "https://auth.soc-ai-search.app",
@@ -51,7 +51,7 @@ function Invoke-CurlStatus {
     )
 
     $bodyPath = Join-Path $tempDirectory (([guid]::NewGuid().ToString("N")) + ".body")
-$args = $script:CurlCommonArgs + @(
+    $curlArgs = $script:CurlCommonArgs + @(
         "--location",
         "--silent",
         "--show-error",
@@ -59,7 +59,7 @@ $args = $script:CurlCommonArgs + @(
         "--write-out", "%{http_code}"
     ) + $ExtraArgs + @($Uri)
 
-    $statusText = & curl.exe @args
+    $statusText = & curl @curlArgs
     if ($LASTEXITCODE -ne 0) {
         throw "[FAIL] $ScenarioName curl failed with exit code $LASTEXITCODE"
     }
@@ -135,7 +135,7 @@ try {
         "--write-out", "%{http_code}",
         "$ApiUrl/api/v1/search"
     )
-    $preflightStatusText = & curl.exe @preflightArgs
+    $preflightStatusText = & curl @preflightArgs
 
     if ($LASTEXITCODE -ne 0) {
         throw "[FAIL] CORS preflight curl failed with exit code $LASTEXITCODE"

@@ -141,7 +141,7 @@ function Export-CsvWithCurl {
 
     $headersPath = Join-Path $tempDirectory "$Name.headers.txt"
     $csvPath = Join-Path $tempDirectory "$Name.csv"
-    & curl.exe `
+    & curl `
         --silent `
         --show-error `
         --fail-with-body `
