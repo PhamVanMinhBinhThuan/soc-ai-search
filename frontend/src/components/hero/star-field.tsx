@@ -12,23 +12,25 @@ type Star = {
   cyan: boolean
 }
 
+function generateStars(count: number): Star[] {
+  // Deterministic pseudo-random so SSR and client match.
+  let seed = 1337
+  const rand = () => {
+    seed = (seed * 9301 + 49297) % 233280
+    return seed / 233280
+  }
+  return Array.from({ length: count }, () => ({
+    top: rand() * 100,
+    left: rand() * 100,
+    size: rand() * 2 + 1,
+    delay: rand() * 4,
+    duration: rand() * 3 + 2,
+    cyan: rand() > 0.65,
+  }))
+}
+
 function useStars(count: number): Star[] {
-  return useMemo(() => {
-    // Deterministic pseudo-random so SSR and client match.
-    let seed = 1337
-    const rand = () => {
-      seed = (seed * 9301 + 49297) % 233280
-      return seed / 233280
-    }
-    return Array.from({ length: count }, () => ({
-      top: rand() * 100,
-      left: rand() * 100,
-      size: rand() * 2 + 1,
-      delay: rand() * 4,
-      duration: rand() * 3 + 2,
-      cyan: rand() > 0.65,
-    }))
-  }, [count])
+  return useMemo(() => generateStars(count), [count])
 }
 
 export function StarField({
