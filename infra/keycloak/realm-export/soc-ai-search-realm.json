@@ -41,14 +41,17 @@
       "authorizationServicesEnabled": false,
       "frontchannelLogout": true,
       "redirectUris": [
-        "http://localhost:3000/*"
+        "http://localhost:3000/*",
+        "https://soc-ai-search.app/auth/callback",
+        "https://soc-ai-search.app/*"
       ],
       "webOrigins": [
-        "http://localhost:3000"
+        "http://localhost:3000",
+        "https://soc-ai-search.app"
       ],
       "attributes": {
         "pkce.code.challenge.method": "S256",
-        "post.logout.redirect.uris": "http://localhost:3000/*"
+        "post.logout.redirect.uris": "http://localhost:3000/*##https://soc-ai-search.app##https://soc-ai-search.app/*"
       }
     }
   ]

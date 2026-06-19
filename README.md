@@ -61,6 +61,108 @@ docker compose --profile tools up -d kibana
 
 Kibana mở tại `http://localhost:5601`. Các cổng quản trị local chỉ bind vào `127.0.0.1`.
 
+## Deploy VPS Bằng Domain HTTPS
+
+Production MVP nên dùng domain + HTTPS thay vì public trực tiếp các cổng
+`3000`, `8081`, `8082`. Repository đã có sẵn:
+
+```text
+Caddyfile
+docker-compose.deploy.yml
+```
+
+DNS cần trỏ về VPS public IP:
+
+```text
+soc-ai-search.app      A  <VPS_PUBLIC_IP>
+api.soc-ai-search.app  A  <VPS_PUBLIC_IP>
+auth.soc-ai-search.app A  <VPS_PUBLIC_IP>
+```
+
+Trên VPS, tạo `.env` từ example và cấu hình domain:
+
+```bash
+cp .env.example .env
+cp frontend/.env.example frontend/.env
+```
+
+Root `.env` production example:
+
+```env
+APP_AUTH_ENABLED=true
+
+APP_DOMAIN=soc-ai-search.app
+API_DOMAIN=api.soc-ai-search.app
+AUTH_DOMAIN=auth.soc-ai-search.app
+
+KEYCLOAK_ISSUER_URI=https://auth.soc-ai-search.app/realms/soc-ai-search
+KEYCLOAK_JWK_SET_URI=http://keycloak:8080/realms/soc-ai-search/protocol/openid-connect/certs
+
+LLM_PROVIDER=gemini
+LLM_BASE_URL=https://generativelanguage.googleapis.com/v1beta
+LLM_API_KEY=<your-gemini-api-key>
+LLM_MODEL=gemini-2.5-flash
+```
+
+`frontend/.env` production example:
+
+```env
+VITE_USE_MOCK=false
+VITE_API_BASE_URL=https://api.soc-ai-search.app
+
+VITE_AUTH_ENABLED=true
+VITE_KEYCLOAK_AUTHORITY=https://auth.soc-ai-search.app/realms/soc-ai-search
+VITE_KEYCLOAK_CLIENT_ID=soc-ai-search-frontend
+VITE_KEYCLOAK_ADMIN_URL=https://auth.soc-ai-search.app/admin/master/console/#/soc-ai-search
+VITE_KEYCLOAK_REDIRECT_URI=https://soc-ai-search.app/auth/callback
+VITE_KEYCLOAK_POST_LOGOUT_REDIRECT_URI=https://soc-ai-search.app
+VITE_KEYCLOAK_SCOPE=openid profile email
+```
+
+Elasticsearch trên Linux cần `vm.max_map_count`:
+
+```bash
+sysctl -w vm.max_map_count=262144
+echo "vm.max_map_count=262144" | tee /etc/sysctl.d/99-elasticsearch.conf
+sysctl --system
+```
+
+Chạy stack production với Caddy reverse proxy:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.deploy.yml --profile auth --profile proxy up -d --build
+docker compose ps
+```
+
+Caddy tự xin và renew TLS certificate cho:
+
+```text
+https://soc-ai-search.app
+https://api.soc-ai-search.app
+https://auth.soc-ai-search.app
+```
+
+Sau khi dùng Caddy, chỉ cần public firewall ports `80` và `443`.
+PostgreSQL, Elasticsearch, backend, frontend và Keycloak có thể giữ sau
+reverse proxy.
+
+Nếu Keycloak volume đã tồn tại trước khi cập nhật realm export, realm import sẽ
+không ghi đè cấu hình client cũ. Vào Keycloak Admin Console và đảm bảo client
+`soc-ai-search-frontend` có:
+
+```text
+Valid redirect URIs:
+https://soc-ai-search.app/auth/callback
+https://soc-ai-search.app/*
+
+Web origins:
+https://soc-ai-search.app
+
+Valid post logout redirect URIs:
+https://soc-ai-search.app
+https://soc-ai-search.app/*
+```
+
 ### Keycloak auth foundation ngày 8
 
 Keycloak dùng để chuẩn bị login/RBAC cho bản demo public. Mặc định stack local không bật auth để không làm chậm luồng phát triển và test hiện tại.

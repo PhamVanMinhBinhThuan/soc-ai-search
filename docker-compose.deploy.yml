@@ -1,0 +1,41 @@
+services:
+  caddy:
+    image: caddy:2-alpine
+    profiles:
+      - proxy
+    restart: unless-stopped
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN:?Set APP_DOMAIN in .env before running the proxy profile}
+      API_DOMAIN: ${API_DOMAIN:?Set API_DOMAIN in .env before running the proxy profile}
+      AUTH_DOMAIN: ${AUTH_DOMAIN:?Set AUTH_DOMAIN in .env before running the proxy profile}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+
+  keycloak:
+    command:
+      - start-dev
+      - --import-realm
+      - --http-enabled=true
+      - --hostname=${AUTH_DOMAIN}
+      - --proxy-headers=xforwarded
+    environment:
+      KC_HTTP_ENABLED: "true"
+      KC_HOSTNAME: ${AUTH_DOMAIN}
+      KC_HOSTNAME_STRICT: "false"
+      KC_PROXY_HEADERS: xforwarded
+
+volumes:
+  caddy_data:
+  caddy_config:
