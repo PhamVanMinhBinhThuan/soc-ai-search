@@ -40,7 +40,7 @@ describe('AuthGateView', () => {
 
     expect(screen.getByText('Dashboard ready')).toBeInTheDocument()
     expect(
-      screen.queryByRole('button', { name: /sign in with keycloak/i }),
+      screen.queryByRole('button', { name: /access console/i }),
     ).not.toBeInTheDocument()
   })
 
@@ -60,7 +60,7 @@ describe('AuthGateView', () => {
 
     expect(screen.queryByText('Dashboard ready')).not.toBeInTheDocument()
     fireEvent.click(
-      screen.getByRole('button', { name: /sign in with keycloak/i }),
+      screen.getByRole('button', { name: /access console/i }),
     )
     expect(signIn).toHaveBeenCalledTimes(1)
   })
