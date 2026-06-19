@@ -9,7 +9,7 @@ import {
   type Variants,
   type MotionValue,
 } from 'framer-motion';
-import { useState, useEffect, type ReactNode } from 'react';
+import { useState, useEffect, useCallback, type ReactNode } from 'react';
 
 import { useSocAuth, type SocAuthState } from '@/auth/auth-context';
 
@@ -95,9 +95,9 @@ interface Particle { id: string; x: number; y: number; shape: string; color: str
 function MouseTrail() {
   const [particles, setParticles] = useState<Particle[]>([]);
   const max = 70;
-  const shapes = ['shape-star', 'shape-shard', 'shape-cross'];
-  const colors = ['#00f2fe', '#8b5cf6', '#ffffff'];
-  const spawn = (e: MouseEvent) => {
+  const spawn = useCallback((e: MouseEvent) => {
+    const shapes = ['shape-star', 'shape-shard', 'shape-cross'];
+    const colors = ['#00f2fe', '#8b5cf6', '#ffffff'];
     const rect = document.body.getBoundingClientRect();
     const baseX = e.clientX - rect.left;
     const baseY = e.clientY - rect.top;
@@ -119,7 +119,7 @@ function MouseTrail() {
       const combined = [...newParts, ...p];
       return combined.slice(0, max);
     });
-  };
+  }, []);
   useEffect(() => {
     window.addEventListener('mousemove', spawn);
     return () => window.removeEventListener('mousemove', spawn);
@@ -148,14 +148,14 @@ function MouseTrail() {
 }
 
 /* ─── Top Navigation ─────────────────────────────────────────────── */
-function TopNav() {
+function TopNav({ auth }: { auth: SocAuthState }) {
   return (
     <nav className="absolute top-4 left-0 right-0 flex items-center justify-between px-6 py-2">
       <div className="flex items-center gap-2">
         <ShieldHalf className="size-5 text-cyan-300" />
         <span className="text-sm font-semibold text-white">SOC AI Search</span>
       </div>
-      <button className="shimmer-btn rounded-full bg-transparent border border-cyan-400/30 px-4 py-1.5 text-sm text-cyan-300 hover:bg-cyan-400/10">
+      <button onClick={auth.signIn} className="shimmer-btn rounded-full bg-transparent border border-cyan-400/30 px-4 py-1.5 text-sm text-cyan-300 hover:bg-cyan-400/10">
         Secure Login
       </button>
     </nav>
@@ -175,8 +175,7 @@ function Footer() {
   );
 }
 
-/* ─── Main Landing View ───────────────────────────────────────────── */
-function LandingView() {
+function LandingView({ auth }: { auth: SocAuthState }) {
   const mouseX = useMotionValue(typeof window !== 'undefined' ? window.innerWidth / 2 : 0);
   const mouseY = useMotionValue(typeof window !== 'undefined' ? window.innerHeight / 2 : 0);
 
@@ -184,7 +183,7 @@ function LandingView() {
     <div className="dark relative flex min-h-svh items-center justify-center overflow-hidden bg-zinc-950 px-4 text-foreground" onMouseMove={e => { mouseX.set(e.clientX); mouseY.set(e.clientY); }}>
       <style dangerouslySetInnerHTML={{ __html: GLOBAL_CSS }} />
       <CyberBackground />
-      <TopNav />
+      <TopNav auth={auth} />
       <MouseTrail />
       <div className="relative z-10 flex flex-col items-center gap-8">
         <OrbitalRings mouseX={mouseX} mouseY={mouseY} />
@@ -199,9 +198,7 @@ function LandingView() {
           <motion.div variants={slideUp} className="flex flex-col gap-3">
             <motion.button
               id="keycloak-signin-btn"
-              type="button"
-              onClick={() => { /* placeholder – auth will be injected */ }}
-              whileHover={{ scale: 1.025, boxShadow: '0 0 30px rgba(6,182,212,0.6), 0 0 60px rgba(6,182,212,0.25)' }}
+              onClick={auth.signIn}
               whileTap={{ scale: 0.97 }}
               transition={{ type: 'spring', stiffness: 350, damping: 20 }}
               className="shimmer-btn relative flex w-60 items-center justify-center gap-2.5 overflow-hidden rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 py-3 font-bold text-white transition-colors duration-200 hover:from-cyan-400 hover:to-blue-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
@@ -248,7 +245,7 @@ function LoadingView() {
 export function AuthGateView({ auth, children }: { auth: SocAuthState; children: ReactNode }) {
   if (!auth.enabled) return children;
   if (auth.loading) return <LoadingView />;
-  if (!auth.authenticated) return <LandingView />;
+  if (!auth.authenticated) return <LandingView auth={auth} />;
   return children;
 }
 export function AuthGate({ children }: { children: ReactNode }) {
