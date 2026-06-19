@@ -1,4 +1,4 @@
-# System Architecture - SOC AI Event Search
+﻿# System Architecture - SOC AI Event Search
 
 ## 1. Document Overview
 
@@ -19,9 +19,9 @@ Hệ thống được xây dựng theo **Modular Monolithic Architecture**.
 - Các module nội bộ phân tách theo trách nhiệm nhưng không giao tiếp qua network.
 - Elasticsearch và PostgreSQL là data store.
 - LLM Provider là external dependency hoặc local inference dependency.
-- Nginx là reverse proxy tại biên hệ thống.
+- Caddy là reverse proxy tại biên hệ thống production.
 
-Elasticsearch, PostgreSQL, Nginx và LLM không phải các microservice do hệ thống tự phát triển. Việc chạy dependency trong process hoặc container riêng là cách đóng gói hạ tầng, không làm thay đổi kiến trúc ứng dụng từ monolith thành microservices.
+Elasticsearch, PostgreSQL, Caddy và LLM không phải các microservice do hệ thống tự phát triển. Việc chạy dependency trong process hoặc container riêng là cách đóng gói hạ tầng, không làm thay đổi kiến trúc ứng dụng từ monolith thành microservices.
 
 ## 2. Scope
 
@@ -40,7 +40,7 @@ Elasticsearch, PostgreSQL, Nginx và LLM không phải các microservice do hệ
 - Export CSV.
 - Query history và application audit log.
 - Swagger/OpenAPI.
-- Docker Compose, GitHub Actions, AWS EC2, Nginx, domain và SSL.
+- Docker Compose, GitHub Actions, DigitalOcean Droplet, Caddy, domain và HTTPS.
 
 ### 2.2. Out of Scope for MVP
 
@@ -65,9 +65,9 @@ Elasticsearch, PostgreSQL, Nginx và LLM không phải các microservice do hệ
 | API Documentation | Swagger/OpenAPI |
 | Packaging | Docker Compose |
 | CI/CD | GitHub Actions |
-| Hosting | AWS EC2 Ubuntu |
-| Reverse Proxy | Nginx |
-| DNS and TLS | Domain + SSL certificate, khuyến nghị Let's Encrypt + Certbot |
+| Hosting | DigitalOcean Droplet Ubuntu |
+| Reverse Proxy | Caddy |
+| DNS and TLS | Name.com DNS + Caddy automatic HTTPS bằng Let's Encrypt |
 
 Chi tiết lựa chọn stack được ghi tại [tech-stack.md](./tech-stack.md). Quyết định chọn Elasticsearch được ghi tại [search-engine-decision.md](./search-engine-decision.md).
 
@@ -345,94 +345,99 @@ Các package giao tiếp bằng Java method call và interface nội bộ. Nếu
 
 ## 10. Deployment Architecture
 
-### 10.1. AWS EC2 Deployment
+### 10.1. DigitalOcean + Caddy Deployment
 
 ```mermaid
 flowchart TB
     User["SOC Analyst Browser"]
-    DNS["Domain DNS<br/>A Record"]
-    IP["AWS Elastic IP"]
+    DNS["Name.com DNS<br/>A Records"]
+    IP["DigitalOcean Droplet<br/>Public IPv4"]
 
-    subgraph AWS["AWS EC2 Ubuntu VPS"]
-        NGINX["Nginx<br/>Reverse Proxy<br/>TLS Termination"]
-        DEPLOY["SSH Deploy Commands<br/>docker compose pull<br/>docker compose up -d"]
+    subgraph VPS["DigitalOcean Ubuntu Droplet"]
+        CADDY["Caddy<br/>Reverse Proxy<br/>TLS Termination"]
+        DEPLOY["SSH Deploy Commands<br/>git fetch/reset<br/>docker compose up -d --build"]
 
         subgraph Compose["Docker Compose Network"]
-            FE["React Static Frontend"]
+            FE["React Static Frontend<br/>frontend container"]
             BE["Spring Boot Monolith"]
+            KC["Keycloak"]
             ES[("Elasticsearch<br/>Named Volume")]
             PG[("PostgreSQL<br/>Named Volume")]
         end
-
-        CERT["Certbot<br/>Let's Encrypt SSL"]
     end
 
     LLM["Cloud LLM API<br/>or Internal Local LLM API"]
     GH["GitHub Actions<br/>CI/CD"]
-    REG["Container Registry<br/>GHCR"]
 
-    User -->|"https://soc.example.com"| DNS
+    User -->|"https://soc-ai-search.app"| DNS
     DNS --> IP
-    IP -->|"80 / 443"| NGINX
-    NGINX -->|"Static files"| FE
-    NGINX -->|"/api/*"| BE
+    IP -->|"80 / 443"| CADDY
+    CADDY -->|"soc-ai-search.app"| FE
+    CADDY -->|"api.soc-ai-search.app"| BE
+    CADDY -->|"auth.soc-ai-search.app"| KC
     BE --> ES
     BE --> PG
     BE -->|"HTTPS API"| LLM
-    CERT -.->|"Issue and renew certificate"| NGINX
-    GH -->|"Push images"| REG
     GH -->|"SSH deploy"| DEPLOY
-    REG -->|"Pull images"| DEPLOY
     DEPLOY -.->|"Restart containers"| FE
     DEPLOY -.->|"Restart containers"| BE
+    DEPLOY -.->|"Restart containers"| KC
+```
+
+Production domains:
+
+```text
+https://soc-ai-search.app       -> frontend
+https://api.soc-ai-search.app   -> backend API
+https://auth.soc-ai-search.app  -> Keycloak
 ```
 
 ### 10.2. Network Exposure
 
 | Port | Public? | Purpose |
 | --- | --- | --- |
-| `22` | Có giới hạn IP | SSH deploy và vận hành |
-| `80` | Có | HTTP redirect và ACME challenge |
+| `22` | Có, nên giới hạn IP | SSH deploy và vận hành |
+| `80` | Có | HTTP redirect và ACME challenge cho Caddy |
 | `443` | Có | HTTPS |
-| Spring Boot internal port | Không | Chỉ Nginx gọi qua loopback binding |
+| Frontend container port | Không | Chỉ Caddy gọi trong Docker network |
+| Spring Boot internal port | Không | Chỉ Caddy gọi trong Docker network |
+| Keycloak internal port | Không | Chỉ Caddy gọi trong Docker network |
 | `9200` | Không | Elasticsearch internal |
-| `5432` | Không | PostgreSQL internal |
+| `5432/5433` | Không | PostgreSQL internal |
 | `5601` | Không | Kibana optional local tool; không public trên VPS |
 
 ### 10.3. Docker Compose Services
 
 | Service | Purpose |
 | --- | --- |
+| `caddy` | Public reverse proxy và automatic HTTPS |
 | `frontend` | Serve React static build |
 | `backend` | Chạy Spring Boot monolith |
+| `keycloak` | OIDC login và RBAC |
 | `elasticsearch` | Event store |
 | `postgres` | Application database |
 | `kibana` | Optional local debug UI cho Elasticsearch, chỉ chạy qua profile `tools` |
 
-Nginx và Certbot chạy trên host EC2, bên ngoài Docker Compose network. Frontend và backend chỉ bind vào loopback để Nginx gọi; Elasticsearch và PostgreSQL chỉ nằm trong Docker network. Kibana không chạy mặc định trên VPS. Với MVP trên một EC2 Ubuntu, cài Certbot trên host và dùng Nginx plugin là cách dễ vận hành. Certbot có thể cấu hình HTTPS cho Nginx và kiểm tra auto-renew bằng `certbot renew --dry-run`.
-
+Caddy chạy trong Docker Compose profile `proxy` và public `80/443`. Frontend, backend, Keycloak, Elasticsearch và PostgreSQL không cần public trực tiếp. `frontend/nginx.conf` nếu có chỉ là Nginx trong container frontend để serve static React assets hoặc proxy nội bộ; production edge reverse proxy vẫn là Caddy.
 ## 11. CI/CD Architecture
 
 ```mermaid
 flowchart LR
     Dev["Developer Push"]
     GH["GitHub Repository"]
-    CI["GitHub Actions CI<br/>Lint, Test, Coverage, Build"]
-    Registry["GHCR<br/>Docker Images by Commit SHA"]
+    CI["GitHub Actions CI<br/>Test, Coverage, Build"]
     CD["GitHub Actions CD<br/>SSH Deploy"]
-    EC2["AWS EC2<br/>docker compose pull<br/>docker compose up -d"]
-    Smoke["Smoke Test<br/>Health, Search, Aggregation"]
+    VPS["DigitalOcean Droplet<br/>git reset origin/main<br/>docker compose up -d --build"]
+    Smoke["Domain Smoke Test<br/>Frontend, API, Keycloak, CORS"]
 
     Dev --> GH
     GH --> CI
-    CI -->|"On success"| Registry
-    Registry --> CD
-    CD --> EC2
-    EC2 --> Smoke
+    CI -->|"On success on main"| CD
+    CD --> VPS
+    VPS --> Smoke
 ```
 
-Deploy image bằng commit SHA để rollback về phiên bản trước khi smoke test thất bại.
-
+CD hiện tại dùng SSH vào VPS, giữ `.env` production trên máy chủ, cập nhật source bằng Git và rebuild Docker Compose. Không bắt buộc dùng GitHub Container Registry cho MVP hiện tại.
 ## 12. Operational Notes
 
 - Đặt `vm.max_map_count=1048576` trên VPS cho Elasticsearch.
@@ -448,6 +453,7 @@ Deploy image bằng commit SHA để rollback về phiên bản trước khi smo
 - [Tech Stack Decision](./tech-stack.md)
 - [Elasticsearch Decision](./search-engine-decision.md)
 - [MVP Requirement](./requirement.md)
-- [NGINX Reverse Proxy Documentation](https://docs.nginx.com/nginx/admin-guide/web-server/reverse-proxy/)
+- [Caddy Documentation](https://caddyserver.com/docs/)
 - [Docker Compose Production Documentation](https://docs.docker.com/compose/how-tos/production/)
-- [Certbot Instructions for Nginx](https://certbot.eff.org/instructions?ws=nginx&os=snap)
+- [Caddy Automatic HTTPS](https://caddyserver.com/docs/automatic-https)
+

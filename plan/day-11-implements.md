@@ -1,4 +1,4 @@
-# Day 11 Implements - Deploy VPS, Domain HTTPS, CI/CD
+﻿# Day 11 Implements - Deploy VPS, Domain HTTPS, CI/CD
 
 File này ghi lại quá trình triển khai Day 11 để review kiến thức và dùng làm nguồn cập nhật README/report.
 
@@ -385,3 +385,43 @@ Hard refresh browser sau deploy frontend:
 ```text
 Ctrl + F5
 ```
+## 13. Hoàn thiện missing tasks Day 11
+
+Sau khi chuyển deployment thực tế sang DigitalOcean + Caddy, các tài liệu hiện hành cần được đồng bộ lại để không còn mô tả nhầm AWS/Nginx/Certbot là kiến trúc production.
+
+Đã bổ sung/cập nhật trong repo:
+
+- Chuẩn hóa docs/plan hiện hành theo mô hình:
+  - DigitalOcean Droplet Ubuntu;
+  - Name.com DNS A records;
+  - Caddy reverse proxy public `80/443`;
+  - Caddy automatic HTTPS bằng Let's Encrypt;
+  - GitHub Actions CD qua SSH, `git fetch/reset` và rebuild Docker Compose.
+- Thêm smoke test domain:
+  - `scripts/smoke-test-day-11-domain.ps1`.
+- Cập nhật CD workflow để chạy public domain smoke sau deploy.
+- Cập nhật README với lệnh hardening UFW và rollback bằng Git commit/reflog.
+
+Các reference còn lại tới Nginx trong docs chỉ hợp lệ khi nói về `frontend/nginx.conf` bên trong container frontend. Đây không phải reverse proxy host-level của production; production edge hiện là Caddy.
+
+Lưu ý vận hành còn cần làm trực tiếp trên VPS nếu chưa làm:
+
+```bash
+ufw allow OpenSSH
+ufw allow 80/tcp
+ufw allow 443/tcp
+ufw delete allow 3000/tcp || true
+ufw delete allow 8081/tcp || true
+ufw delete allow 8082/tcp || true
+ufw delete allow 9200/tcp || true
+ufw delete allow 5433/tcp || true
+ufw delete allow 5601/tcp || true
+ufw status verbose
+```
+
+Sau khi hardening, chạy:
+
+```powershell
+.\scripts\smoke-test-day-11-domain.ps1
+```
+

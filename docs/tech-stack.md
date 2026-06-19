@@ -1,4 +1,4 @@
-# Tech Stack - SOC AI Event Search
+﻿# Tech Stack - SOC AI Event Search
 
 ## 1. Tổng quan
 
@@ -11,7 +11,7 @@ Mục tiêu của giai đoạn MVP là xây dựng một hệ thống có thể:
 - Dùng LLM chuyển câu hỏi tự nhiên thành kế hoạch truy vấn có cấu trúc.
 - Validate kế hoạch truy vấn và compile thành Elasticsearch Query DSL.
 - Hiển thị kết quả tìm kiếm, biểu đồ thống kê, summary, query history và audit log.
-- Đóng gói bằng Docker Compose, deploy lên VPS AWS và truy cập qua domain HTTPS.
+- Đóng gói bằng Docker Compose, deploy lên VPS DigitalOcean và truy cập qua domain HTTPS.
 
 ## 2. Tech stack đã chọn
 
@@ -26,8 +26,8 @@ Mục tiêu của giai đoạn MVP là xây dựng một hệ thống có thể:
 | API Docs | Swagger/OpenAPI | Đã chọn | Sinh tài liệu và thử REST API |
 | Deployment | Docker Compose | Đã chọn | Chạy local và deploy trên một VPS |
 | CI/CD | GitHub Actions | Đã chọn | Test, build Docker image và deploy |
-| Hosting | AWS EC2 VPS + domain + HTTPS | Đã chọn | Host bản demo cho mentor truy cập |
-| Reverse Proxy | Nginx + Certbot | Đã chọn | Reverse proxy, SSL certificate và HTTPS |
+| Hosting | DigitalOcean Droplet Ubuntu + domain HTTPS | Đã chọn | Host bản demo cho mentor truy cập |
+| Reverse Proxy | Caddy | Đã chọn | Reverse proxy public `80/443`, tự cấp và gia hạn HTTPS bằng Let's Encrypt |
 | AI | Cloud LLM API hoặc Local LLM qua API | Chưa chốt | Chuyển natural language thành `SearchPlan`, hỗ trợ summary |
 | Auth | Spring Security JWT hoặc Keycloak/OIDC | Chưa chốt | Xác thực người dùng và ghi nhận danh tính trong audit log |
 
@@ -310,46 +310,59 @@ Tài liệu tham khảo: [Keycloak documentation](https://www.keycloak.org/docum
 ### Thành phần
 
 - Docker Compose.
-- AWS EC2 VPS.
-- Domain trỏ bằng DNS record `A`.
-- Nginx làm reverse proxy.
-- Certbot và Let's Encrypt để cấp, gia hạn SSL certificate.
-- HTTPS.
+- DigitalOcean Droplet Ubuntu.
+- Domain mua tại Name.com, trỏ DNS record `A` về public IPv4 của Droplet.
+- Caddy reverse proxy public `80/443`.
+- HTTPS do Caddy tự cấp và gia hạn bằng Let's Encrypt.
 - GitHub Actions CI/CD.
-- GitHub Container Registry (`ghcr.io`) hoặc Docker Hub.
+- CD qua SSH vào VPS, `git fetch/reset` về `origin/main` và rebuild Docker Compose.
 
-Luồng deploy:
+Production MVP hiện dùng các domain:
+
+```text
+https://soc-ai-search.app       -> frontend
+https://api.soc-ai-search.app   -> backend API
+https://auth.soc-ai-search.app  -> Keycloak
+```
+
+Luồng deploy hiện tại:
 
 ```text
 Push code to GitHub
   |
-GitHub Actions
+GitHub Actions CI
   |-- Run backend tests
-  |-- Run frontend build
-  |-- Build Docker images
-  |-- Push images to registry
-  |-- SSH to AWS EC2
-  |-- docker compose pull
-  |-- docker compose up -d
+  |-- Run frontend tests/lint/build
+  |-- Validate Docker Compose config
   |
-Domain HTTPS
+GitHub Actions CD
+  |-- SSH to DigitalOcean Droplet
+  |-- git fetch/reset to origin/main
+  |-- docker compose -f docker-compose.yml -f docker-compose.deploy.yml --profile auth --profile proxy up -d --build
+  |-- smoke check public domains
+  |
+Caddy HTTPS domains
 ```
 
 Chỉ expose các port cần thiết:
 
 - `22`: SSH, giới hạn theo IP cá nhân nếu có thể.
-- `80`: HTTP để redirect hoặc cấp certificate.
-- `443`: HTTPS.
+- `80`: HTTP challenge/redirect cho Caddy.
+- `443`: HTTPS public.
 
 Không expose trực tiếp:
 
+- Frontend container port `3000`.
+- Backend container port `8081`.
+- Keycloak container port `8082`.
 - Elasticsearch `9200`.
-- PostgreSQL `5432`.
+- PostgreSQL `5432/5433`.
 - Kibana `5601`.
 - Local LLM API nếu có.
 
-Secrets như database password, Elasticsearch password, JWT secret và LLM API key không được commit vào Git. Dùng `.env` trên VPS và GitHub Actions secrets cho pipeline.
+Secrets như database password, Keycloak admin password, JWT/OIDC config và LLM API key không được commit vào Git. Dùng `.env` trên VPS và GitHub Actions secrets cho pipeline.
 
+Lưu ý: `frontend/nginx.conf` vẫn có thể tồn tại bên trong container frontend để serve static React assets hoặc proxy nội bộ trong local Docker. Đây không phải reverse proxy host-level của production; production public edge hiện là Caddy.
 ## 11. Testing
 
 ### Công cụ
@@ -382,7 +395,7 @@ MVP ưu tiên unit test, controller test và smoke script trên Docker Compose l
 | API docs | Springdoc OpenAPI + Swagger UI |
 | AI | Interface `LlmClient`; Cloud API với dữ liệu synthetic hoặc đã ẩn danh; sẵn đường chuyển Local LLM |
 | Auth | Spring Security JWT tối giản; nâng cấp Keycloak/OIDC sau MVP nếu cần |
-| Deploy | Docker Compose + GitHub Actions + AWS EC2 + Nginx + domain HTTPS |
+| Deploy | Docker Compose + GitHub Actions + DigitalOcean Droplet + Caddy + Name.com domain HTTPS |
 
 ## 13. Việc cần xác nhận với mentor
 
@@ -393,3 +406,4 @@ Trước khi dùng dữ liệu SOC thật, cần hỏi mentor:
 3. Có hệ thống SSO hoặc Keycloak sẵn để tích hợp không?
 4. Có yêu cầu RBAC cụ thể cho analyst không?
 5. Bản demo public cần mở cho internet hay chỉ whitelist IP?
+

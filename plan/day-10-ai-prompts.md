@@ -1,4 +1,4 @@
-# Prompt triển khai Ngày 10 - SOC AI Search MVP
+﻿# Prompt triển khai Ngày 10 - SOC AI Search MVP
 
 ## 1. Review kế hoạch Day 10
 
@@ -259,7 +259,7 @@ Yêu cầu:
    - không triển khai deploy trong ngày 10.
 9. Chạy verify phù hợp và báo checklist PASS/FAIL.
 
-Không triển khai deploy VPS, Nginx HTTPS, GitHub CD qua SSH, report/slide hoặc feature mới trong prompt này. Deploy để ngày 11.
+Không triển khai deploy VPS, Caddy HTTPS, GitHub CD qua SSH, report/slide hoặc feature mới trong prompt này. Deploy để ngày 11.
 ```
 
 ### Checkpoint Prompt 3
@@ -321,3 +321,4 @@ Sau đó:
 3. Báo checklist PASS/FAIL.
 4. Liệt kê việc còn cần làm ở ngày 11 nhưng không triển khai chúng.
 ```
+

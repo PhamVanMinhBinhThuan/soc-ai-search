@@ -1,4 +1,4 @@
-# SOC AI Search
+﻿# SOC AI Search
 
 Đề tài: **Xây dựng tính năng Tìm kiếm Event bằng AI cho SOC Platform**.
 
@@ -142,7 +142,7 @@ https://api.soc-ai-search.app
 https://auth.soc-ai-search.app
 ```
 
-Sau khi dùng Caddy, chỉ cần public firewall ports `80` và `443`.
+Sau khi dùng Caddy, chỉ public firewall ports `22`, `80` và `443`; các port app nội bộ như `3000`, `8081`, `8082`, `9200`, `5433`, `5601` không được mở ra internet.
 PostgreSQL, Elasticsearch, backend, frontend và Keycloak có thể giữ sau
 reverse proxy.
 
@@ -162,6 +162,58 @@ Valid post logout redirect URIs:
 https://soc-ai-search.app
 https://soc-ai-search.app/*
 ```
+
+
+### Day 11 domain smoke và rollback
+
+Sau khi deploy production bằng DigitalOcean + Caddy, chạy smoke test domain từ máy local hoặc từ GitHub Actions:
+
+```powershell
+.\scripts\smoke-test-day-11-domain.ps1
+```
+
+Script kiểm tra:
+
+- `https://soc-ai-search.app` trả 2xx;
+- `https://api.soc-ai-search.app/api/v1/health/live` trả 2xx;
+- `https://auth.soc-ai-search.app/realms/soc-ai-search/.well-known/openid-configuration` trả 2xx;
+- CORS preflight từ `https://soc-ai-search.app` tới `POST /api/v1/search` hoạt động;
+- các port nội bộ `3000`, `8081`, `8082`, `9200`, `5433`, `5601` không public từ internet.
+
+Hardening UFW trên VPS:
+
+```bash
+ufw allow OpenSSH
+ufw allow 80/tcp
+ufw allow 443/tcp
+ufw delete allow 3000/tcp || true
+ufw delete allow 8081/tcp || true
+ufw delete allow 8082/tcp || true
+ufw delete allow 9200/tcp || true
+ufw delete allow 5433/tcp || true
+ufw delete allow 5601/tcp || true
+ufw status verbose
+```
+
+Rollback về commit trước đó mà không xóa Docker volumes:
+
+```bash
+cd /root/soc-ai-search
+git fetch origin
+git reset --hard <previous_commit_sha>
+docker compose -f docker-compose.yml -f docker-compose.deploy.yml --profile auth --profile proxy up -d --build
+```
+
+Hoặc nếu deploy mới vừa lỗi và cần tìm commit trước:
+
+```bash
+cd /root/soc-ai-search
+git reflog --date=iso
+git reset --hard <sha_from_reflog>
+docker compose -f docker-compose.yml -f docker-compose.deploy.yml --profile auth --profile proxy up -d --build
+```
+
+Rollback theo cách này giữ nguyên named volumes, nên PostgreSQL, Elasticsearch, Keycloak và Caddy data vẫn còn. Không chạy `docker compose down -v` trừ khi thật sự muốn xóa dữ liệu.
 
 ### Keycloak auth foundation ngày 8
 
@@ -912,3 +964,4 @@ access tokens:
   -AdminToken "<admin-access-token>" `
   -RequireTokens
 ```
+

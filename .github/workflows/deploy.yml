@@ -1,4 +1,4 @@
-name: CD
+﻿name: CD
 
 on:
   workflow_run:
@@ -35,6 +35,9 @@ jobs:
       VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
       DEPLOY_BRANCH: main
     steps:
+      - name: Checkout smoke scripts
+        uses: actions/checkout@v4
+
       - name: Validate deployment secrets
         run: |
           test -n "$VPS_HOST" || (echo "Missing VPS_HOST secret" && exit 1)
@@ -128,3 +131,9 @@ jobs:
 
           "${COMPOSE[@]}" ps
           REMOTE
+      - name: Run public domain smoke
+        shell: pwsh
+        run: |
+          ./scripts/smoke-test-day-11-domain.ps1 -VpsIp "$env:VPS_HOST"
+
+

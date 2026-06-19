@@ -1,8 +1,8 @@
-# Kế hoạch 2 tuần hoàn thiện MVP SOC AI Search
+﻿# Kế hoạch 2 tuần hoàn thiện MVP SOC AI Search
 
 ## 1. Mục tiêu
 
-Hoàn thiện bản MVP cho đề tài **"Xây dựng tính năng Tìm kiếm Event bằng AI cho SOC Platform"** trong 14 ngày, có thể demo end-to-end và deploy lên VPS AWS.
+Hoàn thiện bản MVP cho đề tài **"Xây dựng tính năng Tìm kiếm Event bằng AI cho SOC Platform"** trong 14 ngày, có thể demo end-to-end và deploy lên VPS DigitalOcean.
 
 Phạm vi chỉ tập trung vào các chức năng MVP:
 
@@ -16,7 +16,7 @@ Phạm vi chỉ tập trung vào các chức năng MVP:
 - Swagger/OpenAPI, Docker Compose, test coverage tối thiểu 50%.
 - CI/CD GitHub Actions và deploy VPS để có thể truy cập bản demo.
 
-CI/CD, VPS AWS, domain và HTTPS là hạ tầng bàn giao bản demo, không phải chức năng khuyến khích của sản phẩm.
+CI/CD, VPS DigitalOcean, domain và HTTPS là hạ tầng bàn giao bản demo, không phải chức năng khuyến khích của sản phẩm.
 
 ## 2. Data Model MVP
 
@@ -79,7 +79,7 @@ Không tạo bảng user riêng trong app. User, đăng nhập và role được
 | Ngày 8 | Tích hợp Keycloak foundation: realm/client/roles, Spring Security Resource Server, frontend login/logout; tắt self-registration | Đăng nhập được, API protected trả 401 nếu chưa login |
 | Ngày 9 | Hoàn thiện RBAC và UI permission cho 3 role `SOC_VIEWER`, `SOC_ANALYST`, `SOC_ADMIN`; audit/history lấy identity từ JWT | 3 role demo hoạt động khác nhau và có smoke test |
 | Ngày 10 | Viết unit/integration/regression test cho ingest, search, aggregation, audit, export và RBAC | Coverage backend đạt tối thiểu 50%, frontend lint/build pass |
-| Ngày 11 | Deploy đơn giản trong 1 ngày: production Docker Compose, VPS, Nginx, HTTPS, Keycloak, seed dataset và GitHub Actions CI/CD cơ bản | Website HTTPS truy cập được, login hoạt động, push/deploy được hoặc có lệnh deploy ngắn gọn |
+| Ngày 11 | Deploy đơn giản trong 1 ngày: production Docker Compose, DigitalOcean VPS, Caddy HTTPS, Keycloak, seed dataset và GitHub Actions CI/CD cơ bản | Website HTTPS truy cập được, login hoạt động, push/deploy được hoặc có lệnh deploy ngắn gọn |
 | Ngày 12 | Hardening, kiểm tra secret/port/volume/restart, smoke test domain và hoàn thiện README deploy/Auth | Bản demo public ổn định, có tài liệu chạy và rollback |
 | Ngày 13 | Viết report, slide, chụp screenshot và quay video dự phòng | Có report/slide draft và kịch bản demo 7-10 phút |
 | Ngày 14 | Diễn tập demo, buffer sửa lỗi, tạo release và gửi mentor | Bàn giao link GitHub, URL demo, credential riêng, report/slide draft |
@@ -100,3 +100,4 @@ Không tạo bảng user riêng trong app. User, đăng nhập và role được
 ## 5. Ngoài Phạm Vi 2 Tuần
 
 Các chức năng khuyến khích như multi-turn, semantic search, hybrid search, anomaly detection, dashboard nâng cao, Kubernetes và monitoring chưa nằm trong timeline MVP. Chỉ xem xét sau khi bản bắt buộc đã ổn định.
+
