@@ -1,0 +1,130 @@
+name: CD
+
+on:
+  workflow_run:
+    workflows:
+      - CI
+    types:
+      - completed
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-vps
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to VPS
+    runs-on: ubuntu-latest
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (
+        github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.head_branch == 'main'
+      )
+    env:
+      VPS_HOST: ${{ secrets.VPS_HOST }}
+      VPS_USER: ${{ secrets.VPS_USER }}
+      VPS_PORT: ${{ secrets.VPS_PORT || '22' }}
+      VPS_APP_DIR: ${{ secrets.VPS_APP_DIR }}
+      VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+      DEPLOY_BRANCH: main
+    steps:
+      - name: Validate deployment secrets
+        run: |
+          test -n "$VPS_HOST" || (echo "Missing VPS_HOST secret" && exit 1)
+          test -n "$VPS_USER" || (echo "Missing VPS_USER secret" && exit 1)
+          test -n "$VPS_PORT" || (echo "Missing VPS_PORT secret/default" && exit 1)
+          test -n "$VPS_APP_DIR" || (echo "Missing VPS_APP_DIR secret" && exit 1)
+          test -n "$VPS_SSH_KEY" || (echo "Missing VPS_SSH_KEY secret" && exit 1)
+
+      - name: Configure SSH
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -p "$VPS_PORT" "$VPS_HOST" >> ~/.ssh/known_hosts
+
+      - name: Deploy latest main to VPS
+        run: |
+          ssh -i ~/.ssh/deploy_key -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" \
+            "VPS_APP_DIR='$VPS_APP_DIR' DEPLOY_BRANCH='$DEPLOY_BRANCH' bash -s" <<'REMOTE'
+          set -euo pipefail
+
+          cd "$VPS_APP_DIR"
+
+          if [ ! -d .git ]; then
+            echo "VPS_APP_DIR is not a git checkout: $VPS_APP_DIR"
+            exit 1
+          fi
+
+          if [ ! -f .env ]; then
+            echo "Missing production .env on VPS. Create it from .env.example before deploying."
+            exit 1
+          fi
+
+          if [ ! -f frontend/.env ]; then
+            echo "Missing production frontend/.env on VPS. Create it from frontend/.env.example before deploying."
+            exit 1
+          fi
+
+          if command -v sudo >/dev/null 2>&1; then
+            sudo sysctl -w vm.max_map_count=262144
+          else
+            sysctl -w vm.max_map_count=262144
+          fi
+
+          git fetch --prune origin "$DEPLOY_BRANCH"
+          git clean -fd \
+            -e .env \
+            -e frontend/.env \
+            -e generated-data/ \
+            -e 'generated-data/**' \
+            -e '*.bak'
+          git reset --hard "origin/$DEPLOY_BRANCH"
+
+          COMPOSE=(docker compose -f docker-compose.yml -f docker-compose.deploy.yml --profile auth --profile proxy)
+          "${COMPOSE[@]}" config --quiet
+          "${COMPOSE[@]}" up -d --build
+
+          echo "Waiting for backend health..."
+          for attempt in {1..30}; do
+            if curl -fsS http://127.0.0.1:8081/api/v1/health/live >/dev/null; then
+              echo "Backend is healthy."
+              break
+            fi
+
+            if [ "$attempt" -eq 30 ]; then
+              echo "Backend did not become healthy in time."
+              "${COMPOSE[@]}" ps
+              "${COMPOSE[@]}" logs --tail=120 backend caddy
+              exit 1
+            fi
+
+            sleep 5
+          done
+
+          echo "Waiting for frontend health..."
+          for attempt in {1..20}; do
+            if curl -fsS http://127.0.0.1:3000/ >/dev/null; then
+              echo "Frontend is healthy."
+              break
+            fi
+
+            if [ "$attempt" -eq 20 ]; then
+              echo "Frontend did not become healthy in time."
+              "${COMPOSE[@]}" ps
+              "${COMPOSE[@]}" logs --tail=120 frontend caddy
+              exit 1
+            fi
+
+            sleep 5
+          done
+
+          "${COMPOSE[@]}" ps
+          REMOTE

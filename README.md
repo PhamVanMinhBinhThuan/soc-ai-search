@@ -853,6 +853,40 @@ The CI workflow runs backend `mvn verify`, frontend `npm ci`, `npm test`,
 CI forces `LLM_PROVIDER=mock`, does not require `LLM_API_KEY`, and does not call
 Gemini.
 
+GitHub Actions CD is defined in:
+
+```text
+.github/workflows/deploy.yml
+```
+
+CD deploys to the VPS only after the `CI` workflow succeeds on `main`, or when
+you run the workflow manually from the GitHub Actions tab. The deployment uses
+SSH, keeps production `.env` files on the VPS, pulls the latest `main`, rebuilds
+Docker Compose with the `auth` and `proxy` profiles, and checks backend/frontend
+health before finishing.
+
+Required GitHub repository secrets:
+
+```text
+VPS_HOST=178.128.111.251
+VPS_USER=root
+VPS_PORT=22
+VPS_APP_DIR=/root/soc-ai-search
+VPS_SSH_KEY=<private SSH key that can login to the VPS>
+```
+
+Create a deploy key for GitHub Actions if needed:
+
+```bash
+ssh-keygen -t ed25519 -f ~/.ssh/soc_ai_search_deploy -C "github-actions-soc-ai-search"
+ssh-copy-id -i ~/.ssh/soc_ai_search_deploy.pub root@178.128.111.251
+cat ~/.ssh/soc_ai_search_deploy
+```
+
+Add the private key content from the last command to `VPS_SSH_KEY`. This key is
+for SSH access to the VPS only; because the repository is public, the VPS can run
+`git fetch` from GitHub without a GitHub token.
+
 Local Day 10 smoke regression:
 
 ```powershell
