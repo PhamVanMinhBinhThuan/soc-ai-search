@@ -13,7 +13,7 @@ $AppUrl = $AppUrl.TrimEnd("/")
 $ApiUrl = $ApiUrl.TrimEnd("/")
 $AuthUrl = $AuthUrl.TrimEnd("/")
 $startedAt = Get-Date
-$script:CurlCommonArgs = @("--noproxy", "*")
+$script:CurlCommonArgs = @("--noproxy=*")
 $isWindowsRuntime = $env:OS -eq "Windows_NT"
 $isWindowsVariable = Get-Variable -Name IsWindows -ErrorAction SilentlyContinue
 if ($null -ne $isWindowsVariable) {
@@ -64,7 +64,7 @@ function Invoke-CurlStatus {
         throw "[FAIL] $ScenarioName curl failed with exit code $LASTEXITCODE"
     }
 
-    $status = [int]$statusText
+    $status = [int]([string]$statusText | Select-Object -Last 1)
     Assert-True -Condition ($status -ge 200 -and $status -lt 300) -Message "$ScenarioName returns 2xx ($status)"
     return $status
 }
@@ -141,7 +141,7 @@ try {
         throw "[FAIL] CORS preflight curl failed with exit code $LASTEXITCODE"
     }
 
-    $preflightStatus = [int]$preflightStatusText
+    $preflightStatus = [int]([string]$preflightStatusText | Select-Object -Last 1)
     Assert-True `
         -Condition ($preflightStatus -ge 200 -and $preflightStatus -lt 300) `
         -Message "CORS preflight to POST /api/v1/search returns 2xx ($preflightStatus)"
