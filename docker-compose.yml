@@ -51,6 +51,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-soc_ai_search}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env before running Docker Compose}
       APP_DEMO_USER_IDENTITY: ${APP_DEMO_USER_IDENTITY:-demo-analyst}
+      APP_CORS_ALLOWED_ORIGIN_PATTERNS: ${APP_CORS_ALLOWED_ORIGIN_PATTERNS:-http://localhost:*,http://127.0.0.1:*,https://soc-ai-search.app}
       APP_AUTH_ENABLED: ${APP_AUTH_ENABLED:-false}
       KEYCLOAK_ISSUER_URI: ${KEYCLOAK_ISSUER_URI:-http://localhost:8082/realms/soc-ai-search}
       KEYCLOAK_JWK_SET_URI: ${KEYCLOAK_JWK_SET_URI:-http://keycloak:8080/realms/soc-ai-search/protocol/openid-connect/certs}
