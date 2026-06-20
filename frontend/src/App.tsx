@@ -1,7 +1,5 @@
 import {
   Activity,
-  Circle,
-  FlaskConical,
   LogOut,
   ScrollText,
   ShieldCheck,
