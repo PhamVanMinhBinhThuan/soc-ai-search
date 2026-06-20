@@ -83,11 +83,11 @@ SMTP is configured in Keycloak Admin Console under **Realm settings → Email**.
 | Provider | Use Case | Cost | Setup |
 | --- | --- | --- | --- |
 | Mailtrap | Local development and testing | Free tier available | Sandbox inbox, no real emails sent |
-| Gmail App Password | Production demo | Free with Gmail account | Requires 2FA + App Password |
+| Brevo | Production demo | Free tier (300/day) | Requires account + SMTP setup |
 | Amazon SES | Production at scale | Pay per email | Requires AWS account + domain verification |
 | SendGrid | Production at scale | Free tier (100/day) | Requires account + domain verification |
 
-For this MVP, Mailtrap (local) and Gmail App Password (production) are recommended.
+For this MVP, Mailtrap (local) and Brevo (production) are recommended.
 
 ## Without SMTP (Manual Password)
 

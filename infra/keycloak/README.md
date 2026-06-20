@@ -128,17 +128,17 @@ SMTP is required for email onboarding. Keycloak does not read SMTP settings from
 3. Go to **Realm settings** → **Email** tab.
 4. Fill in the SMTP settings:
 
-| Field | Local/Dev (Mailtrap) | Production (Gmail) |
+| Field | Local/Dev (Mailtrap) | Production (Brevo) |
 | --- | --- | --- |
-| From | `no-reply@soc-ai-search.app` | `your-email@gmail.com` |
+| From | `no-reply@soc-ai-search.app` | `your-sender@yourdomain.com` |
 | From display name | `SOC AI Search` | `SOC AI Search` |
-| Host | `sandbox.smtp.mailtrap.io` | `smtp.gmail.com` |
+| Host | `sandbox.smtp.mailtrap.io` | `smtp-relay.brevo.com` |
 | Port | `587` | `587` |
 | Enable StartTLS | ✅ | ✅ |
 | Enable SSL | ❌ | ❌ |
 | Enable authentication | ✅ | ✅ |
-| Username | Mailtrap inbox username | `your-email@gmail.com` |
-| Password | Mailtrap inbox password | Gmail App Password |
+| Username | Mailtrap inbox username | `<your-brevo-smtp-login>` |
+| Password | Mailtrap inbox password | `<your-brevo-smtp-password>` |
 
 5. Click **Test connection** to verify.
 6. Click **Save**.
@@ -153,15 +153,15 @@ Mailtrap is a sandbox SMTP service that captures all outgoing emails. No real em
 4. Configure in Keycloak Admin Console as shown above.
 5. All emails sent by Keycloak will appear in the Mailtrap inbox.
 
-### Production/Demo With Gmail App Password
+### Production/Demo With Brevo
 
 For production or real demo environments:
 
-1. Use a dedicated Gmail account (not personal).
-2. Enable 2-Step Verification on the Google account.
-3. Create an App Password at [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords).
-4. Do NOT use the main Gmail password. Use the generated App Password.
-5. Configure in Keycloak Admin Console with the App Password.
+1. Create a free account at [brevo.com](https://www.brevo.com/).
+2. Navigate to your profile dropdown → **SMTP & API**.
+3. Generate a new SMTP key.
+4. Do NOT use your main account password. Use the generated SMTP password.
+5. Configure in Keycloak Admin Console with the SMTP credentials.
 
 ### Environment Variables Reference
 

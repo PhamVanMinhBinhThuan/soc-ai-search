@@ -1,4 +1,4 @@
-﻿# Mini Prompt - Keycloak Email Onboarding Cho User Do Admin Tạo
+# Mini Prompt - Keycloak Email Onboarding Cho User Do Admin Tạo
 
 Hãy triển khai và chuẩn hóa luồng onboarding tài khoản Keycloak cho SOC AI Search MVP.
 
@@ -98,12 +98,12 @@ Yêu cầu bảo mật:
 
 - `.env.example` chỉ chứa placeholder.
 - Không ghi SMTP password thật.
-- Không ghi email password/app password thật.
+- Không ghi email password thật.
 - Không commit user password thật.
 
-Sử dụng cấu hình mẫu của Mailtrap cho môi trường local/dev hoặc Gmail App Password cho production/demo thật để làm ví dụ trong `.env.example` và tài liệu. Đây chỉ là ví dụ placeholder, không được hardcode tài khoản thật hoặc app password thật.
+Sử dụng cấu hình mẫu của Mailtrap cho môi trường local/dev hoặc Brevo cho production/demo thật để làm ví dụ trong `.env.example` và tài liệu. Đây chỉ là ví dụ placeholder, không được hardcode tài khoản thật hoặc password thật.
 
-Ví dụ local/dev với Mailtrap nên thể hiện rõ đây là sandbox email để test luồng onboarding mà không gửi email ra người dùng thật. Ví dụ production/demo với Gmail App Password phải ghi rõ cần tạo app password riêng, không dùng mật khẩu Gmail chính.
+Ví dụ local/dev với Mailtrap nên thể hiện rõ đây là sandbox email để test luồng onboarding mà không gửi email ra người dùng thật. Ví dụ production/demo với Brevo phải ghi rõ cần tạo SMTP key riêng.
 
 Nếu Keycloak realm export có thể cấu hình SMTP server bằng JSON, hãy thêm cấu hình dựa trên env/placeholders nếu Keycloak import hỗ trợ an toàn. Nếu không phù hợp, hãy cập nhật tài liệu hướng dẫn admin cấu hình SMTP thủ công trong Keycloak Admin Console.
 
