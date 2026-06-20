@@ -105,8 +105,8 @@ export function SocSidebar({
               expanded ? 'ml-3 w-36 opacity-100' : 'ml-0 w-0 opacity-0',
             )}
           >
-            <span className="block text-sm font-semibold">SOC Console</span>
-            <span className="block text-[10px] text-muted-foreground">
+            <span className="block text-base font-semibold">SOC Console</span>
+            <span className="block text-xs text-muted-foreground">
               AI Event Search
             </span>
           </div>
@@ -208,11 +208,11 @@ export function SocSidebar({
 
           <div
             className={cn(
-              'mt-2 flex h-10 items-center',
+              'mt-2 flex h-12 items-center',
               expanded ? 'px-1' : 'justify-center',
             )}
           >
-            <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-secondary text-xs font-semibold ring-1 ring-border">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-secondary text-sm font-semibold ring-1 ring-border">
               {initials}
             </div>
             <div
@@ -223,10 +223,10 @@ export function SocSidebar({
                   : 'ml-0 w-0 opacity-0',
               )}
             >
-              <span className="block max-w-32 truncate text-xs font-medium">
+              <span className="block max-w-32 truncate text-sm font-medium">
                 {identity}
               </span>
-              <span className="block text-[10px] text-muted-foreground">
+              <span className="block text-xs text-muted-foreground">
                 {roleLabel}
               </span>
             </div>

@@ -1,8 +1,6 @@
 import {
-  Activity,
   LogOut,
   ScrollText,
-  ShieldCheck,
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
@@ -30,7 +28,6 @@ import {
 import { SocHero } from '@/components/hero/soc-hero'
 import { SocSidebar } from '@/components/soc/soc-sidebar'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { initialScenario, mockScenarios } from '@/lib/mock-data'
 import {
   downloadMockCsv,
@@ -506,14 +503,8 @@ function App() {
         </div>
       ) : (
         <div className="min-w-0 flex-1">
-          <header className="sticky top-0 z-30 flex h-16 min-w-0 items-center gap-3 overflow-hidden border-b border-border bg-background/85 px-4 backdrop-blur-xl sm:gap-4 sm:px-6">
-          <div className="min-w-0">
-            <h1 className="text-sm font-semibold">Event Search</h1>
-            <p className="truncate text-xs text-muted-foreground">
-              AI-powered investigation console
-            </p>
-          </div>
-          <div className="ml-auto flex shrink-0 items-center gap-2 sm:gap-3">
+          <header className="sticky top-0 z-30 flex h-16 min-w-0 items-center justify-end gap-3 overflow-hidden border-b border-border bg-background/85 px-4 backdrop-blur-xl sm:gap-4 sm:px-6">
+          <div className="flex shrink-0 items-center gap-2 sm:gap-3 mr-2 sm:mr-4">
             {canUseHistory ? (
               <Button
                 variant="ghost"
@@ -525,26 +516,6 @@ function App() {
                 <ScrollText />
               </Button>
             ) : null}
-            {response ? (
-              <span className="hidden items-center gap-2 text-xs text-muted-foreground sm:flex">
-                <Activity className="size-4 text-cyan-300" />
-                {response.total.toLocaleString('en-US')} events
-              </span>
-            ) : null}
-            <span className="hidden items-center gap-2 rounded-full border border-border bg-secondary/40 px-2.5 py-1 text-xs text-muted-foreground lg:inline-flex">
-              <ShieldCheck className="size-3 text-emerald-300" />
-              <span className="max-w-64 truncate text-foreground">
-                {auth.email || auth.identity}
-              </span>
-              {auth.roles[0] ? (
-                <Badge
-                  variant="outline"
-                  className="h-5 border-cyan-400/25 bg-cyan-400/10 px-2 text-[10px] text-cyan-200"
-                >
-                  {auth.roles[0]}
-                </Badge>
-              ) : null}
-            </span>
             {auth.enabled ? (
               <Button
                 variant="ghost"
