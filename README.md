@@ -1,4 +1,4 @@
-﻿# SOC AI Search MVP
+# SOC AI Search MVP
 
 **SOC AI Search** là một nền tảng demo giúp SOC analyst tìm kiếm, thống kê và điều tra security event bằng ngôn ngữ tự nhiên. Thay vì viết Elasticsearch DSL thủ công, người dùng nhập câu hỏi tiếng Việt hoặc tiếng Anh; backend chuyển câu hỏi thành `SearchPlan`, validate bằng guardrail, compile thành Elasticsearch Query DSL và trả kết quả kèm DSL minh bạch để reviewer có thể kiểm tra.
 
@@ -157,12 +157,25 @@ docker compose --profile auth up -d keycloak
 
 Open `http://localhost:8082/admin`. Admin credential is configured through `.env`; do not commit real passwords.
 
-Recommended demo onboarding:
+### User Onboarding Flow
 
-1. Admin creates user in Keycloak Admin Console.
-2. Admin assigns one of `SOC_VIEWER`, `SOC_ANALYST`, `SOC_ADMIN`.
-3. Admin sets a temporary password locally, or configures SMTP and sends required action email.
-4. Demo credentials are sent separately and never stored in Git.
+Self-registration is disabled. Admin creates all user accounts:
+
+```text
+Admin creates user in Keycloak Admin Console
+        ↓
+Admin assigns role (SOC_VIEWER / SOC_ANALYST / SOC_ADMIN)
+        ↓
+Admin sends "Execute actions email" (Verify Email + Update Password)
+        ↓
+User receives email, clicks link, sets password and verifies email
+        ↓
+User logs in to SOC AI Search
+```
+
+For this flow to work, SMTP must be configured in Keycloak. See `infra/keycloak/README.md` for detailed SMTP setup. Without SMTP, admin can set a temporary password manually from the Credentials tab.
+
+Demo credentials are sent separately and never stored in Git.
 
 ### RBAC Role Matrix
 
@@ -203,6 +216,17 @@ LLM_MAX_ATTEMPTS=2
 
 KEYCLOAK_ISSUER_URI=http://localhost:8082/realms/soc-ai-search
 KEYCLOAK_JWK_SET_URI=http://keycloak:8080/realms/soc-ai-search/protocol/openid-connect/certs
+
+# Email onboarding SMTP (optional, see infra/keycloak/README.md)
+KEYCLOAK_SMTP_HOST=
+KEYCLOAK_SMTP_PORT=587
+KEYCLOAK_SMTP_FROM=no-reply@soc-ai-search.app
+KEYCLOAK_SMTP_FROM_DISPLAY_NAME=SOC AI Search
+KEYCLOAK_SMTP_USER=
+KEYCLOAK_SMTP_PASSWORD=
+KEYCLOAK_SMTP_AUTH=true
+KEYCLOAK_SMTP_STARTTLS=true
+KEYCLOAK_SMTP_SSL=false
 ```
 
 Frontend `.env` controls Vite build-time variables:

@@ -1,4 +1,4 @@
-﻿name: CD
+name: CD
 
 on:
   workflow_run:
@@ -128,6 +128,11 @@ jobs:
 
             sleep 5
           done
+
+          # SMTP config reminder (non-blocking)
+          if ! grep -q 'KEYCLOAK_SMTP_HOST=.' .env 2>/dev/null; then
+            echo "⚠️  KEYCLOAK_SMTP_HOST is not configured in .env. Email onboarding requires SMTP setup in Keycloak Admin Console."
+          fi
 
           "${COMPOSE[@]}" ps
           REMOTE
