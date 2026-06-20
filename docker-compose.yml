@@ -131,6 +131,7 @@ services:
       - "127.0.0.1:${KEYCLOAK_PORT:-8082}:8080"
     volumes:
       - keycloak_data:/opt/keycloak/data
+      - ./infra/keycloak/theme:/opt/keycloak/themes
       - ./infra/keycloak/realm-export:/opt/keycloak/data/import:ro
 
   kibana:
