@@ -455,7 +455,7 @@ function App() {
     <div className="dark flex min-h-svh bg-background text-foreground">
       {!isLandingPage ? (
         <SocSidebar
-          identity={auth.identity}
+          identity={auth.email || auth.identity}
           roles={auth.roles}
           authLoading={auth.loading}
           authEnabled={auth.enabled}
@@ -535,8 +535,8 @@ function App() {
             ) : null}
             <span className="hidden items-center gap-2 rounded-full border border-border bg-secondary/40 px-2.5 py-1 text-xs text-muted-foreground lg:inline-flex">
               <ShieldCheck className="size-3 text-emerald-300" />
-              <span className="max-w-32 truncate text-foreground">
-                {auth.identity}
+              <span className="max-w-64 truncate text-foreground">
+                {auth.email || auth.identity}
               </span>
               {auth.roles[0] ? (
                 <Badge
@@ -558,22 +558,6 @@ function App() {
                 <LogOut />
                 <span className="hidden sm:inline">Logout</span>
               </Button>
-            ) : null}
-            <span
-              className={
-                isMockMode
-                  ? 'hidden items-center gap-1.5 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-2.5 py-1 text-xs font-medium text-cyan-300 sm:inline-flex'
-                  : 'hidden items-center gap-1.5 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2.5 py-1 text-xs font-medium text-emerald-300 sm:inline-flex'
-              }
-            >
-              <Circle className="size-2 fill-current" />
-              {isMockMode ? 'Mock Dataset' : 'Backend API'}
-            </span>
-            {isMockMode ? (
-              <span className="hidden items-center gap-1.5 rounded-full border border-violet-400/20 bg-violet-400/10 px-2.5 py-1 text-xs text-violet-200 lg:inline-flex">
-                <FlaskConical className="size-3" />
-                No API calls
-              </span>
             ) : null}
           </div>
         </header>
