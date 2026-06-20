@@ -199,7 +199,8 @@ function OidcAuthBridge({ children }: { children: ReactNode }) {
     const username = stringClaim(user?.profile.preferred_username)
     const email = stringClaim(user?.profile.email)
     const subject = stringClaim(user?.profile.sub)
-    const identity = username ?? email ?? subject ?? 'unknown-user'
+    const name = stringClaim(user?.profile.name)
+    const identity = name ?? username ?? email ?? subject ?? 'unknown-user'
     const tokenRoles = user ? rolesFromProfile(user.profile) : []
 
     return {

@@ -22,7 +22,7 @@
 
         <#-- SOC AI Search Auto-Redirect Customization -->
         <#if message.summary == msg("accountUpdatedMessage")>
-            <p style="margin-top: 1rem; color: #4CAF50; font-weight: bold;">Đang chuyển hướng về hệ thống...</p>
+            <p style="margin-top: 1rem; color: #4CAF50; font-weight: bold;">Redirecting to the application...</p>
             <script>
                 setTimeout(function() {
                     window.location.href = "https://soc-ai-search.app";
