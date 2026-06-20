@@ -1,6 +1,6 @@
 {
   "realm": "soc-ai-search",
-  "loginTheme": "soc-ai-search",
+  "loginTheme": "custom-theme",
   "enabled": true,
   "displayName": "SOC AI Search",
   "registrationAllowed": false,
