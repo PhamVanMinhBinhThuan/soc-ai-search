@@ -42,7 +42,7 @@ export const oidcConfig: AuthProviderProps = {
       ? undefined
       : new WebStorageStateStore({ store: window.sessionStorage }),
   automaticSilentRenew: true,
-  monitorSession: true,
+  monitorSession: false,
   onSigninCallback: () => {
     window.history.replaceState({}, document.title, '/')
   },
