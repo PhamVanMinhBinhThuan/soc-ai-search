@@ -64,6 +64,11 @@ import type {
   UiError,
 } from '@/types/soc'
 
+const DEFAULT_SEARCH_PAGE_SIZE = 10
+const HISTORY_PAGE_SIZE = 5
+const LOGOUT_BUTTON_CLASS =
+  'border border-zinc-700/80 bg-zinc-900/40 text-zinc-300 shadow-[0_0_24px_-18px_rgba(34,211,238,0.9)] transition-all hover:border-cyan-400/60 hover:bg-cyan-400/10 hover:text-white hover:shadow-[0_0_30px_-16px_rgba(34,211,238,0.95)]'
+
 const initialResponse = isMockMode ? initialMockResponse() : null
 const initialRequest: NaturalLanguageSearchRequestDto | null = initialResponse
   ? {
@@ -162,7 +167,7 @@ function App() {
     try {
       const nextHistory = await getSearchHistory(
         page,
-        20,
+        HISTORY_PAGE_SIZE,
         controller.signal,
       )
       if (controller.signal.aborted) {
@@ -317,7 +322,7 @@ function App() {
     void executeSearch({
       question: nextQuestion,
       page: 0,
-      size: response?.size ?? submittedRequest?.size ?? 20,
+      size: response?.size ?? submittedRequest?.size ?? DEFAULT_SEARCH_PAGE_SIZE,
     })
   }
 
@@ -379,7 +384,7 @@ function App() {
     void executeSearch({
       question: item.question,
       page: 0,
-      size: response?.size ?? submittedRequest?.size ?? 20,
+      size: response?.size ?? submittedRequest?.size ?? DEFAULT_SEARCH_PAGE_SIZE,
     })
   }
 
@@ -479,7 +484,7 @@ function App() {
                     variant="ghost"
                     size="sm"
                     onClick={auth.signOut}
-                    className="text-zinc-300 hover:text-white hover:bg-white/10"
+                    className={LOGOUT_BUTTON_CLASS}
                   >
                     <LogOut className="size-4 mr-2" />
                     Logout
@@ -548,6 +553,7 @@ function App() {
                 size="sm"
                 onClick={auth.signOut}
                 aria-label="Sign out"
+                className={LOGOUT_BUTTON_CLASS}
               >
                 <LogOut />
                 <span className="hidden sm:inline">Logout</span>

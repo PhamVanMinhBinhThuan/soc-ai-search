@@ -20,7 +20,7 @@ const baseProps = {
   chartMetadata: null,
   total: 0,
   page: 0,
-  size: 20,
+  size: 10,
   totalPages: 0,
   isMockMode: false,
   queryId: '00000000-0000-4000-8000-000000000001',
@@ -150,6 +150,36 @@ describe('ResultTabs polymorphic rendering', () => {
     expect(screen.getByText(/summary table/i)).toBeInTheDocument()
     expect(screen.getByText('admin')).toBeInTheDocument()
     expect(screen.getByText('42')).toBeInTheDocument()
+  })
+
+  it('paginates aggregation summary table at 10 rows without trimming chart data', () => {
+    const manyAggregationResults = Array.from({ length: 12 }, (_, index) => ({
+      key: `bucket-${index + 1}`,
+      value: index + 1,
+    }))
+
+    render(
+      <ResultTabs
+        {...baseProps}
+        mode="aggregation"
+        activeTab="analytics"
+        canExportCsv
+        aggregationResults={manyAggregationResults}
+        chartMetadata={chartMetadata}
+        total={78}
+      />,
+    )
+
+    expect(screen.getByText('bucket-1')).toBeInTheDocument()
+    expect(screen.getByText('bucket-10')).toBeInTheDocument()
+    expect(screen.queryByText('bucket-11')).not.toBeInTheDocument()
+    expect(screen.getByText(/showing/i)).toHaveTextContent('Showing 1 - 10 of 12')
+
+    fireEvent.click(screen.getByRole('button', { name: /next summary page/i }))
+
+    expect(screen.queryByText('bucket-1')).not.toBeInTheDocument()
+    expect(screen.getByText('bucket-11')).toBeInTheDocument()
+    expect(screen.getByText('bucket-12')).toBeInTheDocument()
   })
 
   it('renders empty state for successful search with no events', () => {

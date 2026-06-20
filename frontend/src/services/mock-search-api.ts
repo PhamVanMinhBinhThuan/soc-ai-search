@@ -106,7 +106,7 @@ export function initialMockResponse() {
   return mockScenarioToResponse(initialScenario, {
     question: initialScenario.question,
     page: 0,
-    size: 20,
+    size: 10,
   })
 }
 

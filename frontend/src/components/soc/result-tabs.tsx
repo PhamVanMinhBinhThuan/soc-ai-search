@@ -11,7 +11,7 @@ import {
   Table2,
   TriangleAlert,
 } from 'lucide-react'
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useState } from 'react'
 
 import { CountryCode } from '@/components/soc/country-code'
 import { SeverityBadge } from '@/components/soc/severity-badge'
@@ -45,6 +45,7 @@ import type {
 } from '@/types/soc'
 
 type ResultTab = 'analytics' | 'raw'
+const SUMMARY_TABLE_PAGE_SIZE = 10
 
 const AggregationChart = lazy(() =>
   import('@/components/soc/aggregation-chart').then((module) => ({
@@ -83,6 +84,8 @@ function AnalyticsView({
   aggregationResults: AggregationResultItemDto[]
   chartMetadata: ChartMetadataDto | null
 }) {
+  const [summaryPage, setSummaryPage] = useState(0)
+
   if (aggregationResults.length === 0) {
     return (
       <EmptyModeState
@@ -92,6 +95,22 @@ function AnalyticsView({
       />
     )
   }
+
+  const totalSummaryPages = Math.ceil(
+    aggregationResults.length / SUMMARY_TABLE_PAGE_SIZE,
+  )
+  const currentSummaryPage = Math.min(
+    summaryPage,
+    Math.max(totalSummaryPages - 1, 0),
+  )
+  const firstSummaryIndex =
+    currentSummaryPage * SUMMARY_TABLE_PAGE_SIZE
+  const visibleAggregationResults = aggregationResults.slice(
+    firstSummaryIndex,
+    firstSummaryIndex + SUMMARY_TABLE_PAGE_SIZE,
+  )
+  const firstSummaryRow = firstSummaryIndex + 1
+  const lastSummaryRow = firstSummaryIndex + visibleAggregationResults.length
 
   return (
     <div className="space-y-4">
@@ -124,7 +143,7 @@ function AnalyticsView({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {aggregationResults.map((item) => (
+            {visibleAggregationResults.map((item) => (
               <TableRow key={item.key}>
                 <TableCell className="font-mono text-xs">{item.key}</TableCell>
                 <TableCell className="text-right font-mono text-xs font-semibold text-cyan-300">
@@ -134,6 +153,47 @@ function AnalyticsView({
             ))}
           </TableBody>
         </Table>
+        {totalSummaryPages > 1 ? (
+          <div className="flex items-center justify-between border-t border-border px-4 py-3">
+            <span className="text-xs text-muted-foreground">
+              Showing{' '}
+              <span className="font-mono text-foreground">
+                {firstSummaryRow}
+              </span>
+              {' - '}
+              <span className="font-mono text-foreground">
+                {lastSummaryRow}
+              </span>
+              {' of '}
+              <span className="font-mono text-foreground">
+                {aggregationResults.length.toLocaleString('en-US')}
+              </span>
+            </span>
+            <div className="flex items-center gap-2">
+              <span className="hidden font-mono text-[11px] text-muted-foreground sm:inline">
+                Page {currentSummaryPage + 1} of {totalSummaryPages}
+              </span>
+              <Button
+                variant="outline"
+                size="icon-sm"
+                aria-label="Previous summary page"
+                disabled={currentSummaryPage <= 0}
+                onClick={() => setSummaryPage(currentSummaryPage - 1)}
+              >
+                <ChevronLeft />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon-sm"
+                aria-label="Next summary page"
+                disabled={currentSummaryPage + 1 >= totalSummaryPages}
+                onClick={() => setSummaryPage(currentSummaryPage + 1)}
+              >
+                <ChevronRight />
+              </Button>
+            </div>
+          </div>
+        ) : null}
       </div>
     </div>
   )

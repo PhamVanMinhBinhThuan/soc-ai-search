@@ -16,6 +16,11 @@ function currentOrigin() {
 
 const origin = currentOrigin()
 
+export const postLogoutRedirectUri = envValue(
+  'VITE_KEYCLOAK_POST_LOGOUT_REDIRECT_URI',
+  origin,
+)
+
 export const oidcConfig: AuthProviderProps = {
   authority: envValue(
     'VITE_KEYCLOAK_AUTHORITY',
@@ -29,10 +34,7 @@ export const oidcConfig: AuthProviderProps = {
     'VITE_KEYCLOAK_REDIRECT_URI',
     `${origin}/auth/callback`,
   ),
-  post_logout_redirect_uri: envValue(
-    'VITE_KEYCLOAK_POST_LOGOUT_REDIRECT_URI',
-    origin,
-  ),
+  post_logout_redirect_uri: postLogoutRedirectUri,
   scope: envValue('VITE_KEYCLOAK_SCOPE', 'openid profile email'),
   response_type: 'code',
   userStore:

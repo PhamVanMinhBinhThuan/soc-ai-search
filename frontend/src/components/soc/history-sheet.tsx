@@ -174,7 +174,7 @@ function HistoryItem({
               {formatCreatedAt(item.created_at)}
             </span>
             <span className="text-zinc-700" aria-hidden="true">
-              •
+              -
             </span>
             <span className="inline-flex items-center gap-1.5">
               {item.mode === 'aggregation' ? (
@@ -185,7 +185,7 @@ function HistoryItem({
               {resultLabel}
             </span>
             <span className="text-zinc-700" aria-hidden="true">
-              •
+              -
             </span>
             <span className="inline-flex items-center gap-1.5 font-mono">
               <Gauge className="size-3" />
@@ -260,7 +260,7 @@ export function HistorySheet({
                 <LoaderCircle className="size-4 animate-spin" />
                 Loading recent investigations...
               </span>
-              {[0, 1, 2, 3].map((item) => (
+              {[0, 1, 2, 3, 4].map((item) => (
                 <HistorySkeletonCard key={item} />
               ))}
             </>
@@ -324,7 +324,7 @@ export function HistorySheet({
               </span>
               <span className="hidden sm:inline text-zinc-500">
                 {' '}
-                · {response.total.toLocaleString('en-US')} queries
+                - {response.total.toLocaleString('en-US')} queries
               </span>
             </span>
             <div className="flex gap-2">

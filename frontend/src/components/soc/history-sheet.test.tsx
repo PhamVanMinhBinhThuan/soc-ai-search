@@ -29,7 +29,7 @@ const historyItem: SearchHistoryItemDto = {
 const historyPage: SearchHistoryPageDto = {
   items: [historyItem],
   page: 0,
-  size: 20,
+  size: 5,
   total: 1,
   total_pages: 1,
 }
@@ -71,7 +71,7 @@ describe('HistorySheet', () => {
       response: {
         items: [],
         page: 0,
-        size: 20,
+        size: 5,
         total: 0,
         total_pages: 0,
       },

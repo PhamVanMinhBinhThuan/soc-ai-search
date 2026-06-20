@@ -8,6 +8,7 @@ import {
   waitFor,
 } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { ReactNode } from 'react'
 
 import App from '@/App'
 import type { SocAuthState } from '@/auth/auth-context'
@@ -26,10 +27,24 @@ vi.mock('@/services/history-api', () => ({
   getSearchHistory: mockState.getSearchHistory,
 }))
 
+vi.mock('@/components/hero/soc-hero', () => ({
+  SocHero: ({
+    children,
+    topRightContent,
+  }: {
+    children: ReactNode
+    topRightContent?: ReactNode
+  }) => (
+    <div>
+      <header>{topRightContent}</header>
+      {children}
+    </div>
+  ),
+}))
 const emptyHistory: SearchHistoryPageDto = {
   items: [],
   page: 0,
-  size: 20,
+  size: 5,
   total: 0,
   total_pages: 0,
 }
@@ -76,9 +91,23 @@ describe('App history UX', () => {
     })
     expect(mockState.getSearchHistory).toHaveBeenCalledWith(
       0,
-      20,
+      5,
       expect.any(AbortSignal),
     )
+  })
+
+  it('renders a polished logout button and calls signOut', () => {
+    const signOut = vi.fn()
+    mockState.auth = authState({ signOut })
+
+    render(<App />)
+
+    const logoutButton = screen.getByRole('button', { name: /logout/i })
+    expect(logoutButton).toHaveClass('border-zinc-700/80')
+
+    fireEvent.click(logoutButton)
+
+    expect(signOut).toHaveBeenCalledTimes(1)
   })
 
   it('does not render history entry or fetch history for viewer role', () => {

@@ -13,7 +13,11 @@ import {
 } from 'react-oidc-context'
 import type { User } from 'oidc-client-ts'
 
-import { authEnabled, oidcConfig } from '@/auth/auth-config'
+import {
+  authEnabled,
+  oidcConfig,
+  postLogoutRedirectUri,
+} from '@/auth/auth-config'
 import { apiUrl, errorPayload } from '@/services/api-client'
 
 export type SocAuthState = {
@@ -215,7 +219,10 @@ function OidcAuthBridge({ children }: { children: ReactNode }) {
         void oidc.signinRedirect()
       },
       signOut: () => {
-        void oidc.signoutRedirect()
+        void oidc.signoutRedirect({
+          id_token_hint: user?.id_token,
+          post_logout_redirect_uri: postLogoutRedirectUri,
+        })
       },
     }
   }, [accessToken, backendUserState, oidc, user])
