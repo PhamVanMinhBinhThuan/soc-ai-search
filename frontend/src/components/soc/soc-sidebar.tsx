@@ -1,12 +1,6 @@
 import {
-  BellRing,
-  Bot,
-  CircleHelp,
-  LayoutDashboard,
-  Network,
   ScrollText,
   Search,
-  Settings,
   ShieldCheck,
   ShieldHalf,
 } from 'lucide-react'
@@ -26,12 +20,8 @@ import {
 import { cn } from '@/lib/utils'
 
 const primaryNav = [
-  { icon: LayoutDashboard, label: 'Overview' },
   { icon: Search, label: 'Event Search', active: true },
-  { icon: BellRing, label: 'Alerts', badge: 18 },
   { icon: ScrollText, label: 'Investigations' },
-  { icon: Network, label: 'Network Map' },
-  { icon: Bot, label: 'AI Analyst' },
 ]
 
 function CollapsedTooltip({
@@ -107,9 +97,7 @@ export function SocSidebar({
                 <ShieldHalf className="size-5" />
               </button>
             </TooltipTrigger>
-            <TooltipContent side="right">
-              Expand sidebar
-            </TooltipContent>
+            <TooltipContent side="right">Expand sidebar</TooltipContent>
           </Tooltip>
           <div
             className={cn(
@@ -143,7 +131,7 @@ export function SocSidebar({
           </Tooltip>
         </div>
 
-        <nav className="flex flex-1 flex-col gap-1.5 px-3">
+        <nav className="flex flex-col gap-1.5 px-3">
           {visiblePrimaryNav.map((item) => (
             <CollapsedTooltip
               key={item.label}
@@ -178,29 +166,14 @@ export function SocSidebar({
                 >
                   {item.label}
                 </span>
-                {item.badge ? (
-                  <span
-                    className={cn(
-                      'rounded-full bg-rose-500 px-1.5 py-0.5 text-[9px] font-bold text-white',
-                      expanded
-                        ? 'ml-auto'
-                        : 'absolute -top-1 -right-1',
-                    )}
-                  >
-                    {item.badge}
-                  </span>
-                ) : null}
               </button>
             </CollapsedTooltip>
           ))}
         </nav>
 
-        <div className="flex flex-col gap-1.5 px-3">
+        <div className="mt-auto flex flex-col gap-1.5 px-3">
           {adminVisible ? (
-            <CollapsedTooltip
-              collapsed={collapsed}
-              label="Admin Console"
-            >
+            <CollapsedTooltip collapsed={collapsed} label="Admin Console">
               <button
                 type="button"
                 aria-label="Admin Console"
@@ -232,38 +205,6 @@ export function SocSidebar({
               </button>
             </CollapsedTooltip>
           ) : null}
-
-          {[
-            { icon: Settings, label: 'Settings' },
-            { icon: CircleHelp, label: 'Help & Support' },
-          ].map((item) => (
-            <CollapsedTooltip
-              key={item.label}
-              collapsed={collapsed}
-              label={item.label}
-            >
-              <button
-                type="button"
-                aria-label={item.label}
-                className={cn(
-                  'flex h-10 w-full shrink-0 items-center rounded-xl text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground',
-                  expanded ? 'justify-start px-3' : 'justify-center',
-                )}
-              >
-                <item.icon className="size-5 shrink-0" />
-                <span
-                  className={cn(
-                    'overflow-hidden whitespace-nowrap text-left text-sm transition-[width,opacity,margin] duration-300',
-                    expanded
-                      ? 'ml-3 w-36 opacity-100'
-                      : 'ml-0 w-0 opacity-0',
-                  )}
-                >
-                  {item.label}
-                </span>
-              </button>
-            </CollapsedTooltip>
-          ))}
 
           <div
             className={cn(
