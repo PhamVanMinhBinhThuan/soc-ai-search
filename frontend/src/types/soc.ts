@@ -99,6 +99,18 @@ export type NaturalLanguageSearchResponseDto = {
   events: SearchEventDto[]
 }
 
+export type SearchPlanResponseDto = {
+  mode: SearchMode
+  aggregation_type?: AggregationType | null
+  generated_dsl: Record<string, unknown>
+  total: number
+  latency_ms: number
+  aggregation_results?: AggregationResultItemDto[]
+  chart_metadata?: ChartMetadataDto | null
+  events?: SearchEventDto[]
+}
+
+
 export type SearchHistoryItemDto = {
   query_id: string
   question: string

@@ -10,8 +10,10 @@ import {
   LoaderCircle,
   Table2,
   TriangleAlert,
+  PlayCircle,
+  ChevronRightSquare,
 } from 'lucide-react'
-import { lazy, Suspense, useState } from 'react'
+import { lazy, Suspense, useState, useMemo } from 'react'
 
 import { CountryCode } from '@/components/soc/country-code'
 import { SeverityBadge } from '@/components/soc/severity-badge'
@@ -42,7 +44,9 @@ import type {
   ExportStatus,
   SearchEventDto,
   SearchMode,
+  NaturalLanguageSearchResponseDto,
 } from '@/types/soc'
+import { getSuggestions } from '@/lib/investigation-suggestions'
 
 type ResultTab = 'analytics' | 'raw'
 const SUMMARY_TABLE_PAGE_SIZE = 10
@@ -355,10 +359,12 @@ export function ResultTabs({
   canExportCsv,
   exportDisabled,
   timeRangeLabel,
+  response,
   onTabChange,
   onPageChange,
   onSelectEvent,
   onExport,
+  onSuggestionClick,
 }: {
   mode: SearchMode
   activeTab: ResultTab
@@ -376,13 +382,18 @@ export function ResultTabs({
   canExportCsv: boolean
   exportDisabled: boolean
   timeRangeLabel: string
+  response: NaturalLanguageSearchResponseDto | null
   onTabChange: (tab: ResultTab) => void
   onPageChange: (page: number) => void
   onSelectEvent: (eventId: string) => void
   onExport: () => void
+  onSuggestionClick?: (question: string) => void
 }) {
+  const suggestions = useMemo(() => getSuggestions(response), [response])
+
   return (
-    <Card className="gap-0 overflow-hidden border border-border bg-card py-0">
+    <div className="space-y-4">
+      <Card className="gap-0 overflow-hidden border border-border bg-card py-0">
       <div className="flex flex-wrap items-center gap-2 border-b border-border px-4 py-3">
         <span className="inline-flex h-8 items-center gap-2 rounded-lg border border-border bg-background/40 px-3 text-xs text-foreground">
           <CalendarDays className="size-4" />
@@ -491,6 +502,34 @@ export function ResultTabs({
         </TabsContent>
       </Tabs>
     </Card>
+
+    {suggestions.length > 0 && (
+      <div className="space-y-3 pt-2">
+        <h3 className="text-sm font-semibold text-zinc-300 px-1">Suggested next steps</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {suggestions.map((suggestion) => {
+            const Icon = suggestion.icon
+            return (
+              <button
+                key={suggestion.id}
+                onClick={() => onSuggestionClick?.(suggestion.question)}
+                className="group flex flex-col items-start gap-2 rounded-xl border border-zinc-800 bg-zinc-900/40 p-4 text-left transition-all hover:border-cyan-500/30 hover:bg-zinc-800/60"
+              >
+                <div className="flex items-center gap-2 text-xs font-medium text-cyan-400">
+                  <Icon className="size-4" />
+                  {suggestion.category}
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-zinc-200 group-hover:text-cyan-50">{suggestion.title}</p>
+                  <p className="text-xs text-zinc-500 mt-1 line-clamp-2">{suggestion.question}</p>
+                </div>
+              </button>
+            )
+          })}
+        </div>
+      </div>
+    )}
+    </div>
   )
 }
 

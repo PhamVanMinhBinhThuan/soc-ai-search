@@ -648,10 +648,12 @@ function App() {
                   !canUseExport
                 }
                 timeRangeLabel={timeRangeLabel}
+                response={response}
                 onTabChange={setActiveTab}
                 onPageChange={changePage}
                 onSelectEvent={openEventDetail}
-                onExport={() => void handleExport()}
+                onExport={() => void handleExport(response.query_id)}
+                onSuggestionClick={submitQuestion}
               />
             </>
           ) : null}

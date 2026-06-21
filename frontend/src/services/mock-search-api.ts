@@ -10,6 +10,8 @@ import type {
   NaturalLanguageSearchRequestDto,
   NaturalLanguageSearchResponseDto,
   SearchHistoryPageDto,
+  SearchPlanDto,
+  SearchPlanResponseDto,
 } from '@/types/soc'
 
 const MOCK_DELAY_MS = 300
@@ -126,6 +128,85 @@ export async function searchMockEvents(
   }
 
   return mockScenarioToResponse(scenario, request)
+}
+
+export async function executeMockSearchPlan(
+  plan: SearchPlanDto,
+  signal?: AbortSignal,
+): Promise<SearchPlanResponseDto> {
+  await waitForMock(signal)
+
+  // A very basic mock implementation for the dashboard widgets.
+  // We check the plan payload to return some fake data matching the request.
+  const isFailedLogins = plan.filters?.event_type?.includes('failed_login')
+  const isCriticalHigh = plan.filters?.severity?.includes('critical')
+
+  if (plan.mode === 'search') {
+    return {
+      mode: 'search',
+      generated_dsl: { query: 'mock search plan' },
+      total: isFailedLogins ? 312 : isCriticalHigh ? 482 : 1946,
+      latency_ms: 50,
+      events: [],
+    }
+  }
+
+  if (plan.aggregation?.type === 'date_histogram') {
+    return {
+      mode: 'aggregation',
+      aggregation_type: 'date_histogram',
+      generated_dsl: { aggs: 'mock date histogram' },
+      total: 1946,
+      latency_ms: 100,
+      aggregation_results: Array.from({ length: 24 }).map((_, i) => ({
+        key: new Date(Date.now() - (24 - i) * 60 * 60 * 1000).toISOString(),
+        value: Math.floor(Math.random() * 500) + 100,
+      })),
+    }
+  }
+
+  if (plan.aggregation?.type === 'group_by' && plan.aggregation.field === 'severity') {
+    return {
+      mode: 'aggregation',
+      aggregation_type: 'group_by',
+      generated_dsl: { aggs: 'mock severity' },
+      total: 1946,
+      latency_ms: 45,
+      aggregation_results: [
+        { key: 'Critical', value: 186 },
+        { key: 'High', value: 296 },
+        { key: 'Medium', value: 742 },
+        { key: 'Low', value: 722 },
+      ],
+    }
+  }
+
+  if (plan.aggregation?.type === 'top_n' && plan.aggregation.field === 'ip') {
+    return {
+      mode: 'aggregation',
+      aggregation_type: 'top_n',
+      generated_dsl: { aggs: 'mock top ip' },
+      total: 1946,
+      latency_ms: 80,
+      aggregation_results: [
+        { key: '203.0.113.45', value: 874 },
+        { key: '198.51.100.22', value: 612 },
+        { key: '192.0.2.178', value: 433 },
+        { key: '203.0.113.91', value: 287 },
+        { key: '198.51.100.7', value: 154 },
+      ],
+    }
+  }
+
+  // Fallback
+  return {
+    mode: plan.mode,
+    aggregation_type: plan.aggregation?.type ?? null,
+    generated_dsl: {},
+    total: 0,
+    latency_ms: 10,
+    aggregation_results: [],
+  }
 }
 
 export async function getMockSearchHistory(

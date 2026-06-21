@@ -11,6 +11,8 @@ import type {
   EventDetailResponseDto,
   NaturalLanguageSearchRequestDto,
   NaturalLanguageSearchResponseDto,
+  SearchPlanDto,
+  SearchPlanResponseDto,
 } from '@/types/soc'
 
 export const isMockMode =
@@ -95,6 +97,29 @@ export async function searchEvents(
   })
   assertSearchResponse(payload)
   return payload
+}
+
+export async function executeSearchPlan(
+  plan: SearchPlanDto,
+  signal?: AbortSignal,
+): Promise<SearchPlanResponseDto> {
+  if (isMockMode) {
+    // We can reuse the mock service by adding an executeMockSearchPlan function,
+    // or simply simulate it here. For now we will call the mock function.
+    const { executeMockSearchPlan } = await import('@/services/mock-search-api')
+    return executeMockSearchPlan(plan, signal)
+  }
+
+  const payload = await requestJson('/api/v1/search/plan', {
+    method: 'POST',
+    signal,
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(plan),
+  })
+  // Let's assume the backend response matches SearchPlanResponseDto closely enough
+  return payload as SearchPlanResponseDto
 }
 
 export async function getEventDetail(
