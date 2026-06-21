@@ -80,6 +80,7 @@ export async function requestJson(
       ...init,
       headers: {
         Accept: 'application/json',
+        ...(init.body != null ? { 'Content-Type': 'application/json' } : {}),
         ...authHeaders(),
         ...init.headers,
       },
