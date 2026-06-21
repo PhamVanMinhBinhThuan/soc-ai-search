@@ -343,15 +343,59 @@ function App() {
     })
   }
 
-  const changePage = (page: number) => {
+  const changePage = async (page: number) => {
     if (!response || response.mode !== 'search') {
       return
     }
-    void executeSearch({
-      question: response.original_question,
-      page,
-      size: response.size,
-    })
+
+    searchAbortRef.current?.abort()
+    exportAbortRef.current?.abort()
+    exportAbortRef.current = null
+    const controller = new AbortController()
+    searchAbortRef.current = controller
+
+    closeDetail()
+    setSearchError(null)
+    setExportStatus('idle')
+    setExportMessage(null)
+    // We don't set requestStatus to 'loading' to avoid unmounting the ResultTabs
+    // ResultTabs shows a spinner internally or we can just let it be.
+    // Actually, setting requestStatus = 'loading' shows SearchLoadingState and hides the table.
+    // executeSearch does it, so let's keep consistent for now.
+    setRequestStatus('loading')
+
+    try {
+      const { runSearchPlan } = await import('@/services/search-plan-api')
+      const paginatedPlan = {
+        ...response.search_plan,
+        page,
+        size: response.size,
+      }
+      const nextResponse = await runSearchPlan(paginatedPlan, controller.signal)
+      if (controller.signal.aborted) {
+        return
+      }
+
+      setResponse(nextResponse)
+      setIsCurrentQueryPinned(false)
+      setActiveTab(nextResponse.mode === 'aggregation' ? 'analytics' : 'raw')
+      
+      const isEmpty =
+        nextResponse.mode === 'search'
+          ? nextResponse.events.length === 0
+          : nextResponse.aggregation_results.length === 0
+      setRequestStatus(isEmpty ? 'empty' : 'success')
+    } catch (error) {
+      if (isAbortError(error)) {
+        return
+      }
+      setSearchError(toUiError(error))
+      setRequestStatus('error')
+    } finally {
+      if (searchAbortRef.current === controller) {
+        searchAbortRef.current = null
+      }
+    }
   }
 
   const retrySearch = () => {
