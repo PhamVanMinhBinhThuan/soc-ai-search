@@ -443,7 +443,7 @@ function App() {
           authEnabled={auth.enabled}
           activePage={activePage}
           onPageChange={setActivePage}
-          onOpenHistory={() => setHistoryOpen(true)}
+          onOpenHistory={() => { setHistoryOpen(true); void loadHistory(0) }}
         />
       ) : null}
 
