@@ -1,5 +1,5 @@
 import { ApiError, isRecord, requestJson } from '@/services/api-client'
-import { getMockSearchHistory } from '@/services/mock-search-api'
+import { getMockSearchHistory, getMockSearchHistoryDetail, mockTogglePinHistory } from '@/services/mock-search-api'
 import { isMockMode } from '@/services/search-api'
 import type {
   AuditStatus,
@@ -103,10 +103,50 @@ export async function getSearchHistory(
     page: String(page),
     size: String(size),
   })
-  const payload = await requestJson(
+  const response = await requestJson(
     `/api/v1/search/history?${search.toString()}`,
-    { signal },
+    { method: 'GET', signal },
   )
-  assertSearchHistoryPage(payload)
-  return payload
+
+  assertSearchHistoryPage(response)
+  return response
+}
+
+export async function getSearchHistoryDetail(
+  queryId: string,
+  signal?: AbortSignal,
+) {
+  if (isMockMode) {
+    return getMockSearchHistoryDetail(queryId, signal)
+  }
+
+  // TODO: Add real backend call when ready
+  const response = await requestJson(`/api/v1/search/history/${queryId}`, {
+    method: 'GET',
+    signal,
+  })
+  
+  // Minimal assert for now since we rely on mock mostly
+  if (!isRecord(response)) throw new Error('Invalid history detail response')
+  return response as unknown
+}
+
+export async function togglePinHistory(
+  queryId: string,
+  pinned: boolean,
+  signal?: AbortSignal,
+) {
+  if (isMockMode) {
+    return mockTogglePinHistory(queryId, pinned, signal)
+  }
+
+  // TODO: Add real backend call when ready
+  const response = await requestJson(`/api/v1/search/history/${queryId}/pin`, {
+    method: 'PATCH',
+    body: JSON.stringify({ pinned }),
+    signal,
+  })
+  
+  if (!isRecord(response)) throw new Error('Invalid history pin response')
+  return response as unknown
 }

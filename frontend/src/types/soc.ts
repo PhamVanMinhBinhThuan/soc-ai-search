@@ -107,6 +107,14 @@ export type SearchHistoryItemDto = {
   latency_ms: number | null
   status: AuditStatus
   created_at: string
+  pinned: boolean
+  pinned_at: string | null
+}
+
+export type SearchHistoryDetailDto = SearchHistoryItemDto & {
+  search_plan: SearchPlanDto | null
+  generated_dsl: Record<string, unknown> | null
+  summary: string | null
 }
 
 export type SearchHistoryPageDto = {

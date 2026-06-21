@@ -150,6 +150,8 @@ export async function getMockSearchHistory(
         created_at: new Date(
           Date.UTC(2026, 5, 14, 9, 30 - reverseIndex * 4),
         ).toISOString(),
+        pinned: reverseIndex === 0 || reverseIndex === 3, // Mock some pins
+        pinned_at: (reverseIndex === 0 || reverseIndex === 3) ? new Date().toISOString() : null,
       }
     })
   const items = [
@@ -162,6 +164,8 @@ export async function getMockSearchHistory(
       latency_ms: null,
       status: 'FAILED' as const,
       created_at: new Date(Date.UTC(2026, 5, 14, 8, 55)).toISOString(),
+      pinned: false,
+      pinned_at: null,
     },
   ]
   const start = page * size
@@ -190,4 +194,44 @@ export async function getMockEventDetail(
   }
 
   return structuredClone(event)
+}
+
+export async function getMockSearchHistoryDetail(
+  queryId: string,
+  signal?: AbortSignal,
+) {
+  await waitForMock(signal)
+  const items = await getMockSearchHistory(0, 100, signal) // fetch all mocks
+  const item = items.items.find(i => i.query_id === queryId)
+  if (!item) {
+    throw new ApiError({
+      status: 404,
+      message: `History item not found: ${queryId}`,
+    })
+  }
+
+  // Find the scenario to get search plan and DSL
+  const scenarioIndex = parseInt(queryId.split('-').pop() ?? '0', 10) - 1
+  const scenario = mockScenarios[scenarioIndex]
+
+  return {
+    ...item,
+    search_plan: scenario?.search_plan ?? null,
+    generated_dsl: scenario?.generated_dsl ?? null,
+    summary: scenario?.summary ?? null,
+  }
+}
+
+export async function mockTogglePinHistory(
+  queryId: string,
+  pinned: boolean,
+  signal?: AbortSignal,
+) {
+  await waitForMock(signal)
+  const detail = await getMockSearchHistoryDetail(queryId, signal)
+  return {
+    ...detail,
+    pinned,
+    pinned_at: pinned ? new Date().toISOString() : null,
+  }
 }

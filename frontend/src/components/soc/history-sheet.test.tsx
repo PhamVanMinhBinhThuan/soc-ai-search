@@ -20,10 +20,12 @@ const historyItem: SearchHistoryItemDto = {
   query_id: '00000000-0000-4000-8000-000000000001',
   question: 'Show me failed login attempts from China in the last 24h',
   mode: 'search',
-  result_count: 312,
-  latency_ms: 154,
+  result_count: 5,
+  latency_ms: 1200,
   status: 'SUCCESS',
-  created_at: '2026-06-18T07:49:00Z',
+  created_at: '2026-06-10T10:00:00Z',
+  pinned: false,
+  pinned_at: null,
 }
 
 const historyPage: SearchHistoryPageDto = {

@@ -21,6 +21,7 @@ import {
   type ResultTab,
 } from '@/components/soc/result-tabs'
 import { SearchSection } from '@/components/soc/search-section'
+import { InvestigationsPage } from '@/components/soc/investigations/investigations-page'
 import {
   SearchErrorState,
   SearchIdleState,
@@ -103,6 +104,7 @@ function App() {
   const [activeTab, setActiveTab] = useState<ResultTab>(
     initialResponse?.mode === 'aggregation' ? 'analytics' : 'raw',
   )
+  const [activePage, setActivePage] = useState<'search' | 'investigations'>('search')
 
   const [detailOpen, setDetailOpen] = useState(false)
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null)
@@ -456,11 +458,16 @@ function App() {
           roles={auth.roles}
           authLoading={auth.loading}
           authEnabled={auth.enabled}
-          onOpenHistory={openHistory}
+          activePage={activePage}
+          onPageChange={setActivePage}
         />
       ) : null}
 
-      {isLandingPage ? (
+      {activePage === 'investigations' ? (
+        <div className="flex-1 w-full relative min-w-0 flex flex-col h-svh">
+          <InvestigationsPage />
+        </div>
+      ) : isLandingPage ? (
         <div className="flex-1 w-full relative">
           <SocHero
             topRightContent={
@@ -469,7 +476,7 @@ function App() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={openHistory}
+                    onClick={() => setActivePage('investigations')}
                     className="text-zinc-300 hover:text-white hover:bg-white/10"
                   >
                     <ScrollText className="size-4 sm:mr-2" />

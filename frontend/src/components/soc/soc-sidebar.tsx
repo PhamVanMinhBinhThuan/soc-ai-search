@@ -20,8 +20,8 @@ import {
 import { cn } from '@/lib/utils'
 
 const primaryNav = [
-  { icon: Search, label: 'Event Search', active: true },
-  { icon: ScrollText, label: 'Investigations' },
+  { icon: Search, label: 'Event Search', pageId: 'search' as const },
+  { icon: ScrollText, label: 'Investigations', pageId: 'investigations' as const },
 ]
 
 function CollapsedTooltip({
@@ -50,13 +50,15 @@ export function SocSidebar({
   roles,
   authLoading,
   authEnabled,
-  onOpenHistory,
+  activePage,
+  onPageChange,
 }: {
   identity: string
   roles: string[]
   authLoading: boolean
   authEnabled: boolean
-  onOpenHistory: () => void
+  activePage?: 'search' | 'investigations'
+  onPageChange?: (page: 'search' | 'investigations') => void
 }) {
   const [expanded, setExpanded] = useState(false)
   const collapsed = !expanded
@@ -141,16 +143,12 @@ export function SocSidebar({
               <button
                 type="button"
                 aria-label={item.label}
-                aria-current={item.active ? 'page' : undefined}
-                onClick={
-                  item.label === 'Investigations'
-                    ? onOpenHistory
-                    : undefined
-                }
+                aria-current={activePage === item.pageId ? 'page' : undefined}
+                onClick={() => onPageChange?.(item.pageId)}
                 className={cn(
                   'relative flex h-10 w-full shrink-0 items-center rounded-xl transition-colors',
                   expanded ? 'justify-start px-3' : 'justify-center',
-                  item.active
+                  activePage === item.pageId
                     ? 'bg-cyan-400/10 text-cyan-300 ring-1 ring-cyan-400/25'
                     : 'text-muted-foreground hover:bg-secondary hover:text-foreground',
                 )}

@@ -1,7 +1,7 @@
 import '@testing-library/jest-dom/vitest'
 
 import { cleanup, render, screen } from '@testing-library/react'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 
 import { SocSidebar } from '@/components/soc/soc-sidebar'
 
@@ -14,7 +14,6 @@ function renderSidebar(roles: string[], authLoading = false) {
       roles={roles}
       authLoading={authLoading}
       authEnabled
-      onOpenHistory={vi.fn()}
     />,
   )
 }
