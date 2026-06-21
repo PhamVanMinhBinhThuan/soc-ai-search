@@ -23,6 +23,10 @@ const DOT_COLORS = {
   Low: "bg-zinc-500",
 }
 
+function capitalize(s: string): keyof typeof COLORS {
+  return (s.charAt(0).toUpperCase() + s.slice(1).toLowerCase()) as keyof typeof COLORS
+}
+
 export function SeverityDistribution({ data }: { data: SeverityDistributionItem[] }) {
   const total = useMemo(() => {
     return data.reduce((acc, curr) => acc + curr.count, 0)
@@ -54,9 +58,10 @@ export function SeverityDistribution({ data }: { data: SeverityDistributionItem[
                     nameKey="severity"
                     stroke="none"
                   >
-                    {data.map((entry) => (
-                      <Cell key={entry.severity} fill={COLORS[entry.severity]} />
-                    ))}
+                    {data.map((entry) => {
+                      const key = capitalize(entry.severity)
+                      return <Cell key={entry.severity} fill={COLORS[key] ?? "#52525b"} />
+                    })}
                   </Pie>
                   <Tooltip
                     contentStyle={{
@@ -80,17 +85,20 @@ export function SeverityDistribution({ data }: { data: SeverityDistributionItem[
             </div>
 
             <div className="mt-5 grid w-full grid-cols-2 gap-x-4 gap-y-2.5">
-              {data.map((item) => (
-                <div key={item.severity} className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <span className={`h-2 w-2 rounded-full ${DOT_COLORS[item.severity]}`} />
-                    <span className="text-xs text-zinc-400">{item.severity}</span>
+              {data.map((item) => {
+                const key = capitalize(item.severity)
+                return (
+                  <div key={item.severity} className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className={`h-2 w-2 rounded-full ${DOT_COLORS[key] ?? "bg-zinc-500"}`} />
+                      <span className="text-xs text-zinc-400">{key}</span>
+                    </div>
+                    <span className={`text-xs font-medium tabular-nums ${TEXT_COLORS[key] ?? "text-zinc-400"}`}>
+                      {item.count.toLocaleString()}
+                    </span>
                   </div>
-                  <span className={`text-xs font-medium tabular-nums ${TEXT_COLORS[item.severity]}`}>
-                    {item.count.toLocaleString()}
-                  </span>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </>
         )}
