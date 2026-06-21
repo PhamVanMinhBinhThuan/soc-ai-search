@@ -4,7 +4,7 @@ import { KpiCards } from "./kpi-cards"
 import { EventsOverTime } from "./events-over-time"
 import { SeverityDistribution } from "./severity-distribution"
 import { TopSourceIps } from "./top-source-ips"
-import type { DashboardMetricsDto, SearchPlanDto } from "@/types/soc"
+import type { DashboardMetricsDto, SearchPlanDto, SearchPlanResponseDto } from "@/types/soc"
 import { executeSearchPlan } from "@/services/search-api"
 
 // Mock data to simulate API response
@@ -72,18 +72,19 @@ export function SocDashboard() {
 
     if (signal?.aborted) return
 
-    const safeTotal = (res: PromiseSettledResult<any>) => res.status === 'fulfilled' ? res.value.total : 0
+    const safeTotal = (res: PromiseSettledResult<SearchPlanResponseDto>) => 
+      res.status === 'fulfilled' ? res.value.total : 0
     
     const eventsOverTime = timeRes.status === 'fulfilled' 
-      ? (timeRes.value.aggregation_results || []).map((b: any) => ({ timestamp: b.key, events: b.value }))
+      ? (timeRes.value.aggregation_results || []).map((b: { key: string; value: number }) => ({ timestamp: b.key, events: b.value }))
       : []
 
     const severityDist = sevRes.status === 'fulfilled'
-      ? (sevRes.value.aggregation_results || []).map((b: any) => ({ severity: b.key, count: b.value }))
+      ? (sevRes.value.aggregation_results || []).map((b: { key: string; value: number }) => ({ severity: b.key, count: b.value }))
       : []
 
     const topIps = topIpRes.status === 'fulfilled'
-      ? (topIpRes.value.aggregation_results || []).map((b: any, _i: number, arr: any[]) => {
+      ? (topIpRes.value.aggregation_results || []).map((b: { key: string; value: number }, _i: number, arr: { value: number }[]) => {
           const max = Math.max(...arr.map(x => x.value))
           return { ip: b.key, events: b.value, percentage: max > 0 ? Math.round((b.value / max) * 100) : 0 }
         })
@@ -108,6 +109,7 @@ export function SocDashboard() {
 
   useEffect(() => {
     const controller = new AbortController()
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void fetchData(controller.signal)
 
     return () => controller.abort()
