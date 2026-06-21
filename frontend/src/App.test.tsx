@@ -91,7 +91,8 @@ describe('App history UX', () => {
     })
     expect(mockState.getSearchHistory).toHaveBeenCalledWith(
       0,
-      50,
+      100,
+      {},
       expect.any(AbortSignal),
     )
   })

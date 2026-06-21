@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Check, Copy, Download, RotateCw, Sparkles, X } from "lucide-react"
+import { Check, Copy, Download, RotateCw, Sparkles, X, Pin, PinOff } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { SearchHistoryDetailDto } from "@/types/soc"
 import {
@@ -63,9 +63,17 @@ function highlight(code: string) {
 export function InvestigationDetailPanel({
   item,
   onClose,
+  onPinToggle,
+  onRunAgain,
+  onExport,
+  canExport,
 }: {
   item: SearchHistoryDetailDto
   onClose: () => void
+  onPinToggle?: (pinned: boolean) => void
+  onRunAgain?: () => void
+  onExport?: () => void
+  canExport?: boolean
 }) {
   const [tab, setTab] = useState<TabKey>("plan")
   const [copied, setCopied] = useState(false)
@@ -99,11 +107,30 @@ export function InvestigationDetailPanel({
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          <button className="inline-flex items-center gap-1.5 rounded-md border border-cyan-500/40 bg-cyan-500/10 px-3 py-1.5 text-xs font-medium text-cyan-300 transition hover:bg-cyan-500/20">
+          <button
+            title={item.pinned ? "Unpin query" : "Pin query"}
+            onClick={() => onPinToggle?.(!item.pinned)}
+            className={cn(
+              "inline-flex size-8 items-center justify-center rounded-md border transition",
+              item.pinned
+                ? "border-amber-500/40 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20"
+                : "border-zinc-800 bg-zinc-900 text-zinc-400 hover:border-zinc-700 hover:text-zinc-100"
+            )}
+          >
+            {item.pinned ? <PinOff className="size-4" /> : <Pin className="size-4" />}
+          </button>
+          <button 
+            onClick={onRunAgain}
+            className="inline-flex items-center gap-1.5 rounded-md border border-cyan-500/40 bg-cyan-500/10 px-3 py-1.5 text-xs font-medium text-cyan-300 transition hover:bg-cyan-500/20"
+          >
             <RotateCw className="size-3.5" />
             Run Again
           </button>
-          <button className="inline-flex items-center gap-1.5 rounded-md border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-xs font-medium text-zinc-300 transition hover:border-zinc-600 hover:text-zinc-100">
+          <button 
+            onClick={onExport}
+            disabled={!canExport || item.status !== 'SUCCESS'}
+            className="inline-flex items-center gap-1.5 rounded-md border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-xs font-medium text-zinc-300 transition hover:border-zinc-600 hover:text-zinc-100 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
             <Download className="size-3.5" />
             Export CSV
           </button>

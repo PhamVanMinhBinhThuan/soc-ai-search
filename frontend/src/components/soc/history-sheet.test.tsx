@@ -45,7 +45,7 @@ function renderHistorySheet(
     response: historyPage,
     error: null,
     onOpenChange: vi.fn(),
-    onPageChange: vi.fn(),
+    onViewAll: vi.fn(),
     onRunAgain: vi.fn(),
     onRetry: vi.fn(),
     ...overrides,

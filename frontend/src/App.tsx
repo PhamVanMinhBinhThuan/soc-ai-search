@@ -168,6 +168,7 @@ function App() {
       const nextHistory = await getSearchHistory(
         page,
         HISTORY_PAGE_SIZE,
+        {},
         controller.signal,
       )
       if (controller.signal.aborted) {
@@ -356,25 +357,7 @@ function App() {
 
     historyOpenRef.current = true
     setHistoryOpen(true)
-    void loadHistory(historyPageRef.current)
-  }
-
-  const changeHistoryPage = (page: number) => {
-    if (!canUseHistory) {
-      return
-    }
-
-    const nextPage = Math.max(page, 0)
-    historyPageRef.current = nextPage
-    void loadHistory(nextPage)
-  }
-
-  const retryHistory = () => {
-    if (!canUseHistory) {
-      return
-    }
-
-    void loadHistory(historyPageRef.current)
+    void loadHistory(0)
   }
 
   const runHistoryItem = (item: SearchHistoryItemDto) => {
@@ -388,14 +371,9 @@ function App() {
     })
   }
 
-  const handleExport = async () => {
-    if (!response || requestStatus === 'loading') {
-      return
-    }
-
-    if (!canUseExport) {
-      setExportStatus('error')
-      setExportMessage('You do not have permission to export CSV files.')
+  const handleExport = async (overrideQueryId?: string) => {
+    const targetQueryId = overrideQueryId ?? response?.query_id
+    if (!targetQueryId || !canUseExport) {
       return
     }
 
@@ -407,15 +385,19 @@ function App() {
 
     try {
       if (isMockMode) {
-        downloadMockCsv({
-          mode: response.mode,
-          events: response.events,
-          aggregationResults: response.aggregation_results,
-        })
-        setExportMessage('Mock CSV downloaded from local demo data.')
+        if (!overrideQueryId && response) {
+          downloadMockCsv({
+            mode: response.mode,
+            events: response.events,
+            aggregationResults: response.aggregation_results,
+          })
+          setExportMessage('Mock CSV downloaded from local demo data.')
+        } else {
+          setExportMessage('Exporting historical query is not fully supported in pure mock mode.')
+        }
       } else {
         const exported = await exportSearchCsv(
-          response.query_id,
+          targetQueryId,
           controller.signal,
         )
         if (controller.signal.aborted) {
@@ -461,6 +443,7 @@ function App() {
           authEnabled={auth.enabled}
           activePage={activePage}
           onPageChange={setActivePage}
+          onOpenHistory={() => setHistoryOpen(true)}
         />
       ) : null}
 
@@ -470,7 +453,14 @@ function App() {
         </div>
       ) : activePage === 'investigations' ? (
         <div className="flex-1 w-full relative min-w-0 flex flex-col h-svh">
-          <InvestigationsPage />
+          <InvestigationsPage 
+            onRunAgain={(item) => {
+              setActivePage('search')
+              runHistoryItem(item)
+            }}
+            onExport={(queryId) => void handleExport(queryId)}
+            canExport={canUseExport}
+          />
         </div>
       ) : isLandingPage ? (
         <div className="flex-1 w-full relative">
@@ -696,12 +686,19 @@ function App() {
             historyAbortRef.current?.abort()
             historyAbortRef.current = null
           } else {
-            void loadHistory(historyPageRef.current)
+            void loadHistory(0) // recent queries
           }
         }}
-        onPageChange={changeHistoryPage}
-        onRunAgain={runHistoryItem}
-        onRetry={retryHistory}
+        onViewAll={() => {
+          setHistoryOpen(false)
+          setActivePage('investigations')
+        }}
+        onRunAgain={(item) => {
+          setHistoryOpen(false)
+          setActivePage('search')
+          runHistoryItem(item)
+        }}
+        onRetry={() => loadHistory(0)}
       />
     </div>
   )

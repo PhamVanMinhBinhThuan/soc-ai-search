@@ -3,6 +3,7 @@ import { getMockSearchHistory, getMockSearchHistoryDetail, mockTogglePinHistory 
 import { isMockMode } from '@/services/search-api'
 import type {
   AuditStatus,
+  SearchHistoryDetailDto,
   SearchHistoryItemDto,
   SearchHistoryPageDto,
   SearchMode,
@@ -93,6 +94,7 @@ function assertSearchHistoryPage(
 export async function getSearchHistory(
   page: number,
   size: number,
+  filters?: { pinned?: boolean; status?: AuditStatus | 'all'; mode?: SearchMode | 'all' },
   signal?: AbortSignal,
 ) {
   if (isMockMode) {
@@ -103,6 +105,11 @@ export async function getSearchHistory(
     page: String(page),
     size: String(size),
   })
+  
+  if (filters?.pinned) search.set('pinned', 'true')
+  if (filters?.status && filters.status !== 'all') search.set('status', filters.status)
+  if (filters?.mode && filters.mode !== 'all') search.set('mode', filters.mode)
+
   const response = await requestJson(
     `/api/v1/search/history?${search.toString()}`,
     { method: 'GET', signal },
@@ -115,32 +122,29 @@ export async function getSearchHistory(
 export async function getSearchHistoryDetail(
   queryId: string,
   signal?: AbortSignal,
-) {
+): Promise<SearchHistoryDetailDto> {
   if (isMockMode) {
-    return getMockSearchHistoryDetail(queryId, signal)
+    return getMockSearchHistoryDetail(queryId, signal) as Promise<SearchHistoryDetailDto>
   }
 
-  // TODO: Add real backend call when ready
   const response = await requestJson(`/api/v1/search/history/${queryId}`, {
     method: 'GET',
     signal,
   })
   
-  // Minimal assert for now since we rely on mock mostly
   if (!isRecord(response)) throw new Error('Invalid history detail response')
-  return response as unknown
+  return response as unknown as SearchHistoryDetailDto
 }
 
 export async function togglePinHistory(
   queryId: string,
   pinned: boolean,
   signal?: AbortSignal,
-) {
+): Promise<SearchHistoryItemDto> {
   if (isMockMode) {
     return mockTogglePinHistory(queryId, pinned, signal)
   }
 
-  // TODO: Add real backend call when ready
   const response = await requestJson(`/api/v1/search/history/${queryId}/pin`, {
     method: 'PATCH',
     body: JSON.stringify({ pinned }),
@@ -148,5 +152,5 @@ export async function togglePinHistory(
   })
   
   if (!isRecord(response)) throw new Error('Invalid history pin response')
-  return response as unknown
+  return response as unknown as SearchHistoryItemDto
 }

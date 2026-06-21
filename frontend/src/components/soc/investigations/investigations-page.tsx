@@ -2,10 +2,18 @@ import { useEffect, useMemo, useState } from "react"
 import { ShieldAlert } from "lucide-react"
 import { InvestigationsMasterList, type FilterKey } from "./investigations-master-list"
 import { InvestigationDetailPanel } from "./investigation-detail-panel"
-import { getSearchHistory, getSearchHistoryDetail } from "@/services/history-api"
+import { getSearchHistory, getSearchHistoryDetail, togglePinHistory } from "@/services/history-api"
 import type { SearchHistoryItemDto, SearchHistoryDetailDto } from "@/types/soc"
 
-export function InvestigationsPage() {
+export function InvestigationsPage({
+  onRunAgain,
+  onExport,
+  canExport,
+}: {
+  onRunAgain?: (item: SearchHistoryItemDto) => void
+  onExport?: (queryId: string) => void
+  canExport?: boolean
+}) {
   const [query, setQuery] = useState("")
   const [filter, setFilter] = useState<FilterKey>("all")
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -19,7 +27,10 @@ export function InvestigationsPage() {
     const abortController = new AbortController()
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true)
-    getSearchHistory(0, 50, abortController.signal)
+    
+    // We could pass filter to backend here, but for now we fetch recent 100
+    // and filter client-side as the mock did, unless the user changes filters heavily.
+    getSearchHistory(0, 100, {}, abortController.signal)
       .then(res => {
         setItems(res.items)
       })
@@ -46,8 +57,7 @@ export function InvestigationsPage() {
     const abortController = new AbortController()
     getSearchHistoryDetail(selectedId, abortController.signal)
       .then(detail => {
-        // detail is typed as unknown so we cast it for now
-        setSelectedItemDetail(detail as unknown as SearchHistoryDetailDto)
+        setSelectedItemDetail(detail)
       })
       .catch(err => {
         if (err.name !== 'AbortError') {
@@ -57,6 +67,18 @@ export function InvestigationsPage() {
 
     return () => abortController.abort()
   }, [selectedId])
+
+  const handlePinToggle = async (queryId: string, pinned: boolean) => {
+    try {
+      const updatedItem = await togglePinHistory(queryId, pinned)
+      setItems(prev => prev.map(it => it.query_id === queryId ? updatedItem : it))
+      if (selectedItemDetail?.query_id === queryId) {
+        setSelectedItemDetail({ ...selectedItemDetail, pinned: updatedItem.pinned, pinned_at: updatedItem.pinned_at })
+      }
+    } catch (err) {
+      console.error('Failed to toggle pin', err)
+    }
+  }
 
   const filtered = useMemo(() => {
     return items.filter((item) => {
@@ -136,6 +158,10 @@ export function InvestigationsPage() {
             <InvestigationDetailPanel
               item={selectedItemDetail}
               onClose={() => setSelectedId(null)}
+              onPinToggle={(pinned) => handlePinToggle(selectedItemDetail.query_id, pinned)}
+              onRunAgain={() => onRunAgain?.(selectedItemDetail)}
+              onExport={() => onExport?.(selectedItemDetail.query_id)}
+              canExport={canExport}
             />
           )}
         </div>

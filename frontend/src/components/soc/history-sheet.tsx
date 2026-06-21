@@ -1,7 +1,5 @@
 import {
   BarChart3,
-  ChevronLeft,
-  ChevronRight,
   Clock3,
   Database,
   Gauge,
@@ -214,7 +212,7 @@ export function HistorySheet({
   response,
   error,
   onOpenChange,
-  onPageChange,
+  onViewAll,
   onRunAgain,
   onRetry,
 }: {
@@ -223,7 +221,7 @@ export function HistorySheet({
   response: SearchHistoryPageDto | null
   error: UiError | null
   onOpenChange: (open: boolean) => void
-  onPageChange: (page: number) => void
+  onViewAll?: () => void
   onRunAgain: (item: SearchHistoryItemDto) => void
   onRetry: () => void
 }) {
@@ -239,9 +237,9 @@ export function HistorySheet({
               <History className="size-5" />
             </span>
             <span>
-              <span className="block">Recent Investigations</span>
+              <span className="block">Recent Queries</span>
               <span className="mt-0.5 block text-[11px] font-normal tracking-normal text-zinc-500">
-                Query history for demo-analyst
+                Quick access to recent history
               </span>
             </span>
           </SheetTitle>
@@ -316,40 +314,15 @@ export function HistorySheet({
             : null}
         </div>
 
-        {response && response.total_pages > 0 ? (
-          <div className="flex items-center justify-between border-t border-zinc-800 bg-zinc-950/90 px-4 py-3 sm:px-5">
-            <span className="text-xs text-zinc-500">
-              <span className="font-medium text-zinc-300">
-                Page {response.page + 1} of {response.total_pages}
-              </span>
-              <span className="hidden sm:inline text-zinc-500">
-                {' '}
-                - {response.total.toLocaleString('en-US')} queries
-              </span>
-            </span>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="icon-sm"
-                aria-label="Previous history page"
-                disabled={response.page <= 0 || status === 'loading'}
-                onClick={() => onPageChange(response.page - 1)}
-              >
-                <ChevronLeft />
-              </Button>
-              <Button
-                variant="outline"
-                size="icon-sm"
-                aria-label="Next history page"
-                disabled={
-                  response.page + 1 >= response.total_pages ||
-                  status === 'loading'
-                }
-                onClick={() => onPageChange(response.page + 1)}
-              >
-                <ChevronRight />
-              </Button>
-            </div>
+        {response && response.items.length > 0 && onViewAll ? (
+          <div className="flex items-center justify-center border-t border-zinc-800 bg-zinc-950/90 px-4 py-4 sm:px-5">
+            <Button
+              variant="outline"
+              className="w-full text-zinc-300 hover:text-white"
+              onClick={onViewAll}
+            >
+              View all investigations
+            </Button>
           </div>
         ) : null}
       </SheetContent>

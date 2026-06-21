@@ -23,8 +23,17 @@ import { cn } from '@/lib/utils'
 const primaryNav = [
   { icon: LayoutDashboard, label: 'Dashboard', pageId: 'dashboard' as const },
   { icon: Search, label: 'Event Search', pageId: 'search' as const },
-  { icon: ScrollText, label: 'Investigations', pageId: 'investigations' as const },
 ]
+
+const investigationsNav = {
+  icon: ScrollText,
+  label: 'Investigations',
+  pageId: 'investigations' as const,
+  children: [
+    { label: 'All Investigations', action: 'page' as const },
+    { label: 'Recent Queries', action: 'drawer' as const },
+  ]
+}
 
 function CollapsedTooltip({
   collapsed,
@@ -54,6 +63,7 @@ export function SocSidebar({
   authEnabled,
   activePage,
   onPageChange,
+  onOpenHistory,
 }: {
   identity: string
   roles: string[]
@@ -61,15 +71,15 @@ export function SocSidebar({
   authEnabled: boolean
   activePage?: 'dashboard' | 'search' | 'investigations'
   onPageChange?: (page: 'dashboard' | 'search' | 'investigations') => void
+  onOpenHistory?: () => void
 }) {
   const [expanded, setExpanded] = useState(false)
+  const [investigationsOpen, setInvestigationsOpen] = useState(false)
   const collapsed = !expanded
   const permissionContext = { roles, loading: authLoading }
   const historyVisible = canViewHistory(permissionContext)
   const adminVisible = canViewAuditLogs(permissionContext)
-  const visiblePrimaryNav = primaryNav.filter(
-    (item) => item.label !== 'Investigations' || historyVisible,
-  )
+  const visiblePrimaryNav = primaryNav
   const initials = identity
     .split(/[.@_\-\s]+/)
     .filter(Boolean)
@@ -169,6 +179,76 @@ export function SocSidebar({
               </button>
             </CollapsedTooltip>
           ))}
+
+          {historyVisible ? (
+            <div className="flex flex-col">
+              <CollapsedTooltip
+                collapsed={collapsed}
+                label={investigationsNav.label}
+              >
+                <button
+                  type="button"
+                  aria-label={investigationsNav.label}
+                  onClick={() => {
+                    if (collapsed) {
+                      setExpanded(true)
+                      setInvestigationsOpen(true)
+                    } else {
+                      setInvestigationsOpen(!investigationsOpen)
+                    }
+                  }}
+                  className={cn(
+                    'relative flex h-10 w-full shrink-0 items-center rounded-xl transition-colors',
+                    expanded ? 'justify-start px-3' : 'justify-center',
+                    activePage === investigationsNav.pageId
+                      ? 'bg-cyan-400/10 text-cyan-300 ring-1 ring-cyan-400/25'
+                      : 'text-muted-foreground hover:bg-secondary hover:text-foreground',
+                  )}
+                >
+                  <investigationsNav.icon className="size-5 shrink-0" />
+                  <span
+                    className={cn(
+                      'overflow-hidden whitespace-nowrap text-left text-sm transition-[width,opacity,margin] duration-300',
+                      expanded
+                        ? 'ml-3 w-36 opacity-100'
+                        : 'ml-0 w-0 opacity-0',
+                    )}
+                  >
+                    {investigationsNav.label}
+                  </span>
+                  {expanded && (
+                    <span className="ml-auto text-xs opacity-60">
+                      {investigationsOpen ? '▼' : '▶'}
+                    </span>
+                  )}
+                </button>
+              </CollapsedTooltip>
+
+              {expanded && investigationsOpen && (
+                <div className="ml-9 mt-1 flex flex-col gap-1 border-l border-border/50 pl-2">
+                  <button
+                    type="button"
+                    onClick={() => onPageChange?.('investigations')}
+                    className={cn(
+                      'flex h-8 items-center rounded-lg px-3 text-sm transition-colors text-left',
+                      activePage === 'investigations'
+                        ? 'bg-cyan-400/10 text-cyan-300'
+                        : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+                    )}
+                  >
+                    All Investigations
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onOpenHistory?.()}
+                    className="flex h-8 items-center rounded-lg px-3 text-sm transition-colors text-left text-muted-foreground hover:bg-secondary hover:text-foreground"
+                  >
+                    Recent Queries
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : null}
         </nav>
 
         <div className="mt-auto flex flex-col gap-1.5 px-3">
