@@ -24,7 +24,7 @@ export function SocDashboard() {
     const failedLoginsPlan: SearchPlanDto = {
       mode: 'search',
       page: 0,
-      size: 0,
+      size: 1,
       message_query: null,
       aggregation: null,
       filters: { timestamp: { from: 'now-24h', to: 'now' }, event_type: ['failed_login'] },
@@ -32,7 +32,7 @@ export function SocDashboard() {
     const criticalPlan: SearchPlanDto = {
       mode: 'search',
       page: 0,
-      size: 0,
+      size: 1,
       message_query: null,
       aggregation: null,
       filters: { timestamp: { from: 'now-24h', to: 'now' }, severity: ['critical', 'high'] },
@@ -40,7 +40,7 @@ export function SocDashboard() {
     const timePlan: SearchPlanDto = {
       mode: 'aggregation',
       page: 0,
-      size: 0,
+      size: 1,
       message_query: null,
       filters: { timestamp: { from: 'now-24h', to: 'now' } },
       aggregation: { type: 'date_histogram', interval: 'hour' },
@@ -48,7 +48,7 @@ export function SocDashboard() {
     const severityPlan: SearchPlanDto = {
       mode: 'aggregation',
       page: 0,
-      size: 0,
+      size: 1,
       message_query: null,
       filters: { timestamp: { from: 'now-24h', to: 'now' } },
       aggregation: { type: 'group_by', field: 'severity', top_n: 10 },
@@ -56,7 +56,7 @@ export function SocDashboard() {
     const topIpPlan: SearchPlanDto = {
       mode: 'aggregation',
       page: 0,
-      size: 0,
+      size: 1,
       message_query: null,
       filters: { timestamp: { from: 'now-24h', to: 'now' } },
       aggregation: { type: 'top_n', field: 'ip', top_n: 10 },
