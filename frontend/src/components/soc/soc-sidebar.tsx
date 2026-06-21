@@ -141,8 +141,8 @@ export function SocSidebar({
                   expanded ? 'opacity-100' : 'pointer-events-none opacity-0',
                 )}
               >
-                <span aria-hidden="true" className="text-base leading-none">
-                  {'<'}
+                <span aria-hidden="true" className="text-[10px] leading-none">
+                  {'◀'}
                 </span>
               </button>
             </TooltipTrigger>

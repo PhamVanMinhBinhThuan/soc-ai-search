@@ -3,8 +3,6 @@ import { oneDark } from '@codemirror/theme-one-dark'
 import CodeMirror from '@uiw/react-codemirror'
 import {
   Check,
-  ChevronDown,
-  ChevronUp,
   Code2,
   Copy,
   Edit2,
@@ -205,7 +203,9 @@ export function QueryTransparency({
           aria-controls="query-transparency-content"
           onClick={() => setExpanded((current) => !current)}
         >
-          {expanded ? <ChevronUp /> : <ChevronDown />}
+          <span aria-hidden="true" className="mr-1.5 text-[10px]">
+            {expanded ? '▲' : '▼'}
+          </span>
           {expanded ? 'Collapse' : 'Expand'}
         </Button>
       </div>
