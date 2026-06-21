@@ -82,7 +82,12 @@ function SearchPlanEditor({
       setIsRunning(true)
       await onRun(parsed)
     } catch (err) {
-      setError(toUiError(err))
+      const uiErr = toUiError(err)
+      const errorMessage =
+        uiErr.errors.length > 0
+          ? `${uiErr.message}: ${uiErr.errors.join(', ')}`
+          : uiErr.message
+      setError(errorMessage)
     } finally {
       setIsRunning(false)
     }
