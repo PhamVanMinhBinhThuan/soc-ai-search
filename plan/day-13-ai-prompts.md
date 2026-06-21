@@ -1,4 +1,4 @@
-﻿# Prompt triển khai Ngày 13 - SOC AI Search MVP
+# Prompt triển khai Ngày 13 - SOC AI Search MVP
 
 ## 1. Review kế hoạch Day 13
 
@@ -22,8 +22,8 @@ Không làm trong Day 13:
 Day 13 chia thành 4 prompt:
 
 1. Backend history detail + pin/unpin + filter nhẹ.
-2. Frontend `Investigations` page + sidebar submenu + Recent Queries drawer.
-3. Static investigation suggestions/playbooks + SOC Overview Dashboard auto-refresh 10 phút.
+2. Frontend `Investigations` page + sidebar submenu + Recent Queries drawer, tích hợp API vào UI mock đã có.
+3. Static investigation suggestions/playbooks + SOC Overview Dashboard auto-refresh 10 phút, tích hợp API vào UI dashboard mock đã có.
 4. Review, CI/CD, smoke và demo checklist.
 
 Chỉ chuyển prompt tiếp theo khi prompt trước đã chạy test/build phù hợp.
@@ -155,12 +155,19 @@ Không triển khai frontend trong prompt này. Không tạo saved query table. 
 ```text
 Tiếp tục triển khai ngày 13 cho SOC AI Search MVP.
 
-Hãy xây dựng UI trang `Investigations` đầy đủ và giữ `Recent Queries` drawer như quick access.
+Hãy tích hợp API thật vào UI mock trang `Investigations` đã có và giữ `Recent Queries` drawer như quick access.
+
+Quan trọng:
+- UI All Investigations đã được mock trước trong `image_ui/investigation_ui/`.
+- Không thiết kế lại UI từ đầu, không đổi theme lớn, không phá layout mock đang có.
+- Nhiệm vụ chính là nối API, state, RBAC, loading/error/empty states, filters, pin/unpin, detail panel và đồng bộ Recent Queries drawer.
+- Chỉ chỉnh UI ở mức cần thiết để khớp backend contract và làm trải nghiệm mượt hơn.
 
 Đọc trước:
 - README.md
 - plan/day-06-prompt-v0.dev-part1.md
 - plan/day-12-ai-prompts.md
+- image_ui/investigation_ui/
 - frontend/src/App.tsx
 - frontend/src/components/soc/soc-sidebar.tsx
 - frontend/src/components/soc/history-sheet.tsx
@@ -177,15 +184,16 @@ Hãy xây dựng UI trang `Investigations` đầy đủ và giữ `Recent Querie
 
 Yêu cầu UX/navigation:
 1. Kiểm tra trạng thái repository trước khi sửa.
-2. Sidebar có nhóm cha `Investigations` có thể expand/collapse.
-3. Bên trong nhóm `Investigations` có 2 mục con:
+2. Đọc UI mock trong `image_ui/investigation_ui/` và các component frontend hiện có để hiểu visual/layout trước khi sửa code.
+3. Sidebar có nhóm cha `Investigations` có thể expand/collapse.
+4. Bên trong nhóm `Investigations` có 2 mục con:
    - `All Investigations`: mở trang lịch sử đầy đủ;
    - `Recent Queries`: mở drawer quick access hiện tại.
-4. Click `Investigations` cha chỉ expand/collapse, không mở drawer trực tiếp.
-5. Click `All Investigations` chuyển main content sang trang Investigations.
-6. Click `Recent Queries` mở drawer bên phải như hiện tại.
-7. Header có thể giữ icon/button `Recent Queries` cạnh user/logout nếu hiện có, nhưng không bắt buộc. Nếu giữ, label/tooltip phải rõ.
-8. Drawer hiện tại đổi vai trò thành quick access:
+5. Click `Investigations` cha chỉ expand/collapse, không mở drawer trực tiếp.
+6. Click `All Investigations` chuyển main content sang trang Investigations.
+7. Click `Recent Queries` mở drawer bên phải như hiện tại.
+8. Header có thể giữ icon/button `Recent Queries` cạnh user/logout nếu hiện có, nhưng không bắt buộc. Nếu giữ, label/tooltip phải rõ.
+9. Drawer hiện tại đổi vai trò thành quick access:
    - tên `Recent Queries` hoặc `Recent Investigations` đều được, nhưng thống nhất toàn UI;
    - chỉ hiển thị 5 query gần nhất;
    - có Run Again;
@@ -193,14 +201,14 @@ Yêu cầu UX/navigation:
    - cuối drawer có nút `View all history` / `View all investigations` để chuyển tới page đầy đủ.
 
 Yêu cầu trang `All Investigations`:
-9. Tạo page/component riêng, ví dụ `frontend/src/components/soc/investigations-page.tsx`.
-10. Trang này dùng Enterprise Dark Theme/SOC Console hiện tại:
+10. Nếu mock đã có component tương ứng, refactor/tái sử dụng component đó. Nếu chưa có file rõ ràng, tạo page/component riêng, ví dụ `frontend/src/components/soc/investigations-page.tsx`.
+11. Trang này phải giữ visual direction của mock trong `image_ui/investigation_ui/`:
     - background zinc/slate dark;
     - cyan/purple accents cho AI/query;
     - emerald success, rose failed, amber warning;
     - compact but premium spacing;
     - không giống student project.
-11. Layout desktop khuyến nghị:
+12. Layout desktop phải bám theo mock hiện tại; nếu cần chuẩn hóa, dùng hướng sau:
 
 ```text
 +---------------------------------------------------------------+
@@ -218,8 +226,8 @@ Yêu cầu trang `All Investigations`:
 +-------------------------------+-------------------------------+
 ```
 
-12. Nếu project không dùng router, có thể dùng state trong `App.tsx` để switch giữa `Event Search` và `All Investigations`. Không bắt buộc thêm React Router nếu project chưa có.
-13. Query list/table cột tối thiểu:
+13. Nếu project không dùng router, có thể dùng state trong `App.tsx` để switch giữa `Event Search` và `All Investigations`. Không bắt buộc thêm React Router nếu project chưa có.
+14. Query list/table cột tối thiểu:
     - Time;
     - Question;
     - Mode;
@@ -228,44 +236,50 @@ Yêu cầu trang `All Investigations`:
     - Latency;
     - Pin;
     - Actions.
-14. Filters trên page:
+15. Filters trên page:
     - `All`;
     - `Pinned`;
     - `Success`;
     - `Failed`;
     - `Search`;
     - `Aggregation`.
-15. Nếu backend supports filters, gọi API với query params. Nếu backend chỉ support một phần, frontend degrade rõ ràng, không fake sai dữ liệu.
-16. Có search input nhỏ để lọc question nếu backend có `q`; nếu chưa có backend `q`, có thể filter client-side trên items đang load và ghi chú TODO nhỏ trong code comment nếu cần.
-17. Detail panel:
+16. Nếu backend supports filters, gọi API với query params. Nếu backend chỉ support một phần, frontend degrade rõ ràng, không fake sai dữ liệu.
+17. Có search input nhỏ để lọc question nếu backend có `q`; nếu chưa có backend `q`, có thể filter client-side trên items đang load và ghi chú TODO nhỏ trong code comment nếu cần.
+18. Detail panel:
     - khi chưa chọn item: hiển thị empty state đẹp, gợi ý chọn một investigation;
     - khi chọn item: gọi `GET /api/v1/search/history/{query_id}`;
     - hiển thị metadata, summary/error;
     - tabs `SearchPlan` và `Generated DSL` dùng code block/pretty JSON;
     - DSL read-only, badge `Read-only · Generated by backend compiler`;
     - có Copy button.
-18. Actions:
+19. Actions:
     - `Run Again`: chạy lại câu hỏi qua natural language endpoint nếu có question;
     - `Export CSV`: chỉ enabled nếu có quyền `SOC_ANALYST`/`SOC_ADMIN`, query success và có query_id;
     - `Pin/Unpin`: gọi endpoint pin;
     - refresh list/detail sau pin/unpin.
-19. RBAC:
+20. RBAC:
     - `SOC_VIEWER` không thấy Investigations page hoặc thấy lock state tùy policy hiện tại;
     - `SOC_ANALYST` thấy history của mình, pin/unpin, export;
     - `SOC_ADMIN` theo policy hiện tại.
-20. Loading/error states:
+21. Loading/error states:
     - skeleton list;
     - skeleton detail;
     - alert lỗi 400/403/404/503;
     - retry button;
-    - không crash khi `search_plan` hoặc `generated_dsl` null vì query failed.
-21. Không thêm saved query table/UI riêng. Chỉ pin/unpin history.
-22. Không gọi Elasticsearch trực tiếp từ frontend.
-23. Không cho edit DSL.
-24. Không phá Event Search page hiện tại.
+    - không crash khi `search_plan` hoặc `generated_dsl` null vì query failed. Nếu bị lỗi, hiển thị Error Alert rõ ràng trong Detail Panel thay vì các tab SearchPlan/DSL vô nghĩa.
+22. Không thêm saved query table/UI riêng. Chỉ pin/unpin history.
+23. Không gọi Elasticsearch trực tiếp từ frontend.
+24. Không cho edit DSL.
+25. Không phá Event Search page hiện tại.
 
-Prompt UI design cho AI/UI generator:
-25. Nếu dùng AI khác để generate UI, hãy yêu cầu style:
+Prompt UI implementation guidance:
+26. Không yêu cầu AI generate UI mới từ đầu vì mock đã có ở `image_ui/investigation_ui/`. Hãy yêu cầu AI:
+    - giữ layout, spacing, dark theme, badge style, card/table style theo mock;
+    - chỉ chỉnh các phần cần thiết để bind data thật;
+    - nếu component mock đang dùng static data, thay bằng props/state/API data;
+    - giữ SearchPlan/DSL panel read-only, có copy button;
+    - giữ empty/loading/error state cùng style với mock.
+27. Nếu cần polish nhỏ, giữ style:
     - premium dark SOC console;
     - compact split-pane investigation workspace;
     - left list/table with hover glow;
@@ -275,7 +289,7 @@ Prompt UI design cho AI/UI generator:
     - JSON panels with monospace, cyan syntax feeling, copy button;
     - empty states and skeleton loading polished;
     - no marketing/landing-page elements inside app console.
-26. UI copy đề xuất:
+28. UI copy đề xuất:
     - Page title: `Investigations`;
     - Subtitle: `Audit-backed query history, pinned investigations, and replay`;
     - Drawer title: `Recent Queries`;
@@ -283,7 +297,7 @@ Prompt UI design cho AI/UI generator:
     - Detail empty: `Select an investigation to inspect SearchPlan and DSL`.
 
 Tests:
-27. Frontend tests:
+29. Frontend tests:
     - sidebar expand `Investigations` shows `All Investigations` and `Recent Queries`;
     - clicking `Recent Queries` opens drawer;
     - clicking `All Investigations` shows page;
@@ -295,7 +309,7 @@ Tests:
     - viewer does not see/execute restricted actions;
     - export disabled for viewer;
     - Run Again uses existing search flow.
-28. Chạy verify:
+30. Chạy verify:
 
 ```powershell
 cd frontend
@@ -304,8 +318,8 @@ npm run build
 cd ..
 ```
 
-29. Nếu sửa backend contract trong lúc làm frontend, chạy lại backend test.
-30. Báo file đã sửa/tạo và test đã chạy.
+31. Nếu sửa backend contract trong lúc làm frontend, chạy lại backend test.
+32. Báo file đã sửa/tạo và test đã chạy.
 
 Không triển khai SOC Overview hoặc Query Suggestions trong prompt này.
 ```
@@ -317,12 +331,19 @@ Không triển khai SOC Overview hoặc Query Suggestions trong prompt này.
 ```text
 Tiếp tục triển khai ngày 13 cho SOC AI Search MVP.
 
-Hãy bổ sung Static Query Suggestions / Investigation Playbooks và SOC Overview Dashboard dùng aggregation API hiện có.
+Hãy bổ sung Static Query Suggestions / Investigation Playbooks và tích hợp API thật vào UI mock SOC Overview Dashboard đã có.
+
+Quan trọng:
+- Dashboard UI đã được mock trước trong `image_ui/image_dashboard/`.
+- Không thiết kế lại dashboard từ đầu, không đổi theme lớn, không phá layout mock đang có.
+- Nhiệm vụ chính là nối aggregation API thật, refresh state, partial failure, auto-refresh 10 phút, và bind chart/table/KPI vào UI mock.
+- Static Query Suggestions / Investigation Playbooks có thể thêm mới hoặc gắn vào UI hiện có, nhưng không được làm dashboard/search page rối hơn.
 
 Đọc trước:
 - README.md
 - docs/architecture.md
 - docs/sequence-flow.md
+- image_ui/image_dashboard/
 - frontend/src/App.tsx
 - frontend/src/components/soc/search-section.tsx
 - frontend/src/components/soc/result-tabs.tsx
@@ -376,7 +397,7 @@ Phần A - Static Query Suggestions / Investigation Playbooks:
 9. Không thay thế suggested queries hiện tại; có thể giữ suggested queries ở search box và thêm `Suggested next steps` sau result.
 
 Phần B - SOC Overview Dashboard:
-10. Tạo page/component dashboard riêng, ví dụ `SocOverviewDashboard`.
+10. Nếu mock dashboard đã có component tương ứng, refactor/tái sử dụng component đó. Nếu chưa có file rõ ràng, tạo page/component riêng, ví dụ `SocOverviewDashboard`, nhưng phải bám sát mock trong `image_ui/image_dashboard/`.
 11. Sidebar có item `Overview` nếu trước đây đã xóa/ẩn mà muốn dùng lại. Nếu sidebar hiện chỉ còn Event Search/Investigations, thêm lại `Overview` chỉ khi page thật sự hoạt động.
 12. Dashboard dùng `POST /api/v1/search/plan` với SearchPlan aggregation cố định. Không gọi LLM.
 13. Cards/charts tối thiểu:
@@ -418,9 +439,14 @@ AUTO_REFRESH_INTERVAL_MS = 10 * 60 * 1000
 25. Không thêm realtime streaming.
 26. Không thêm advanced aggregation ngoài contract hiện có.
 
-Prompt UI design cho dashboard/suggestions:
-27. Thiết kế SOC Overview như enterprise SecOps dashboard:
-    - dashboard sẽ gọi khoảng 4-5 aggregation API; nếu fetch thủ công, dùng `Promise.allSettled` hoặc render từng card/chart độc lập với skeleton riêng để card nào có data trước thì render trước. Không để toàn bộ dashboard bị treo chỉ vì một API chậm/lỗi;
+Prompt UI implementation guidance cho dashboard/suggestions:
+27. Không yêu cầu AI generate dashboard UI mới từ đầu vì mock đã có ở `image_ui/image_dashboard/`. Hãy yêu cầu AI:
+    - giữ layout, dark theme, card style, chart container, iconography và visual hierarchy theo mock;
+    - thay dữ liệu mock bằng API data thật;
+    - giữ skeleton/empty/error states cùng visual style;
+    - không đổi sidebar/header chung ngoài phần cần route tới dashboard.
+28. Khi bind dữ liệu vào SOC Overview:
+    - dashboard sẽ gọi khoảng 4-5 aggregation API; nếu fetch thủ công, dùng `Promise.allSettled` hoặc render từng card/chart độc lập với skeleton riêng để card nào có data trước thì render trước. Tuyệt đối không để toàn bộ dashboard bị treo chỉ vì một API chậm/lỗi, và tránh tình trạng component spam/re-render liên tục gây quá tải cho backend;
     - top KPI cards: Total Events, Critical/High Events, Top Source IP, Last Updated;
     - chart grid 2 columns desktop, 1 column mobile;
     - line chart for events over time;
@@ -431,14 +457,14 @@ Prompt UI design cho dashboard/suggestions:
     - semantic colors for severity;
     - compact card headers with icons from lucide-react;
     - skeleton loading and empty state polished.
-28. Suggestions/playbooks UI:
+29. Suggestions/playbooks UI:
     - cards or pills with subtle border/hover glow;
     - category badges: `Next step`, `Playbook`, `Aggregation`, `Raw events`;
     - button text: `Run` or click entire card;
     - avoid overwhelming the page; show 4-6 best suggestions.
 
 Tests:
-29. Frontend tests:
+30. Frontend tests:
     - suggestion helper returns failed_login suggestions;
     - suggestion helper does not suggest unsupported fields;
     - clicking suggestion triggers existing search flow;
@@ -449,8 +475,8 @@ Tests:
     - refresh button refetches;
     - auto-refresh interval is 10 minutes and cleanup happens on unmount;
     - no LLM endpoint is called for suggestions/dashboard.
-30. Nếu có mock mode, dashboard should render with mock/fake service or test mocks without requiring real backend.
-31. Chạy verify:
+31. Nếu có mock mode, dashboard should render with mock/fake service or test mocks without requiring real backend.
+32. Chạy verify:
 
 ```powershell
 cd frontend
@@ -459,8 +485,8 @@ npm run build
 cd ..
 ```
 
-32. Nếu thêm backend endpoint hoặc change API contract, chạy backend test.
-33. Báo file đã sửa/tạo và test đã chạy.
+33. Nếu thêm backend endpoint hoặc change API contract, chạy backend test.
+34. Báo file đã sửa/tạo và test đã chạy.
 
 Không triển khai multi-turn conversation, saved dashboard, saved query, streaming hoặc advanced aggregation trong prompt này.
 ```
