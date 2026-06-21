@@ -452,6 +452,7 @@ function App() {
             }}
             onExport={(queryId) => void handleExport(queryId)}
             canExport={canUseExport}
+            onBack={() => setActivePage('search')}
           />
         </div>
       ) : isLandingPage ? (

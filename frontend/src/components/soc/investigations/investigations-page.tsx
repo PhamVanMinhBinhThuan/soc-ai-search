@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react"
-import { ShieldAlert } from "lucide-react"
+import { ShieldAlert, ArrowLeft } from "lucide-react"
+import { Button } from "@/components/ui/button"
 import { InvestigationsMasterList, type FilterKey } from "./investigations-master-list"
 import { InvestigationDetailPanel } from "./investigation-detail-panel"
 import { getSearchHistory, getSearchHistoryDetail, togglePinHistory } from "@/services/history-api"
@@ -9,10 +10,12 @@ export function InvestigationsPage({
   onRunAgain,
   onExport,
   canExport,
+  onBack,
 }: {
   onRunAgain?: (item: SearchHistoryItemDto) => void
   onExport?: (queryId: string) => void
   canExport?: boolean
+  onBack?: () => void
 }) {
   const [query, setQuery] = useState("")
   const [filter, setFilter] = useState<FilterKey>("all")
@@ -103,6 +106,17 @@ export function InvestigationsPage({
     <main className="flex h-full min-h-0 flex-col bg-zinc-950 text-zinc-200">
       {/* Page header */}
       <header className="flex items-center gap-3 border-b border-zinc-800 px-5 py-4 shrink-0">
+        {onBack && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onBack}
+            className="mr-1 h-9 w-9 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-100"
+            title="Go back to search"
+          >
+            <ArrowLeft className="size-5" />
+          </Button>
+        )}
         <div className="flex size-9 items-center justify-center rounded-lg border border-cyan-500/30 bg-cyan-500/10">
           <ShieldAlert className="size-5 text-cyan-300" />
         </div>
