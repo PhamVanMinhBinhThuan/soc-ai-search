@@ -29,19 +29,25 @@ class AuditQueryServiceTest {
     void historyUsesStableSortAndMapsQueryId() {
         when(currentUserService.currentIdentity()).thenReturn("demo-analyst");
         var log = queryLog(UUID.fromString("11111111-1111-1111-1111-111111111111"));
-        when(repository.findByUserIdentity(
+        when(repository.findWithFilters(
                 org.mockito.ArgumentMatchers.eq("demo-analyst"),
+                org.mockito.ArgumentMatchers.isNull(),
+                org.mockito.ArgumentMatchers.isNull(),
+                org.mockito.ArgumentMatchers.isNull(),
                 org.mockito.ArgumentMatchers.any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(log)));
 
-        var response = service.history(0, 20);
+        var response = service.history(0, 20, null, null, null);
 
         assertThat(response.items()).singleElement()
                 .extracting(SearchHistoryItem::queryId)
                 .isEqualTo(log.getId());
         var pageable = ArgumentCaptor.forClass(Pageable.class);
-        verify(repository).findByUserIdentity(
+        verify(repository).findWithFilters(
                 org.mockito.ArgumentMatchers.eq("demo-analyst"),
+                org.mockito.ArgumentMatchers.isNull(),
+                org.mockito.ArgumentMatchers.isNull(),
+                org.mockito.ArgumentMatchers.isNull(),
                 pageable.capture());
         assertThat(pageable.getValue().getSort().toString())
                 .isEqualTo("createdAt: DESC,id: DESC");
@@ -50,15 +56,18 @@ class AuditQueryServiceTest {
     @Test
     void emptyHistoryHasZeroTotalPages() {
         when(currentUserService.currentIdentity()).thenReturn("demo-analyst");
-        when(repository.findByUserIdentity(
+        when(repository.findWithFilters(
                 org.mockito.ArgumentMatchers.eq("demo-analyst"),
+                org.mockito.ArgumentMatchers.isNull(),
+                org.mockito.ArgumentMatchers.isNull(),
+                org.mockito.ArgumentMatchers.isNull(),
                 org.mockito.ArgumentMatchers.any(Pageable.class)))
                 .thenReturn(new PageImpl<>(
                         List.of(),
                         org.springframework.data.domain.PageRequest.of(0, 20),
                         0));
 
-        var response = service.history(0, 20);
+        var response = service.history(0, 20, null, null, null);
 
         assertThat(response.items()).isEmpty();
         assertThat(response.total()).isZero();
@@ -80,9 +89,9 @@ class AuditQueryServiceTest {
 
     @Test
     void rejectsInvalidPagination() {
-        assertThatThrownBy(() -> service.history(-1, 20))
+        assertThatThrownBy(() -> service.history(-1, 10, null, null, null))
                 .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> service.history(0, 0))
+        assertThatThrownBy(() -> service.history(0, 0, null, null, null))
                 .isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> service.auditLogs(0, 101))
                 .isInstanceOf(IllegalArgumentException.class);

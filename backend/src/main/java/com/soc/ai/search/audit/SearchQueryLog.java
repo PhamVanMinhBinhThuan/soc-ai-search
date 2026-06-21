@@ -60,6 +60,12 @@ public class SearchQueryLog {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
+    @Column(name = "pinned", nullable = false)
+    private boolean pinned = false;
+
+    @Column(name = "pinned_at")
+    private Instant pinnedAt;
+
     protected SearchQueryLog() {
     }
 
@@ -136,5 +142,22 @@ public class SearchQueryLog {
 
     public Instant getCreatedAt() {
         return createdAt;
+    }
+
+    public boolean isPinned() {
+        return pinned;
+    }
+
+    public Instant getPinnedAt() {
+        return pinnedAt;
+    }
+
+    public void setPinned(boolean pinned) {
+        this.pinned = pinned;
+        if (pinned) {
+            this.pinnedAt = Instant.now();
+        } else {
+            this.pinnedAt = null;
+        }
     }
 }

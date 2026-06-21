@@ -175,7 +175,7 @@ class RbacEndpointGuardTest {
 
     @Test
     void analystCanReadHistoryButCannotReadAuditLogs() throws Exception {
-        when(auditQueryService.history(0, 20)).thenReturn(new PagedResponse<>(
+        when(auditQueryService.history(0, 20, null, null, null)).thenReturn(new PagedResponse<>(
                 List.of(new SearchHistoryItem(
                         UUID.fromString("22222222-2222-2222-2222-222222222222"),
                         "failed login china",
@@ -183,7 +183,9 @@ class RbacEndpointGuardTest {
                         3L,
                         25L,
                         AuditStatus.SUCCESS,
-                        Instant.parse("2026-06-18T00:00:00Z"))),
+                        Instant.parse("2026-06-18T00:00:00Z"),
+                        false,
+                        null)),
                 0,
                 20,
                 1,
@@ -220,7 +222,7 @@ class RbacEndpointGuardTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].user_identity").value("admin.one"));
 
-        when(auditQueryService.history(0, 20)).thenReturn(new PagedResponse<>(List.of(), 0, 20, 0, 0));
+        when(auditQueryService.history(0, 20, null, null, null)).thenReturn(new PagedResponse<>(List.of(), 0, 20, 0, 0));
         mockMvc.perform(get("/api/v1/search/history").with(role(RoleNames.ROLE_ADMIN)))
                 .andExpect(status().isOk());
     }

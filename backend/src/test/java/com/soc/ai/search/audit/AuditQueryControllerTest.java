@@ -30,7 +30,7 @@ class AuditQueryControllerTest {
 
     @Test
     void returnsPaginatedHistory() throws Exception {
-        when(queryService.history(0, 20)).thenReturn(new PagedResponse<>(
+        when(queryService.history(0, 20, null, null, null)).thenReturn(new PagedResponse<>(
                 List.of(new SearchHistoryItem(
                         UUID.fromString("11111111-1111-1111-1111-111111111111"),
                         "failed login china",
@@ -38,7 +38,9 @@ class AuditQueryControllerTest {
                         3L,
                         20L,
                         AuditStatus.SUCCESS,
-                        Instant.parse("2026-06-14T00:00:00Z"))),
+                        Instant.parse("2026-06-14T00:00:00Z"),
+                        false,
+                        null)),
                 0,
                 20,
                 1,
@@ -71,7 +73,7 @@ class AuditQueryControllerTest {
 
     @Test
     void returnsBadRequestForInvalidPagination() throws Exception {
-        when(queryService.history(-1, 20))
+        when(queryService.history(-1, 20, null, null, null))
                 .thenThrow(new IllegalArgumentException("page must be greater than or equal to 0"));
 
         mockMvc.perform(get("/api/v1/search/history").param("page", "-1"))

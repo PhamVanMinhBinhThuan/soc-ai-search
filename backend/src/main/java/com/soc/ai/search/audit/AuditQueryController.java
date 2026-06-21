@@ -10,6 +10,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -30,8 +33,27 @@ public class AuditQueryController {
             description = "Requires SOC_ANALYST. Results are scoped to the current identity.")
     public PagedResponse<SearchHistoryItem> history(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
-        return queryService.history(page, size);
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) Boolean pinned,
+            @RequestParam(required = false) AuditStatus status,
+            @RequestParam(required = false) com.soc.ai.search.search.plan.SearchMode mode) {
+        return queryService.history(page, size, pinned, status, mode);
+    }
+
+    @GetMapping("/api/v1/search/history/{queryId}")
+    @PreAuthorize("@rbacPermissionService.authDisabled() or hasAnyRole('SOC_ANALYST', 'SOC_ADMIN')")
+    @Operation(summary = "Get detailed query history", description = "Requires SOC_ANALYST or SOC_ADMIN.")
+    public ResponseEntity<SearchHistoryDetailItem> getHistoryDetail(@PathVariable java.util.UUID queryId) {
+        return ResponseEntity.ok(queryService.getHistoryDetail(queryId));
+    }
+
+    @PatchMapping("/api/v1/search/history/{queryId}/pin")
+    @PreAuthorize("@rbacPermissionService.authDisabled() or hasAnyRole('SOC_ANALYST', 'SOC_ADMIN')")
+    @Operation(summary = "Pin or unpin a query", description = "Requires SOC_ANALYST or SOC_ADMIN.")
+    public ResponseEntity<SearchHistoryItem> pinQuery(
+            @PathVariable java.util.UUID queryId,
+            @RequestBody PinQueryRequest request) {
+        return ResponseEntity.ok(queryService.pinQuery(queryId, request.pinned()));
     }
 
     @GetMapping("/api/v1/audit-logs")

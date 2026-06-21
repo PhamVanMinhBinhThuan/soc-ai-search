@@ -16,6 +16,11 @@ public class AuditQueryService {
             Sort.Order.desc("createdAt"),
             Sort.Order.desc("id"));
 
+    private static final Sort PINNED_SORT = Sort.by(
+            Sort.Order.desc("pinnedAt"),
+            Sort.Order.desc("createdAt"),
+            Sort.Order.desc("id"));
+
     private final SearchQueryLogRepository repository;
     private final CurrentUserService currentUserService;
 
@@ -25,13 +30,18 @@ public class AuditQueryService {
     }
 
     @Transactional(readOnly = true)
-    public PagedResponse<SearchHistoryItem> history(int page, int size) {
+    public PagedResponse<SearchHistoryItem> history(
+            int page, int size, Boolean pinned, AuditStatus status, com.soc.ai.search.search.plan.SearchMode mode) {
         validatePagination(page, size);
         final Page<SearchQueryLog> result;
         try {
-            result = repository.findByUserIdentity(
+            Sort sort = (Boolean.TRUE.equals(pinned)) ? PINNED_SORT : AUDIT_SORT;
+            result = repository.findWithFilters(
                     currentUserService.currentIdentity(),
-                    PageRequest.of(page, size, AUDIT_SORT));
+                    pinned,
+                    status,
+                    mode,
+                    PageRequest.of(page, size, sort));
         } catch (DataAccessException exception) {
             throw new AuditPersistenceException("Audit history lookup failed", exception);
         }
@@ -43,7 +53,9 @@ public class AuditQueryService {
                         log.getResultCount(),
                         log.getLatencyMs(),
                         log.getStatus(),
-                        log.getCreatedAt()))
+                        log.getCreatedAt(),
+                        log.isPinned(),
+                        log.getPinnedAt()))
                 .toList();
 
         return new PagedResponse<>(
@@ -82,6 +94,49 @@ public class AuditQueryService {
                 result.getSize(),
                 result.getTotalElements(),
                 result.getTotalPages());
+    }
+
+    @Transactional(readOnly = true)
+    public SearchHistoryDetailItem getHistoryDetail(java.util.UUID queryId) {
+        return repository.findByIdAndUserIdentity(queryId, currentUserService.currentIdentity())
+                .map(log -> new SearchHistoryDetailItem(
+                        log.getId(),
+                        log.getUserIdentity(),
+                        log.getQuestion(),
+                        log.getMode(),
+                        log.getResultCount(),
+                        log.getLatencyMs(),
+                        log.getStatus(),
+                        log.getErrorMessage(),
+                        log.getSummary(),
+                        log.getSearchPlan(),
+                        log.getGeneratedDsl(),
+                        log.getCreatedAt(),
+                        log.isPinned(),
+                        log.getPinnedAt()))
+                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(
+                        org.springframework.http.HttpStatus.NOT_FOUND, "Query not found or access denied"));
+    }
+
+    @Transactional
+    public SearchHistoryItem pinQuery(java.util.UUID queryId, boolean pinned) {
+        SearchQueryLog log = repository.findByIdAndUserIdentity(queryId, currentUserService.currentIdentity())
+                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(
+                        org.springframework.http.HttpStatus.NOT_FOUND, "Query not found or access denied"));
+        
+        log.setPinned(pinned);
+        log = repository.save(log);
+        
+        return new SearchHistoryItem(
+                log.getId(),
+                log.getQuestion(),
+                log.getMode(),
+                log.getResultCount(),
+                log.getLatencyMs(),
+                log.getStatus(),
+                log.getCreatedAt(),
+                log.isPinned(),
+                log.getPinnedAt());
     }
 
     private void validatePagination(int page, int size) {
