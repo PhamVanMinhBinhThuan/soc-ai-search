@@ -66,21 +66,28 @@ export function InvestigationsMasterList({
             className="w-full rounded-md border border-zinc-800 bg-zinc-900/60 py-2 pl-8 pr-3 text-sm text-zinc-200 placeholder:text-zinc-500 outline-none transition focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/30"
           />
         </div>
-        <div className="flex flex-wrap gap-1.5">
-          {FILTERS.map((f) => (
-            <button
-              key={f.key}
-              onClick={() => handleFilterChange(f.key)}
-              className={cn(
-                "rounded-md border px-2.5 py-1 text-xs font-medium transition",
-                filter === f.key
-                  ? "border-cyan-500/40 bg-cyan-500/10 text-cyan-300"
-                  : "border-zinc-800 bg-zinc-900/40 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200",
-              )}
-            >
-              {f.label}
-            </button>
-          ))}
+        <div className="flex items-center justify-between">
+          <div className="flex flex-wrap gap-1.5">
+            {FILTERS.map((f) => (
+              <button
+                key={f.key}
+                onClick={() => handleFilterChange(f.key)}
+                className={cn(
+                  "rounded-md border px-2.5 py-1 text-xs font-medium transition",
+                  filter === f.key
+                    ? "border-cyan-500/40 bg-cyan-500/10 text-cyan-300"
+                    : "border-zinc-800 bg-zinc-900/40 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200",
+                )}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+          {expanded && items.length > 0 && (
+            <span className="hidden text-xs text-zinc-500 sm:inline-block">
+              💡 Tip: Click on any row to view full details
+            </span>
+          )}
         </div>
       </div>
 
@@ -116,6 +123,9 @@ export function InvestigationsMasterList({
                 <th className="px-3 py-2.5 text-xs font-medium uppercase tracking-wide text-zinc-500">
                   Status
                 </th>
+                <th className="w-8 px-3 py-2.5">
+                  <span className="sr-only">Action</span>
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -127,7 +137,7 @@ export function InvestigationsMasterList({
                   <tr
                     key={item.query_id}
                     onClick={() => onSelect(item.query_id)}
-                    className="cursor-pointer border-b border-zinc-800/70 transition hover:bg-zinc-900/60"
+                    className="group cursor-pointer border-b border-zinc-800/70 transition hover:bg-zinc-900/60"
                   >
                     <td className="px-3 py-3">
                       <button
@@ -167,6 +177,9 @@ export function InvestigationsMasterList({
                     </td>
                     <td className="px-3 py-3">
                       <StatusBadge status={item.status} />
+                    </td>
+                    <td className="px-3 py-3">
+                      <ChevronRight className="size-4 text-zinc-600 opacity-0 transition-opacity group-hover:opacity-100" />
                     </td>
                   </tr>
                 )

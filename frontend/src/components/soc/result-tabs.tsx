@@ -239,6 +239,10 @@ function RawEventsView({
         <span className="rounded-full bg-secondary px-2 py-0.5 font-mono text-[11px] text-muted-foreground">
           {total.toLocaleString('en-US')} results
         </span>
+        <div className="flex-1" />
+        <span className="hidden text-xs text-muted-foreground sm:inline-block">
+          💡 Tip: Click on any row to view full details
+        </span>
       </div>
       <Table>
         <TableHeader>
@@ -252,6 +256,7 @@ function RawEventsView({
             <TableHead>IP</TableHead>
             <TableHead>Country</TableHead>
             <TableHead className="min-w-64">Message</TableHead>
+            <TableHead className="w-8 px-2"><span className="sr-only">Action</span></TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -260,7 +265,7 @@ function RawEventsView({
               key={event.event_id}
               tabIndex={0}
               aria-label={`Open event ${event.event_id}`}
-              className="cursor-pointer focus-visible:bg-secondary/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-cyan-400/50"
+              className="group cursor-pointer focus-visible:bg-secondary/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-cyan-400/50"
               onClick={() => onSelectEvent(event.event_id)}
               onKeyDown={(eventKey) => {
                 if (
@@ -296,6 +301,9 @@ function RawEventsView({
               </TableCell>
               <TableCell className="max-w-sm truncate text-xs text-muted-foreground">
                 {event.message}
+              </TableCell>
+              <TableCell className="px-2">
+                <ChevronRight className="size-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
               </TableCell>
             </TableRow>
           ))}
