@@ -1,5 +1,7 @@
 import {
+  History,
   LayoutDashboard,
+  ListFilter,
   ScrollText,
   Search,
   ShieldCheck,
@@ -230,19 +232,21 @@ export function SocSidebar({
                     type="button"
                     onClick={() => onPageChange?.('investigations')}
                     className={cn(
-                      'flex h-8 items-center rounded-lg px-3 text-sm transition-colors text-left',
+                      'flex h-8 items-center gap-2 rounded-lg px-3 text-sm transition-colors text-left w-full',
                       activePage === 'investigations'
                         ? 'bg-cyan-400/10 text-cyan-300'
                         : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
                     )}
                   >
+                    <ListFilter className="size-3.5 shrink-0" />
                     All Investigations
                   </button>
                   <button
                     type="button"
                     onClick={() => onOpenHistory?.()}
-                    className="flex h-8 items-center rounded-lg px-3 text-sm transition-colors text-left text-muted-foreground hover:bg-secondary hover:text-foreground"
+                    className="flex h-8 w-full items-center gap-2 rounded-lg px-3 text-sm transition-colors text-left text-muted-foreground hover:bg-secondary hover:text-foreground"
                   >
+                    <History className="size-3.5 shrink-0" />
                     Recent Queries
                   </button>
                 </div>

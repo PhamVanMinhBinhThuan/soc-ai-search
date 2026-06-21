@@ -1,7 +1,10 @@
-import { Search, Star } from "lucide-react"
+import { useState } from "react"
+import { ChevronLeft, ChevronRight, Search, Star } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { SearchHistoryItemDto } from "@/types/soc"
 import { ModeBadge, StatusBadge } from "./investigation-badges"
+
+const PAGE_SIZE = 10
 
 export type FilterKey = "all" | "pinned" | "SUCCESS" | "FAILED" | "search" | "aggregation"
 
@@ -33,6 +36,21 @@ export function InvestigationsMasterList({
   onFilterChange: (value: FilterKey) => void
   expanded?: boolean
 }) {
+  const [page, setPage] = useState(0)
+  const totalPages = Math.ceil(items.length / PAGE_SIZE)
+  const pagedItems = expanded
+    ? items.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
+    : items
+
+  // Reset to page 0 when filter/query changes
+  const handleFilterChange = (value: FilterKey) => {
+    setPage(0)
+    onFilterChange(value)
+  }
+  const handleQueryChange = (value: string) => {
+    setPage(0)
+    onQueryChange(value)
+  }
   return (
     <div className="flex h-full min-h-0 flex-col border-r border-zinc-800">
       {/* Filters toolbar */}
@@ -41,7 +59,7 @@ export function InvestigationsMasterList({
           <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-zinc-500" />
           <input
             value={query}
-            onChange={(e) => onQueryChange(e.target.value)}
+            onChange={(e) => handleQueryChange(e.target.value)}
             placeholder="Search questions..."
             className="w-full rounded-md border border-zinc-800 bg-zinc-900/60 py-2 pl-8 pr-3 text-sm text-zinc-200 placeholder:text-zinc-500 outline-none transition focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/30"
           />
@@ -50,7 +68,7 @@ export function InvestigationsMasterList({
           {FILTERS.map((f) => (
             <button
               key={f.key}
-              onClick={() => onFilterChange(f.key)}
+              onClick={() => handleFilterChange(f.key)}
               className={cn(
                 "rounded-md border px-2.5 py-1 text-xs font-medium transition",
                 filter === f.key
@@ -99,7 +117,7 @@ export function InvestigationsMasterList({
               </tr>
             </thead>
             <tbody>
-              {items.map((item) => {
+              {pagedItems.map((item) => {
                 const date = new Date(item.created_at)
                 const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                 
@@ -147,7 +165,7 @@ export function InvestigationsMasterList({
         ) : (
           /* Split view: compact card list */
           <ul className="flex flex-col gap-2 p-2">
-            {items.map((item) => {
+            {pagedItems.map((item) => {
               const isActive = item.query_id === activeId
               const date = new Date(item.created_at)
               const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -195,6 +213,31 @@ export function InvestigationsMasterList({
           </ul>
         )}
       </div>
+
+      {/* Pagination — only in expanded table view */}
+      {expanded && totalPages > 1 && (
+        <div className="flex shrink-0 items-center justify-between border-t border-zinc-800 px-4 py-2.5">
+          <span className="text-xs text-zinc-500">
+            Page {page + 1} of {totalPages} &middot; {items.length} total
+          </span>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setPage((p) => Math.max(0, p - 1))}
+              disabled={page === 0}
+              className="flex size-7 items-center justify-center rounded-md border border-zinc-800 bg-zinc-900 text-zinc-400 transition hover:border-zinc-700 hover:text-zinc-100 disabled:pointer-events-none disabled:opacity-30"
+            >
+              <ChevronLeft className="size-4" />
+            </button>
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+              disabled={page >= totalPages - 1}
+              className="flex size-7 items-center justify-center rounded-md border border-zinc-800 bg-zinc-900 text-zinc-400 transition hover:border-zinc-700 hover:text-zinc-100 disabled:pointer-events-none disabled:opacity-30"
+            >
+              <ChevronRight className="size-4" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
