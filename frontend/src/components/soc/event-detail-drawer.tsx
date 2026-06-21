@@ -241,7 +241,7 @@ export function EventDetailDrawer({
               className="min-h-0 overflow-auto rounded-xl border border-border bg-[#090b10]"
             >
               {rawLocked ? null : (
-                <pre className="min-w-max p-4 font-mono text-xs leading-6 text-cyan-200">
+                <pre className="whitespace-pre-wrap break-all p-4 font-mono text-[13px] leading-7 text-cyan-200">
                   {event.raw}
                 </pre>
               )}
