@@ -32,6 +32,7 @@ const baseProps = {
   onPageChange: vi.fn(),
   onSelectEvent: vi.fn(),
   onExport: vi.fn(),
+  response: null,
 }
 
 const event: SearchEventDto = {

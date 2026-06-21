@@ -10,8 +10,6 @@ import {
   LoaderCircle,
   Table2,
   TriangleAlert,
-  PlayCircle,
-  ChevronRightSquare,
 } from 'lucide-react'
 import { lazy, Suspense, useState, useMemo } from 'react'
 

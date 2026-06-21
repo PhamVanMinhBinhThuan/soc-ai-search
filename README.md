@@ -58,10 +58,12 @@ flowchart LR
 - SearchPlan transparency: response trả `search_plan` và `generated_dsl` dạng JSON object, không phải string escaped.
 - Event detail drawer qua `GET /api/v1/events/{event_id}`; `event_id` map từ Elasticsearch `_id`.
 - AI summary best-effort/fallback: lỗi summary không làm search fail.
-- Recent investigation history, audit log và query replay.
+- Recent investigation history, audit log, query replay, and a dedicated `All Investigations` page with Pinned query support.
+- Static Query Suggestions and Playbooks (e.g. Malware Triage, Failed login investigation) for context-aware next steps.
+- Live `SOC Overview Dashboard` fetching Total Events, Failed Logins, Critical Alerts, Events Over Time, and Top Source IPs with 10m auto-refresh (no LLM calls).
 - CSV export theo `query_id`, giới hạn 10.000 dòng, không nhận DSL từ client.
 - Keycloak OIDC/RBAC với `SOC_VIEWER`, `SOC_ANALYST`, `SOC_ADMIN`.
-- Frontend dark-mode SOC console, charts Recharts, raw event table, detail drawer, history sheet.
+- Frontend dark-mode SOC console, charts Recharts, raw event table, detail drawer, history sheet, full investigations view.
 - CI/CD GitHub Actions: backend verify, frontend test/lint/build, compose config và deploy VPS qua SSH.
 
 ## Tech Stack

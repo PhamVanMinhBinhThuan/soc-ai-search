@@ -8,31 +8,7 @@ import type { DashboardMetricsDto, SearchPlanDto } from "@/types/soc"
 import { executeSearchPlan } from "@/services/search-api"
 
 // Mock data to simulate API response
-const MOCK_DASHBOARD_DATA: DashboardMetricsDto = {
-  kpis: {
-    total_events: 1946,
-    critical_high_alerts: 482,
-    top_source_ip: "203.0.113.45",
-    failed_logins: 312,
-  },
-  events_over_time: Array.from({ length: 24 }).map((_, i) => ({
-    timestamp: new Date(Date.now() - (24 - i) * 60 * 60 * 1000).toISOString(),
-    events: Math.floor(Math.random() * 500) + 100,
-  })),
-  severity_distribution: [
-    { severity: "Critical", count: 186 },
-    { severity: "High", count: 296 },
-    { severity: "Medium", count: 742 },
-    { severity: "Low", count: 722 },
-  ],
-  top_source_ips: [
-    { ip: "203.0.113.45", events: 874, percentage: 100 },
-    { ip: "198.51.100.22", events: 612, percentage: 70 },
-    { ip: "192.0.2.178", events: 433, percentage: 50 },
-    { ip: "203.0.113.91", events: 287, percentage: 33 },
-    { ip: "198.51.100.7", events: 154, percentage: 18 },
-  ],
-}
+
 
 export function SocDashboard() {
   const [data, setData] = useState<DashboardMetricsDto | null>(null)
@@ -107,7 +83,7 @@ export function SocDashboard() {
       : []
 
     const topIps = topIpRes.status === 'fulfilled'
-      ? (topIpRes.value.aggregation_results || []).map((b: any, i: number, arr: any[]) => {
+      ? (topIpRes.value.aggregation_results || []).map((b: any, _i: number, arr: any[]) => {
           const max = Math.max(...arr.map(x => x.value))
           return { ip: b.key, events: b.value, percentage: max > 0 ? Math.round((b.value / max) * 100) : 0 }
         })
