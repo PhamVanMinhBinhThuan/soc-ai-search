@@ -350,15 +350,6 @@ function App() {
     }
   }
 
-  const openHistory = () => {
-    if (!canUseHistory) {
-      return
-    }
-
-    historyOpenRef.current = true
-    setHistoryOpen(true)
-    void loadHistory(0)
-  }
 
   const runHistoryItem = (item: SearchHistoryItemDto) => {
     historyOpenRef.current = false
@@ -444,6 +435,7 @@ function App() {
           activePage={activePage}
           onPageChange={setActivePage}
           onOpenHistory={() => { setHistoryOpen(true); void loadHistory(0) }}
+          onLogout={auth.signOut}
         />
       ) : null}
 
@@ -507,33 +499,7 @@ function App() {
         </div>
       ) : (
         <div className="min-w-0 flex-1">
-          <header className="sticky top-0 z-30 flex h-16 min-w-0 items-center justify-end gap-3 overflow-hidden border-b border-border bg-background/85 px-4 backdrop-blur-xl sm:gap-4 sm:px-6">
-          <div className="flex shrink-0 items-center gap-2 sm:gap-3 mr-2 sm:mr-4">
-            {canUseHistory ? (
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                className="md:hidden"
-                aria-label="Open recent investigations"
-                onClick={openHistory}
-              >
-                <ScrollText />
-              </Button>
-            ) : null}
-            {auth.enabled ? (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={auth.signOut}
-                aria-label="Sign out"
-                className={LOGOUT_BUTTON_CLASS}
-              >
-                <LogOut />
-                <span className="hidden sm:inline">Logout</span>
-              </Button>
-            ) : null}
-          </div>
-        </header>
+
 
         <main className="mx-auto flex min-w-0 w-full max-w-[1500px] flex-col gap-5 p-4 sm:p-6">
           <SearchSection

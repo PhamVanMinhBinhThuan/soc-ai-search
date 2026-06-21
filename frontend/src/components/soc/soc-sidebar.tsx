@@ -2,6 +2,7 @@ import {
   History,
   LayoutDashboard,
   ListFilter,
+  LogOut,
   ScrollText,
   Search,
   ShieldCheck,
@@ -66,6 +67,7 @@ export function SocSidebar({
   activePage,
   onPageChange,
   onOpenHistory,
+  onLogout,
 }: {
   identity: string
   roles: string[]
@@ -74,6 +76,7 @@ export function SocSidebar({
   activePage?: 'dashboard' | 'search' | 'investigations'
   onPageChange?: (page: 'dashboard' | 'search' | 'investigations') => void
   onOpenHistory?: () => void
+  onLogout?: () => void
 }) {
   const [expanded, setExpanded] = useState(false)
   const [investigationsOpen, setInvestigationsOpen] = useState(false)
@@ -285,6 +288,32 @@ export function SocSidebar({
                   )}
                 >
                   Admin Console
+                </span>
+              </button>
+            </CollapsedTooltip>
+          ) : null}
+
+          {authEnabled && onLogout ? (
+            <CollapsedTooltip collapsed={collapsed} label="Logout">
+              <button
+                type="button"
+                aria-label="Logout"
+                onClick={onLogout}
+                className={cn(
+                  'flex h-10 w-full shrink-0 items-center rounded-xl transition-colors text-muted-foreground hover:bg-secondary hover:text-foreground',
+                  expanded ? 'justify-start px-3' : 'justify-center',
+                )}
+              >
+                <LogOut className="size-5 shrink-0" />
+                <span
+                  className={cn(
+                    'overflow-hidden whitespace-nowrap text-left text-sm transition-[width,opacity,margin] duration-300',
+                    expanded
+                      ? 'ml-3 w-36 opacity-100'
+                      : 'ml-0 w-0 opacity-0',
+                  )}
+                >
+                  Logout
                 </span>
               </button>
             </CollapsedTooltip>
