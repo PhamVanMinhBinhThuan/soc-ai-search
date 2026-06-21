@@ -80,7 +80,10 @@ export function SocDashboard() {
       : []
 
     const severityDist = sevRes.status === 'fulfilled'
-      ? (sevRes.value.aggregation_results || []).map((b: { key: string; value: number }) => ({ severity: b.key, count: b.value }))
+      ? (sevRes.value.aggregation_results || []).map((b: { key: string; value: number }) => ({ 
+          severity: b.key as 'Critical' | 'High' | 'Medium' | 'Low', 
+          count: b.value 
+        }))
       : []
 
     const topIps = topIpRes.status === 'fulfilled'
