@@ -177,6 +177,118 @@ export function getSuggestions(response: NaturalLanguageSearchResponseDto | null
     )
   }
 
+  // 5. Check IP Context
+  const hasIpFilter = Object.keys(filters || {}).some(k => k.toLowerCase().includes('ip')) || 
+                      response.search_plan.message_query?.match(/\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/);
+  if (hasIpFilter) {
+    suggestions.push(
+      {
+        id: 'ip-ctx-1',
+        category: 'Raw events',
+        title: 'All blocked connections for IP',
+        question: 'Tìm các kết nối bị chặn liên quan đến IP này',
+        icon: ShieldAlert,
+      },
+      {
+        id: 'ip-ctx-2',
+        category: 'Aggregation',
+        title: 'Successful logins from IP',
+        question: 'Thống kê các user đăng nhập thành công từ IP này',
+        icon: Activity,
+      },
+      {
+        id: 'ip-ctx-3',
+        category: 'Aggregation',
+        title: 'Top destination ports for IP',
+        question: 'Thống kê các destination port mà IP này đã giao tiếp',
+        icon: Activity,
+      }
+    )
+  }
+
+  // 6. Check User Context
+  const hasUserFilter = Object.keys(filters || {}).some(k => k.toLowerCase().includes('user')) || 
+                        response.search_plan.message_query?.toLowerCase().includes('user');
+  if (hasUserFilter) {
+    suggestions.push(
+      {
+        id: 'user-ctx-1',
+        category: 'Raw events',
+        title: 'Commands executed by user',
+        question: 'Tìm các lệnh (commands) mà user này đã chạy',
+        icon: Terminal,
+      },
+      {
+        id: 'user-ctx-2',
+        category: 'Playbook',
+        title: 'User login history',
+        question: 'Xem toàn bộ lịch sử đăng nhập (cả thành công và thất bại) của user này trong 7 ngày',
+        icon: UserX,
+      },
+      {
+        id: 'user-ctx-3',
+        category: 'Aggregation',
+        title: 'Unusual IPs for user',
+        question: 'Thống kê các IP lạ mà user này đã dùng để đăng nhập',
+        icon: Activity,
+      }
+    )
+  }
+
+  // 7. Check Network & Firewall
+  const isNetwork = filters?.event_type?.includes('firewall') || 
+                    filters?.event_type?.includes('network') || 
+                    response.search_plan.message_query?.toLowerCase().includes('firewall') || 
+                    response.search_plan.message_query?.toLowerCase().includes('blocked');
+  if (isNetwork) {
+    suggestions.push(
+      {
+        id: 'net-ctx-1',
+        category: 'Aggregation',
+        title: 'Top 10 blocked IPs 24h',
+        question: 'Top 10 IP bị tường lửa chặn nhiều nhất trong 24h qua',
+        icon: ShieldAlert,
+      },
+      {
+        id: 'net-ctx-2',
+        category: 'Aggregation',
+        title: 'Top attacked ports',
+        question: 'Top 10 destination port bị tấn công hoặc chặn nhiều nhất',
+        icon: Activity,
+      },
+      {
+        id: 'net-ctx-3',
+        category: 'Aggregation',
+        title: 'Blocked traffic over time',
+        question: 'Biểu đồ lượng truy cập bị chặn theo giờ trong 24h qua',
+        icon: Activity,
+      }
+    )
+  }
+
+  // 8. Data Exfiltration
+  const isExfil = response.search_plan.message_query?.toLowerCase().includes('vpn') || 
+                  response.search_plan.message_query?.toLowerCase().includes('bytes') || 
+                  filters?.event_type?.includes('vpn');
+  if (isExfil) {
+    suggestions.push(
+      {
+        id: 'exfil-1',
+        category: 'Aggregation',
+        title: 'Top connections by bytes out',
+        question: 'Top các kết nối tải dữ liệu ra ngoài (bytes_out) nhiều nhất',
+        icon: Activity,
+      },
+      {
+        id: 'exfil-2',
+        category: 'Playbook',
+        title: 'Unusual VPN sessions',
+        question: 'Điều tra các phiên VPN có lượng dữ liệu truyền tải bất thường',
+        icon: ShieldAlert,
+      }
+    )
+  }
+
   // Deduplicate by question
   const uniqueSuggestions = Array.from(new Map(suggestions.map((s) => [s.question, s])).values())
 

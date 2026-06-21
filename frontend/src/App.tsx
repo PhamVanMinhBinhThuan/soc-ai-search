@@ -42,7 +42,7 @@ import {
   downloadCsvBlob,
   exportSearchCsv,
 } from '@/services/csv-export-api'
-import { getSearchHistory } from '@/services/history-api'
+import { getSearchHistory, togglePinHistory } from '@/services/history-api'
 import { initialMockResponse } from '@/services/mock-search-api'
 import {
   getEventDetail,
@@ -98,6 +98,7 @@ function App() {
     useState<NaturalLanguageSearchRequestDto | null>(initialRequest)
   const [response, setResponse] =
     useState<NaturalLanguageSearchResponseDto | null>(initialResponse)
+  const [isCurrentQueryPinned, setIsCurrentQueryPinned] = useState(false)
   const [requestStatus, setRequestStatus] = useState<RequestStatus>(
     initialResponse ? 'success' : 'idle',
   )
@@ -191,6 +192,20 @@ function App() {
     }
   }
 
+  const handleTogglePinCurrentQuery = async (pinned: boolean) => {
+    if (!response?.query_id) return
+    setIsCurrentQueryPinned(pinned)
+    try {
+      await togglePinHistory(response.query_id, pinned)
+      if (historyOpenRef.current && canUseHistory) {
+        void loadHistory(historyPageRef.current)
+      }
+    } catch (e) {
+      setIsCurrentQueryPinned(!pinned)
+      console.error(e)
+    }
+  }
+
   const closeDetail = () => {
     detailAbortRef.current?.abort()
     detailAbortRef.current = null
@@ -245,6 +260,7 @@ function App() {
       }
 
       setResponse(nextResponse)
+      setIsCurrentQueryPinned(false)
       setActiveTab(
         nextResponse.mode === 'aggregation' ? 'analytics' : 'raw',
       )
@@ -511,6 +527,9 @@ function App() {
             onQuestionChange={setQuestion}
             onSubmitQuestion={submitQuestion}
             onSelectSuggestion={submitQuestion}
+            currentQueryId={response?.query_id}
+            isPinned={isCurrentQueryPinned}
+            onTogglePin={handleTogglePinCurrentQuery}
           />
 
           {requestStatus === 'idle' ? (
@@ -561,6 +580,7 @@ function App() {
                        return
                      }
                      setResponse(nextResponse)
+                     setIsCurrentQueryPinned(false)
                      setSearchError(null)
                      setExportStatus('idle')
                      setExportMessage(null)

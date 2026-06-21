@@ -156,6 +156,7 @@ export function InvestigationsPage({
             filter={filter}
             onFilterChange={setFilter}
             expanded={!selectedId}
+            onTogglePin={handlePinToggle}
           />
         </div>
 

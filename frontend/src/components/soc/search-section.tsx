@@ -3,6 +3,7 @@ import {
   LoaderCircle,
   Search,
   Sparkles,
+  Pin,
 } from 'lucide-react'
 import type { FormEvent, KeyboardEvent } from 'react'
 
@@ -18,6 +19,9 @@ export function SearchSection({
   onQuestionChange,
   onSubmitQuestion,
   onSelectSuggestion,
+  currentQueryId,
+  isPinned,
+  onTogglePin,
 }: {
   question: string
   scenarios: MockScenario[]
@@ -26,6 +30,9 @@ export function SearchSection({
   onQuestionChange: (question: string) => void
   onSubmitQuestion: (question: string) => void
   onSelectSuggestion: (question: string) => void
+  currentQueryId?: string | null
+  isPinned?: boolean
+  onTogglePin?: (pinned: boolean) => void
 }) {
   const canSubmit = question.trim().length > 0 && !isLoading
 
@@ -66,23 +73,36 @@ export function SearchSection({
             className="min-h-16 min-w-0 flex-1 border-0 bg-transparent px-0 py-1 text-sm leading-6 shadow-none focus-visible:ring-0"
           />
           <div className="flex shrink-0 flex-col gap-2 sm:items-end">
-            <Button
-              type="submit"
-              disabled={!canSubmit}
-              title="Run natural-language search"
-              className="bg-violet-500 text-white shadow-[0_0_18px_-6px_#a78bfa] hover:bg-violet-400"
-            >
-              {isLoading ? (
-                <LoaderCircle className="animate-spin" />
-              ) : (
-                <Search />
+            <div className="flex items-center gap-2">
+              {currentQueryId && onTogglePin && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => onTogglePin(!isPinned)}
+                  className={`px-3 border-border ${isPinned ? 'text-amber-400 bg-amber-400/10 hover:bg-amber-400/20' : 'text-muted-foreground hover:text-foreground hover:bg-zinc-800'}`}
+                  title={isPinned ? 'Unpin this query' : 'Pin this query to Investigations'}
+                >
+                  <Pin className={`size-4 ${isPinned ? 'fill-current' : ''}`} />
+                </Button>
               )}
-              {isLoading
-                ? 'Searching...'
-                : isMockMode
-                  ? 'Run Mock'
-                  : 'Search'}
-            </Button>
+              <Button
+                type="submit"
+                disabled={!canSubmit}
+                title="Run natural-language search"
+                className="bg-violet-500 text-white shadow-[0_0_18px_-6px_#a78bfa] hover:bg-violet-400"
+              >
+                {isLoading ? (
+                  <LoaderCircle className="animate-spin" />
+                ) : (
+                  <Search />
+                )}
+                {isLoading
+                  ? 'Searching...'
+                  : isMockMode
+                    ? 'Run Mock'
+                    : 'Search'}
+              </Button>
+            </div>
             <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
               <CornerDownLeft className="size-3" />
               Ctrl + Enter to run

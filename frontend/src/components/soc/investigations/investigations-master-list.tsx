@@ -26,6 +26,7 @@ export function InvestigationsMasterList({
   filter,
   onFilterChange,
   expanded = false,
+  onTogglePin,
 }: {
   items: SearchHistoryItemDto[]
   activeId: string | null
@@ -35,6 +36,7 @@ export function InvestigationsMasterList({
   filter: FilterKey
   onFilterChange: (value: FilterKey) => void
   expanded?: boolean
+  onTogglePin?: (queryId: string, pinned: boolean) => void
 }) {
   const [page, setPage] = useState(0)
   const totalPages = Math.ceil(items.length / PAGE_SIZE)
@@ -128,14 +130,23 @@ export function InvestigationsMasterList({
                     className="cursor-pointer border-b border-zinc-800/70 transition hover:bg-zinc-900/60"
                   >
                     <td className="px-3 py-3">
-                      <Star
-                        className={cn(
-                          "size-3.5",
-                          item.pinned
-                            ? "fill-amber-400 text-amber-400"
-                            : "text-zinc-700",
-                        )}
-                      />
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onTogglePin?.(item.query_id, !item.pinned)
+                        }}
+                        className="flex items-center justify-center rounded transition-colors hover:bg-zinc-800 p-1 -m-1"
+                      >
+                        <Star
+                          className={cn(
+                            "size-3.5",
+                            item.pinned
+                              ? "fill-amber-400 text-amber-400"
+                              : "text-zinc-700",
+                          )}
+                        />
+                      </button>
                     </td>
                     <td className="whitespace-nowrap px-3 py-3 font-mono text-xs text-zinc-500">
                       {timeStr}
@@ -185,14 +196,23 @@ export function InvestigationsMasterList({
                       <span className="font-mono text-xs text-zinc-500">
                         {timeStr}
                       </span>
-                      <Star
-                        className={cn(
-                          "size-3.5 transition",
-                          item.pinned
-                            ? "fill-amber-400 text-amber-400"
-                            : "text-zinc-600 group-hover:text-zinc-500",
-                        )}
-                      />
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onTogglePin?.(item.query_id, !item.pinned)
+                        }}
+                        className="flex items-center justify-center rounded transition-colors hover:bg-zinc-800/80 p-1 -m-1"
+                      >
+                        <Star
+                          className={cn(
+                            "size-3.5 transition",
+                            item.pinned
+                              ? "fill-amber-400 text-amber-400"
+                              : "text-zinc-600 group-hover:text-zinc-500",
+                          )}
+                        />
+                      </button>
                     </div>
                     <p
                       className={cn(
