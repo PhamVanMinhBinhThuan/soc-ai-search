@@ -581,11 +581,9 @@ function App() {
                    const controller = new AbortController()
                    searchAbortRef.current = controller
                    closeDetail()
-                   setResponse(null)
-                   setSearchError(null)
-                   setExportStatus('idle')
-                   setExportMessage(null)
-                   setRequestStatus('loading')
+                   // We do not setResponse(null) or setRequestStatus('loading') here
+                   // to keep the editor and current results visible while running.
+                   // The editor component handles its own loading spinner.
                    
                    try {
                      const { runSearchPlan } = await import('@/services/search-plan-api')
@@ -594,6 +592,9 @@ function App() {
                        return
                      }
                      setResponse(nextResponse)
+                     setSearchError(null)
+                     setExportStatus('idle')
+                     setExportMessage(null)
                      setActiveTab(
                        nextResponse.mode === 'aggregation' ? 'analytics' : 'raw',
                      )
@@ -606,9 +607,8 @@ function App() {
                      if (isAbortError(error)) {
                        return
                      }
-                     setResponse(null)
-                     setSearchError(toUiError(error))
-                     setRequestStatus('error')
+                     // Let QueryTransparency handle the error to keep editor open
+                     throw error
                    } finally {
                      if (searchAbortRef.current === controller) {
                        searchAbortRef.current = null

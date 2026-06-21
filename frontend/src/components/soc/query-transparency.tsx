@@ -9,6 +9,7 @@ import {
   Copy,
   Edit2,
   FileJson2,
+  Loader2,
   Play,
   RotateCcw,
 } from 'lucide-react'
@@ -66,19 +67,27 @@ function SearchPlanEditor({
   onCancel,
 }: {
   initialValue: SearchPlanDto
-  onRun: (plan: SearchPlanDto) => void
+  onRun: (plan: SearchPlanDto) => Promise<void>
   onCancel: () => void
 }) {
   const [code, setCode] = useState(() => JSON.stringify(initialValue, null, 2))
   const [error, setError] = useState<string | null>(null)
+  const [isRunning, setIsRunning] = useState(false)
 
-  const handleRun = () => {
+  const handleRun = async () => {
     try {
       const parsed = JSON.parse(code) as SearchPlanDto
       setError(null)
-      onRun(parsed)
-    } catch {
-      setError('Invalid JSON format')
+      setIsRunning(true)
+      await onRun(parsed)
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message)
+      } else {
+        setError('An unexpected error occurred')
+      }
+    } finally {
+      setIsRunning(false)
     }
   }
 
@@ -113,20 +122,24 @@ function SearchPlanEditor({
           {error}
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={handleReset}>
+          <Button variant="outline" size="sm" onClick={handleReset} disabled={isRunning}>
             <RotateCcw className="mr-2 size-4" />
             Reset to AI Plan
           </Button>
-          <Button variant="outline" size="sm" onClick={onCancel}>
+          <Button variant="outline" size="sm" onClick={onCancel} disabled={isRunning}>
             Cancel
           </Button>
           <Button
             size="sm"
-            disabled={error !== null}
-            onClick={handleRun}
-            className="bg-cyan-600 text-white hover:bg-cyan-700"
+            disabled={error !== null || isRunning}
+            onClick={() => void handleRun()}
+            className="bg-cyan-600 text-white hover:bg-cyan-700 disabled:bg-cyan-600/50"
           >
-            <Play className="mr-2 size-4" />
+            {isRunning ? (
+              <Loader2 className="mr-2 size-4 animate-spin" />
+            ) : (
+              <Play className="mr-2 size-4" />
+            )}
             Run Edited Plan
           </Button>
         </div>
@@ -144,7 +157,7 @@ export function QueryTransparency({
   searchPlan: SearchPlanDto
   generatedDsl: Record<string, unknown>
   canEditPlan?: boolean
-  onRunEditedPlan?: (plan: SearchPlanDto) => void
+  onRunEditedPlan?: (plan: SearchPlanDto) => Promise<void>
 }) {
   const [expanded, setExpanded] = useState(true)
   const [isEditing, setIsEditing] = useState(false)
@@ -236,8 +249,8 @@ export function QueryTransparency({
               <SearchPlanEditor
                 initialValue={searchPlan}
                 onCancel={() => setIsEditing(false)}
-                onRun={(editedPlan) => {
-                  onRunEditedPlan?.(editedPlan)
+                onRun={async (editedPlan) => {
+                  await onRunEditedPlan?.(editedPlan)
                 }}
               />
             ) : (
