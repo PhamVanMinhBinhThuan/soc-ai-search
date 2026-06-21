@@ -59,3 +59,7 @@ export function canViewAuditLogs(context: PermissionContext) {
 export function isAdmin(context: PermissionContext) {
   return canViewAuditLogs(context)
 }
+
+export function canEditSearchPlan(context: PermissionContext) {
+  return hasAtLeastRole(context, 'SOC_ANALYST')
+}

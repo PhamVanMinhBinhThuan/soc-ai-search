@@ -9,6 +9,7 @@ import {
   canViewBasicEventDetail,
   canViewHistory,
   canViewRawLog,
+  canEditSearchPlan,
 } from '@/auth/permissions'
 import { useSocAuth } from '@/auth/use-auth'
 import { EventDetailDrawer } from '@/components/soc/event-detail-drawer'
@@ -87,6 +88,7 @@ function App() {
   const canUseHistory = canViewHistory(permissionContext)
   const canUseExport = canExportCsv(permissionContext)
   const canUseRawLog = canViewRawLog(permissionContext)
+  const canEditPlan = canEditSearchPlan(permissionContext)
   const [question, setQuestion] = useState(
     isMockMode ? initialScenario.question : '',
   )
@@ -571,6 +573,55 @@ function App() {
               <QueryTransparency
                 searchPlan={response.search_plan}
                 generatedDsl={response.generated_dsl}
+                canEditPlan={canEditPlan}
+                onRunEditedPlan={async (editedPlan) => {
+                   searchAbortRef.current?.abort()
+                   exportAbortRef.current?.abort()
+                   exportAbortRef.current = null
+                   const controller = new AbortController()
+                   searchAbortRef.current = controller
+                   closeDetail()
+                   setResponse(null)
+                   setSearchError(null)
+                   setExportStatus('idle')
+                   setExportMessage(null)
+                   setRequestStatus('loading')
+                   
+                   try {
+                     const { runSearchPlan } = await import('@/services/search-plan-api')
+                     const nextResponse = await runSearchPlan(editedPlan, controller.signal)
+                     if (controller.signal.aborted) {
+                       return
+                     }
+                     setResponse(nextResponse)
+                     setActiveTab(
+                       nextResponse.mode === 'aggregation' ? 'analytics' : 'raw',
+                     )
+                     const isEmpty =
+                       nextResponse.mode === 'search'
+                         ? nextResponse.events.length === 0
+                         : nextResponse.aggregation_results.length === 0
+                     setRequestStatus(isEmpty ? 'empty' : 'success')
+                   } catch (error) {
+                     if (isAbortError(error)) {
+                       return
+                     }
+                     setResponse(null)
+                     setSearchError(toUiError(error))
+                     setRequestStatus('error')
+                   } finally {
+                     if (searchAbortRef.current === controller) {
+                       searchAbortRef.current = null
+                     }
+                     if (
+                       !controller.signal.aborted &&
+                       historyOpenRef.current &&
+                       canUseHistory
+                     ) {
+                       void loadHistory(historyPageRef.current)
+                     }
+                   }
+                }}
               />
 
               <ResultTabs

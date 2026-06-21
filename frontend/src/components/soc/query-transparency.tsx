@@ -1,10 +1,16 @@
+import { json } from '@codemirror/lang-json'
+import { oneDark } from '@codemirror/theme-one-dark'
+import CodeMirror from '@uiw/react-codemirror'
 import {
   Check,
   ChevronDown,
   ChevronUp,
   Code2,
   Copy,
+  Edit2,
   FileJson2,
+  Play,
+  RotateCcw,
 } from 'lucide-react'
 import { useState } from 'react'
 
@@ -28,7 +34,7 @@ function JsonViewer({
   copyStatus: 'idle' | 'copied' | 'failed'
 }) {
   return (
-    <div className="relative h-80 overflow-auto rounded-xl border border-border bg-[#090b10]">
+    <div className="relative h-[28rem] overflow-auto rounded-xl border border-border bg-[#090b10]">
       <Button
         variant="outline"
         size="sm"
@@ -54,18 +60,106 @@ function JsonViewer({
   )
 }
 
+function SearchPlanEditor({
+  initialValue,
+  onRun,
+  onCancel,
+}: {
+  initialValue: SearchPlanDto
+  onRun: (plan: SearchPlanDto) => void
+  onCancel: () => void
+}) {
+  const [code, setCode] = useState(() => JSON.stringify(initialValue, null, 2))
+  const [error, setError] = useState<string | null>(null)
+
+  const handleRun = () => {
+    try {
+      const parsed = JSON.parse(code) as SearchPlanDto
+      setError(null)
+      onRun(parsed)
+    } catch {
+      setError('Invalid JSON format')
+    }
+  }
+
+  const handleReset = () => {
+    setCode(JSON.stringify(initialValue, null, 2))
+    setError(null)
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="relative overflow-hidden rounded-xl border border-border bg-[#090b10]">
+        <CodeMirror
+          value={code}
+          height="28rem"
+          theme={oneDark}
+          extensions={[json()]}
+          onChange={(value) => {
+            setCode(value)
+            try {
+              JSON.parse(value)
+              setError(null)
+            } catch {
+              setError('Invalid JSON format')
+            }
+          }}
+          className="text-xs"
+        />
+      </div>
+
+      <div className="flex items-center justify-between">
+        <div className="text-sm font-medium text-destructive">
+          {error}
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={handleReset}>
+            <RotateCcw className="mr-2 size-4" />
+            Reset to AI Plan
+          </Button>
+          <Button variant="outline" size="sm" onClick={onCancel}>
+            Cancel
+          </Button>
+          <Button
+            size="sm"
+            disabled={error !== null}
+            onClick={handleRun}
+            className="bg-cyan-600 text-white hover:bg-cyan-700"
+          >
+            <Play className="mr-2 size-4" />
+            Run Edited Plan
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export function QueryTransparency({
   searchPlan,
   generatedDsl,
+  canEditPlan = false,
+  onRunEditedPlan,
 }: {
   searchPlan: SearchPlanDto
   generatedDsl: Record<string, unknown>
+  canEditPlan?: boolean
+  onRunEditedPlan?: (plan: SearchPlanDto) => void
 }) {
   const [expanded, setExpanded] = useState(true)
+  const [isEditing, setIsEditing] = useState(false)
   const [copyState, setCopyState] = useState<{
     type: 'plan' | 'dsl'
     status: 'copied' | 'failed'
   } | null>(null)
+
+  const [prevSearchPlan, setPrevSearchPlan] = useState(searchPlan)
+
+  // Reset editing state when search plan changes (render phase instead of effect)
+  if (searchPlan !== prevSearchPlan) {
+    setIsEditing(false)
+    setPrevSearchPlan(searchPlan)
+  }
 
   const copyValue = async (type: 'plan' | 'dsl', value: unknown) => {
     try {
@@ -107,26 +201,62 @@ export function QueryTransparency({
           defaultValue="plan"
           className="p-3 sm:p-4"
         >
-          <TabsList className="max-w-full overflow-x-auto">
-            <TabsTrigger value="plan">
-              <FileJson2 />
-              Validated SearchPlan
-            </TabsTrigger>
-            <TabsTrigger value="dsl">
-              <Code2 />
-              Compiled DSL
-            </TabsTrigger>
-          </TabsList>
-          <TabsContent value="plan">
-            <JsonViewer
-              value={searchPlan}
-              copyStatus={
-                copyState?.type === 'plan' ? copyState.status : 'idle'
-              }
-              onCopy={() => void copyValue('plan', searchPlan)}
-            />
+          <div className="flex items-center justify-between mb-3">
+            <TabsList className="max-w-full overflow-x-auto">
+              <TabsTrigger value="plan">
+                <FileJson2 />
+                Validated SearchPlan
+              </TabsTrigger>
+              <TabsTrigger value="dsl">
+                <Code2 />
+                Compiled DSL
+              </TabsTrigger>
+            </TabsList>
+            
+            {canEditPlan && !isEditing && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsEditing(true)}
+                className="ml-auto text-cyan-400 hover:text-cyan-300 border-cyan-400/30 hover:border-cyan-400/50 hover:bg-cyan-950/30"
+              >
+                <Edit2 className="size-4 mr-2" />
+                Edit SearchPlan
+              </Button>
+            )}
+            {!canEditPlan && (
+               <span className="text-xs text-muted-foreground ml-auto hidden sm:inline">
+                 SearchPlan editing requires SOC_ANALYST or SOC_ADMIN.
+               </span>
+            )}
+          </div>
+          
+          <TabsContent value="plan" className="mt-0 outline-none">
+            {isEditing ? (
+              <SearchPlanEditor
+                initialValue={searchPlan}
+                onCancel={() => setIsEditing(false)}
+                onRun={(editedPlan) => {
+                  onRunEditedPlan?.(editedPlan)
+                }}
+              />
+            ) : (
+              <JsonViewer
+                value={searchPlan}
+                copyStatus={
+                  copyState?.type === 'plan' ? copyState.status : 'idle'
+                }
+                onCopy={() => void copyValue('plan', searchPlan)}
+              />
+            )}
           </TabsContent>
-          <TabsContent value="dsl">
+          
+          <TabsContent value="dsl" className="mt-0 outline-none">
+            <div className="mb-2">
+               <span className="text-xs font-medium text-amber-500 bg-amber-500/10 px-2 py-1 rounded-md border border-amber-500/20 inline-flex items-center">
+                  Read-only · Generated by backend compiler
+               </span>
+            </div>
             <JsonViewer
               value={generatedDsl}
               copyStatus={
