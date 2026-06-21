@@ -1,4 +1,5 @@
 import {
+  LayoutDashboard,
   ScrollText,
   Search,
   ShieldCheck,
@@ -20,6 +21,7 @@ import {
 import { cn } from '@/lib/utils'
 
 const primaryNav = [
+  { icon: LayoutDashboard, label: 'Dashboard', pageId: 'dashboard' as const },
   { icon: Search, label: 'Event Search', pageId: 'search' as const },
   { icon: ScrollText, label: 'Investigations', pageId: 'investigations' as const },
 ]
@@ -57,8 +59,8 @@ export function SocSidebar({
   roles: string[]
   authLoading: boolean
   authEnabled: boolean
-  activePage?: 'search' | 'investigations'
-  onPageChange?: (page: 'search' | 'investigations') => void
+  activePage?: 'dashboard' | 'search' | 'investigations'
+  onPageChange?: (page: 'dashboard' | 'search' | 'investigations') => void
 }) {
   const [expanded, setExpanded] = useState(false)
   const collapsed = !expanded

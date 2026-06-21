@@ -117,6 +117,39 @@ export type SearchHistoryDetailDto = SearchHistoryItemDto & {
   summary: string | null
 }
 
+// --- Dashboard Types ---
+
+export interface KpiData {
+  total_events: number
+  critical_high_alerts: number
+  top_source_ip: string
+  failed_logins: number
+}
+
+export interface EventsOverTimePoint {
+  timestamp: string
+  events: number
+}
+
+export interface SeverityDistributionItem {
+  severity: 'Critical' | 'High' | 'Medium' | 'Low'
+  count: number
+}
+
+export interface TopSourceIpItem {
+  ip: string
+  events: number
+  percentage: number
+}
+
+export interface DashboardMetricsDto {
+  kpis: KpiData
+  events_over_time: EventsOverTimePoint[]
+  severity_distribution: SeverityDistributionItem[]
+  top_source_ips: TopSourceIpItem[]
+}
+
+
 export type SearchHistoryPageDto = {
   items: SearchHistoryItemDto[]
   page: number

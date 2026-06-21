@@ -1,0 +1,100 @@
+import { useMemo } from "react"
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts"
+import type { SeverityDistributionItem } from "@/types/soc"
+
+const COLORS = {
+  Critical: "#f43f5e", // rose-500
+  High: "#f59e0b",     // amber-500
+  Medium: "#22d3ee",   // cyan-400
+  Low: "#71717a",      // zinc-500
+}
+
+const TEXT_COLORS = {
+  Critical: "text-rose-400",
+  High: "text-amber-400",
+  Medium: "text-cyan-300",
+  Low: "text-zinc-400",
+}
+
+const DOT_COLORS = {
+  Critical: "bg-rose-500",
+  High: "bg-amber-500",
+  Medium: "bg-cyan-400",
+  Low: "bg-zinc-500",
+}
+
+export function SeverityDistribution({ data }: { data: SeverityDistributionItem[] }) {
+  const total = useMemo(() => {
+    return data.reduce((acc, curr) => acc + curr.count, 0)
+  }, [data])
+
+  return (
+    <div className="rounded-md border border-zinc-800 bg-zinc-900 flex flex-col h-full">
+      <div className="border-b border-zinc-800 px-5 py-3.5 shrink-0">
+        <h2 className="text-sm font-semibold text-zinc-100">Severity Distribution</h2>
+        <p className="text-xs text-zinc-400">Alerts by severity, last 24h</p>
+      </div>
+
+      <div className="flex flex-col items-center p-5 flex-1 min-h-0 justify-center">
+        {data.length === 0 ? (
+          <p className="text-sm text-zinc-500">No data available</p>
+        ) : (
+          <>
+            <div className="relative flex h-40 w-full items-center justify-center shrink-0">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={data}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={80}
+                    paddingAngle={2}
+                    dataKey="count"
+                    nameKey="severity"
+                    stroke="none"
+                  >
+                    {data.map((entry) => (
+                      <Cell key={entry.severity} fill={COLORS[entry.severity]} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "#18181b",
+                      border: "1px solid #27272a",
+                      borderRadius: "6px",
+                      color: "#f4f4f5",
+                    }}
+                    itemStyle={{ fontWeight: 500 }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="absolute flex flex-col items-center justify-center pointer-events-none">
+                <span className="text-xl font-semibold tabular-nums text-zinc-50">
+                  {total.toLocaleString()}
+                </span>
+                <span className="text-[10px] uppercase tracking-wide text-zinc-500">
+                  Total
+                </span>
+              </div>
+            </div>
+
+            <div className="mt-5 grid w-full grid-cols-2 gap-x-4 gap-y-2.5">
+              {data.map((item) => (
+                <div key={item.severity} className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className={`h-2 w-2 rounded-full ${DOT_COLORS[item.severity]}`} />
+                    <span className="text-xs text-zinc-400">{item.severity}</span>
+                  </div>
+                  <span className={`text-xs font-medium tabular-nums ${TEXT_COLORS[item.severity]}`}>
+                    {item.count.toLocaleString()}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}

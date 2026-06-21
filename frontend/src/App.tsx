@@ -22,6 +22,7 @@ import {
 } from '@/components/soc/result-tabs'
 import { SearchSection } from '@/components/soc/search-section'
 import { InvestigationsPage } from '@/components/soc/investigations/investigations-page'
+import { SocDashboard } from '@/components/soc/dashboard/soc-dashboard'
 import {
   SearchErrorState,
   SearchIdleState,
@@ -104,7 +105,7 @@ function App() {
   const [activeTab, setActiveTab] = useState<ResultTab>(
     initialResponse?.mode === 'aggregation' ? 'analytics' : 'raw',
   )
-  const [activePage, setActivePage] = useState<'search' | 'investigations'>('search')
+  const [activePage, setActivePage] = useState<'dashboard' | 'search' | 'investigations'>('search')
 
   const [detailOpen, setDetailOpen] = useState(false)
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null)
@@ -463,7 +464,11 @@ function App() {
         />
       ) : null}
 
-      {activePage === 'investigations' ? (
+      {activePage === 'dashboard' ? (
+        <div className="flex-1 w-full relative min-w-0 flex flex-col h-svh">
+          <SocDashboard />
+        </div>
+      ) : activePage === 'investigations' ? (
         <div className="flex-1 w-full relative min-w-0 flex flex-col h-svh">
           <InvestigationsPage />
         </div>
