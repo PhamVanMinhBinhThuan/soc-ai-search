@@ -23,6 +23,7 @@ import {
   TabsList,
   TabsTrigger,
 } from '@/components/ui/tabs'
+import { toUiError } from '@/services/api-error-messages'
 import type { SearchPlanDto } from '@/types/soc'
 
 function JsonViewer({
@@ -81,11 +82,7 @@ function SearchPlanEditor({
       setIsRunning(true)
       await onRun(parsed)
     } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message)
-      } else {
-        setError('An unexpected error occurred')
-      }
+      setError(toUiError(err))
     } finally {
       setIsRunning(false)
     }

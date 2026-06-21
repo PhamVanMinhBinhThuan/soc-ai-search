@@ -56,10 +56,20 @@ public class SearchController {
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
-    ResponseEntity<SearchErrorResponse> handleUnreadableMessage() {
+    ResponseEntity<SearchErrorResponse> handleUnreadableMessage(HttpMessageNotReadableException exception) {
+        String detailMessage = "Request body cannot be parsed";
+        Throwable cause = exception.getCause();
+        if (cause instanceof com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException unrecognized) {
+            detailMessage = "Validation failed: Unrecognized field '" + unrecognized.getPropertyName() + "'. This field is not in the allowlist.";
+        } else if (cause instanceof com.fasterxml.jackson.databind.JsonMappingException mappingEx) {
+            detailMessage = "Invalid JSON structure: " + mappingEx.getOriginalMessage();
+        } else if (cause != null) {
+            detailMessage = cause.getMessage();
+        }
+
         return ResponseEntity
                 .badRequest()
-                .body(new SearchErrorResponse("Invalid request body", List.of("Request body cannot be parsed")));
+                .body(new SearchErrorResponse("Invalid request body", List.of(detailMessage)));
     }
 
     @ExceptionHandler(SearchExecutionException.class)
