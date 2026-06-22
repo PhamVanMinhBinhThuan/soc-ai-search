@@ -5,11 +5,12 @@ import {
 import { useEffect, useRef, useState } from 'react'
 
 import {
+  canEditSearchPlan,
   canExportCsv,
+  canViewAuditLogs,
   canViewBasicEventDetail,
   canViewHistory,
   canViewRawLog,
-  canEditSearchPlan,
 } from '@/auth/permissions'
 import { useSocAuth } from '@/auth/use-auth'
 import { EventDetailDrawer } from '@/components/soc/event-detail-drawer'
@@ -21,6 +22,7 @@ import {
   type ResultTab,
 } from '@/components/soc/result-tabs'
 import { SearchSection } from '@/components/soc/search-section'
+import { AuditLogsPage } from '@/components/soc/admin/audit-logs-page'
 import { InvestigationsPage } from '@/components/soc/investigations/investigations-page'
 import { SocDashboard } from '@/components/soc/dashboard/soc-dashboard'
 import {
@@ -91,6 +93,7 @@ function App() {
   const canUseExport = canExportCsv(permissionContext)
   const canUseRawLog = canViewRawLog(permissionContext)
   const canEditPlan = canEditSearchPlan(permissionContext)
+  const canUseAuditLogs = canViewAuditLogs(permissionContext)
   const [question, setQuestion] = useState(
     isMockMode ? initialScenario.question : '',
   )
@@ -106,7 +109,7 @@ function App() {
   const [activeTab, setActiveTab] = useState<ResultTab>(
     initialResponse?.mode === 'aggregation' ? 'analytics' : 'raw',
   )
-  const [activePage, setActivePage] = useState<'dashboard' | 'search' | 'investigations'>('search')
+  const [activePage, setActivePage] = useState<'dashboard' | 'search' | 'investigations' | 'audit-logs'>('search')
 
   const [detailOpen, setDetailOpen] = useState(false)
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null)
@@ -422,6 +425,10 @@ function App() {
     })
   }
 
+  const navigateToAuditLogs = () => {
+    setActivePage('audit-logs')
+  }
+
   const handleExport = async (overrideQueryId?: string) => {
     const targetQueryId = overrideQueryId ?? response?.query_id
     if (!targetQueryId || !canUseExport) {
@@ -495,11 +502,22 @@ function App() {
           activePage={activePage}
           onPageChange={setActivePage}
           onOpenHistory={() => { setHistoryOpen(true); void loadHistory(0) }}
+          onOpenAuditLogs={navigateToAuditLogs}
           onLogout={auth.signOut}
         />
       ) : null}
 
-      {activePage === 'dashboard' ? (
+      {activePage === 'audit-logs' ? (
+        canUseAuditLogs ? (
+          <AuditLogsPage onBack={() => setActivePage('search')} />
+        ) : (
+          <div className="flex h-full w-full flex-col items-center justify-center bg-zinc-950 text-rose-500">
+            <h1 className="text-2xl font-bold">403 Forbidden</h1>
+            <p className="mt-2 text-zinc-400">You do not have permission to view System Audit Logs.</p>
+            <Button className="mt-4" onClick={() => setActivePage('search')}>Return to Search</Button>
+          </div>
+        )
+      ) : activePage === 'dashboard' ? (
         <div className="flex-1 w-full relative min-w-0 flex flex-col h-svh">
           <SocDashboard />
         </div>

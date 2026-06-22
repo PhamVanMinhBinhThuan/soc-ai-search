@@ -67,19 +67,22 @@ export function SocSidebar({
   activePage,
   onPageChange,
   onOpenHistory,
+  onOpenAuditLogs,
   onLogout,
 }: {
   identity: string
   roles: string[]
   authLoading: boolean
   authEnabled: boolean
-  activePage?: 'dashboard' | 'search' | 'investigations'
-  onPageChange?: (page: 'dashboard' | 'search' | 'investigations') => void
+  activePage?: 'dashboard' | 'search' | 'investigations' | 'audit-logs'
+  onPageChange?: (page: 'dashboard' | 'search' | 'investigations' | 'audit-logs') => void
   onOpenHistory?: () => void
+  onOpenAuditLogs?: () => void
   onLogout?: () => void
 }) {
   const [expanded, setExpanded] = useState(false)
   const [investigationsOpen, setInvestigationsOpen] = useState(false)
+  const [adminOpen, setAdminOpen] = useState(false)
   const collapsed = !expanded
   const permissionContext = { roles, loading: authLoading }
   const historyVisible = canViewHistory(permissionContext)
@@ -260,38 +263,83 @@ export function SocSidebar({
 
         <div className="mt-auto flex flex-col gap-1.5 px-3">
           {adminVisible ? (
-            <CollapsedTooltip collapsed={collapsed} label="Admin Console">
-              <button
-                type="button"
-                aria-label="Admin Console"
-                title="Open Keycloak Admin Console"
-                onClick={() =>
-                  window.open(
-                    import.meta.env.VITE_KEYCLOAK_ADMIN_URL ??
-                      'http://localhost:8080/admin/master/console/#/soc-ai-search',
-                    '_blank',
-                    'noopener,noreferrer',
-                  )
-                }
-                className={cn(
-                  'flex h-10 w-full shrink-0 items-center rounded-xl border border-amber-400/15 bg-amber-400/8 text-amber-200 transition-colors hover:bg-amber-400/15 hover:text-amber-100',
-                  expanded ? 'justify-start px-3' : 'justify-center',
-                )}
-              >
-                <ShieldCheck className="size-5 shrink-0" />
-                <span
+            <div className="flex flex-col gap-1">
+              <CollapsedTooltip collapsed={collapsed} label="Admin Tools">
+                <button
+                  type="button"
+                  aria-label="Admin Tools"
+                  onClick={() => {
+                    if (collapsed) {
+                      setExpanded(true)
+                      setAdminOpen(true)
+                    } else {
+                      setAdminOpen(!adminOpen)
+                    }
+                  }}
                   className={cn(
-                    'overflow-hidden whitespace-nowrap text-left text-sm transition-[width,opacity,margin] duration-300',
-                    expanded
-                      ? 'ml-3 w-36 opacity-100'
-                      : 'ml-0 w-0 opacity-0',
+                    'relative flex h-10 w-full shrink-0 items-center rounded-xl border border-amber-400/15 transition-colors',
+                    expanded ? 'justify-start px-3' : 'justify-center',
+                    activePage === 'audit-logs'
+                      ? 'bg-amber-400/20 text-amber-300 ring-1 ring-amber-400/30'
+                      : 'bg-amber-400/8 text-amber-200 hover:bg-amber-400/15 hover:text-amber-100',
                   )}
                 >
-                  Admin Console
-                </span>
-              </button>
-            </CollapsedTooltip>
+                  <ShieldCheck className="size-5 shrink-0" />
+                  <span
+                    className={cn(
+                      'overflow-hidden whitespace-nowrap text-left text-sm transition-[width,opacity,margin] duration-300',
+                      expanded
+                        ? 'ml-3 w-36 opacity-100'
+                        : 'ml-0 w-0 opacity-0',
+                    )}
+                  >
+                    Admin Tools
+                  </span>
+                  {expanded && (
+                    <span className="ml-auto text-xs opacity-60">
+                      {adminOpen ? '▼' : '▶'}
+                    </span>
+                  )}
+                </button>
+              </CollapsedTooltip>
+
+              {expanded && adminOpen && (
+                <div className="ml-9 mt-1 flex flex-col gap-1 border-l border-amber-400/20 pl-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onOpenAuditLogs?.()
+                    }}
+                    className={cn(
+                      'flex h-8 w-full items-center gap-2 rounded-lg px-3 text-sm transition-colors text-left',
+                      activePage === 'audit-logs'
+                        ? 'bg-amber-400/20 text-amber-300'
+                        : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+                    )}
+                  >
+                    <History className="size-3.5 shrink-0" />
+                    System Audit Logs
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      window.open(
+                        import.meta.env.VITE_KEYCLOAK_ADMIN_URL ??
+                          'http://localhost:8080/admin/master/console/#/soc-ai-search',
+                        '_blank',
+                        'noopener,noreferrer',
+                      )
+                    }
+                    className="flex h-8 w-full items-center gap-2 rounded-lg px-3 text-sm transition-colors text-left text-muted-foreground hover:bg-secondary hover:text-foreground"
+                  >
+                    <ShieldCheck className="size-3.5 shrink-0" />
+                    Keycloak Console
+                  </button>
+                </div>
+              )}
+            </div>
           ) : null}
+
 
           {authEnabled && onLogout ? (
             <CollapsedTooltip collapsed={collapsed} label="Logout">

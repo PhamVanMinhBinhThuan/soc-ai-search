@@ -12,6 +12,42 @@ import type {
 const uuidPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
+export async function getAuditLogs(
+  page: number = 0,
+  size: number = 50,
+  signal?: AbortSignal,
+): Promise<{
+  items: import('@/types/soc').AuditLogItem[]
+  page: number
+  size: number
+  total: number
+  total_pages: number
+}> {
+  if (isMockMode) {
+    // Just return empty or mock if needed
+    return { items: [], page: 0, size: 0, total: 0, total_pages: 0 }
+  }
+
+  const query = new URLSearchParams({
+    page: page.toString(),
+    size: size.toString(),
+  })
+
+  const payload = await requestJson(`/api/v1/audit-logs?${query}`, { signal })
+
+  if (!isRecord(payload) || !Array.isArray(payload.content)) {
+    throw new Error('Invalid audit logs response')
+  }
+
+  return {
+    items: payload.content as import('@/types/soc').AuditLogItem[],
+    page: (payload.page_number as number) || 0,
+    size: (payload.page_size as number) || 0,
+    total: (payload.total_elements as number) || 0,
+    total_pages: (payload.total_pages as number) || 0,
+  }
+}
+
 function isNullableNumber(value: unknown) {
   return (
     value === null ||

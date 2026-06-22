@@ -218,3 +218,15 @@ export type MockScenario = {
   events: SearchEventDto[]
   summary: string
 }
+
+export type AuditLogItem = {
+  id: string
+  user_identity: string
+  question: string
+  mode: SearchMode
+  result_count: number | null
+  latency_ms: number | null
+  status: AuditStatus
+  error_message: string | null
+  created_at: string
+}

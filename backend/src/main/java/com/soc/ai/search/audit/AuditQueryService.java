@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.soc.ai.search.security.CurrentUserService;
+import com.soc.ai.search.security.RbacPermissionService;
 
 @Service
 public class AuditQueryService {
@@ -23,10 +24,12 @@ public class AuditQueryService {
 
     private final SearchQueryLogRepository repository;
     private final CurrentUserService currentUserService;
+    private final RbacPermissionService rbacPermissionService;
 
-    public AuditQueryService(SearchQueryLogRepository repository, CurrentUserService currentUserService) {
+    public AuditQueryService(SearchQueryLogRepository repository, CurrentUserService currentUserService, RbacPermissionService rbacPermissionService) {
         this.repository = repository;
         this.currentUserService = currentUserService;
+        this.rbacPermissionService = rbacPermissionService;
     }
 
     @Transactional(readOnly = true)
@@ -98,7 +101,13 @@ public class AuditQueryService {
 
     @Transactional(readOnly = true)
     public SearchHistoryDetailItem getHistoryDetail(java.util.UUID queryId) {
-        return repository.findByIdAndUserIdentity(queryId, currentUserService.currentIdentity())
+        boolean isAdmin = rbacPermissionService.hasAdmin(org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication());
+        
+        java.util.Optional<SearchQueryLog> logOptional = isAdmin 
+                ? repository.findById(queryId) 
+                : repository.findByIdAndUserIdentity(queryId, currentUserService.currentIdentity());
+                
+        return logOptional
                 .map(log -> new SearchHistoryDetailItem(
                         log.getId(),
                         log.getUserIdentity(),
