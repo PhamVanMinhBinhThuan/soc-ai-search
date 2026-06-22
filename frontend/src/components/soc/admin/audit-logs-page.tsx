@@ -1,12 +1,13 @@
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo } from "react"
 import { ShieldAlert, ArrowLeft, ChevronLeft, ChevronRight, Search, ShieldCheck } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { getAuditLogs } from "@/services/history-api"
-import { getSearchHistoryDetail } from "@/services/history-api"
+import { getAuditLogs, getSearchHistoryDetail } from "@/services/history-api"
 import type { AuditLogItem, SearchHistoryDetailDto } from "@/types/soc"
 import { ModeBadge, StatusBadge } from "../investigations/investigation-badges"
 import { InvestigationDetailPanel } from "../investigations/investigation-detail-panel"
+
+const FILTERS = ["All", "Success", "Failed", "SEARCH", "AGGREGATION"]
 
 export function AuditLogsPage({
   onBack,
@@ -23,6 +24,9 @@ export function AuditLogsPage({
   const [loading, setLoading] = useState(false)
   const [detailLoading, setDetailLoading] = useState(false)
   const [detailError, setDetailError] = useState<string | null>(null)
+
+  const [searchQuery, setSearchQuery] = useState('')
+  const [activeFilter, setActiveFilter] = useState('All')
 
   const fetchLogs = (targetPage: number) => {
     const abortController = new AbortController()
@@ -68,26 +72,43 @@ export function AuditLogsPage({
     setDetailError(null)
 
     getSearchHistoryDetail(selectedId, abortController.signal)
-      .then(res => {
-        setSelectedItemDetail(res)
-      })
+      .then(res => setSelectedItemDetail(res))
       .catch(err => {
         if (err.name !== 'AbortError') {
           console.error("Failed to fetch history detail", err)
           setDetailError("Không thể tải chi tiết. Backend có thể đang chặn quyền truy cập.")
         }
       })
-      .finally(() => {
-        setDetailLoading(false)
-      })
+      .finally(() => setDetailLoading(false))
 
     return () => abortController.abort()
   }, [selectedId])
 
+  const filteredItems = useMemo(() => {
+    return items.filter(item => {
+      // 1. Search Query Filter
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase()
+        if (
+          !item.question.toLowerCase().includes(query) &&
+          !item.user_identity.toLowerCase().includes(query)
+        ) {
+          return false
+        }
+      }
+      // 2. Pill Filter
+      if (activeFilter === 'Success') return item.status === 'SUCCESS'
+      if (activeFilter === 'Failed') return item.status === 'FAILED'
+      if (activeFilter === 'SEARCH') return item.mode === 'search'
+      if (activeFilter === 'AGGREGATION') return item.mode === 'aggregation'
+      return true
+    })
+  }, [items, searchQuery, activeFilter])
+
   return (
     <div className="flex h-full min-h-0 w-full flex-col bg-zinc-950 text-zinc-50">
       {/* Header */}
-      <header className="flex h-14 shrink-0 items-center justify-between border-b border-zinc-800 bg-zinc-900/50 px-4">
+      <header className="flex shrink-0 flex-col border-b border-zinc-800 bg-zinc-900/50 p-4">
         <div className="flex items-center gap-3">
           {onBack && (
             <Button
@@ -107,6 +128,41 @@ export function AuditLogsPage({
             </p>
           </div>
         </div>
+
+        {/* Search & Filters */}
+        <div className="mt-4 flex flex-col gap-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-500" />
+            <input
+              type="text"
+              placeholder="Search audit logs..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="h-10 w-full rounded-md border border-zinc-800 bg-zinc-900/50 pl-10 pr-4 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-cyan-500/50 focus:outline-none focus:ring-1 focus:ring-cyan-500/50 transition-all"
+            />
+          </div>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              {FILTERS.map(f => (
+                <button
+                  key={f}
+                  onClick={() => setActiveFilter(f)}
+                  className={cn(
+                    "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+                    activeFilter === f
+                      ? "border-cyan-500/50 bg-cyan-500/10 text-cyan-300"
+                      : "border-zinc-800 bg-zinc-900 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200"
+                  )}
+                >
+                  {f}
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-zinc-500">
+              💡 Tip: Click on any row to view full details
+            </p>
+          </div>
+        </div>
       </header>
 
       {/* Main Content Area */}
@@ -115,35 +171,69 @@ export function AuditLogsPage({
         <div
           className={cn(
             "flex h-full min-h-0 flex-col border-r border-zinc-800 transition-all duration-300",
-            selectedId ? "w-1/2" : "w-full"
+            selectedId ? "w-1/2 bg-zinc-950/50" : "w-full"
           )}
         >
-          {/* Table Container */}
+          {/* Table / Cards Container */}
           <div className="min-h-0 flex-1 overflow-auto">
             {loading && items.length === 0 ? (
               <div className="flex h-full items-center justify-center text-zinc-500">
                 <Search className="mr-2 size-4 animate-spin" />
                 Loading audit logs...
               </div>
-            ) : items.length === 0 ? (
+            ) : filteredItems.length === 0 ? (
               <div className="flex h-full flex-col items-center justify-center text-center text-zinc-500">
                 <ShieldAlert className="mb-4 size-10 opacity-20" />
-                <p>No audit logs found.</p>
+                <p>No audit logs match your filters.</p>
+              </div>
+            ) : selectedId ? (
+              // Cards View (when details open)
+              <div className="flex flex-col gap-2 p-4">
+                {filteredItems.map(item => {
+                  const isActive = item.query_id === selectedId
+                  const date = new Date(item.created_at)
+                  const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+
+                  return (
+                    <div
+                      key={item.query_id}
+                      onClick={() => setSelectedId(isActive ? null : item.query_id)}
+                      className={cn(
+                        "cursor-pointer rounded-lg border bg-zinc-900/50 p-4 transition-all hover:bg-zinc-800/80",
+                        isActive ? "border-cyan-500 bg-zinc-800 shadow-[0_0_15px_-3px_rgba(6,182,212,0.2)]" : "border-zinc-800"
+                      )}
+                    >
+                      <div className="mb-2 flex items-center justify-between text-xs text-zinc-500">
+                        <span className="font-mono">{timeStr}</span>
+                        <span>{item.user_identity}</span>
+                      </div>
+                      <p className="mb-3 line-clamp-2 text-sm font-medium leading-relaxed text-zinc-200">
+                        {item.question}
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <ModeBadge mode={item.mode} />
+                        <StatusBadge status={item.status} />
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
             ) : (
+              // Table View (full width)
               <table className="w-full text-left text-sm">
-                <thead className="sticky top-0 z-10 border-b border-zinc-800 bg-zinc-900/90 text-zinc-400 backdrop-blur-md">
+                <thead className="sticky top-0 z-10 border-b border-zinc-800 bg-zinc-900/90 text-xs font-semibold uppercase tracking-wider text-zinc-400 backdrop-blur-md">
                   <tr>
-                    <th className="px-4 py-3 font-medium">Timestamp</th>
-                    <th className="px-4 py-3 font-medium">User</th>
-                    <th className="px-4 py-3 font-medium">Action / Question</th>
-                    <th className="px-4 py-3 font-medium text-right">Results / Latency</th>
-                    <th className="px-4 py-3 font-medium">Mode</th>
-                    <th className="px-4 py-3 font-medium">Status</th>
+                    <th className="px-6 py-4">TIMESTAMP</th>
+                    <th className="px-6 py-4">USER</th>
+                    <th className="px-6 py-4">QUESTION</th>
+                    <th className="px-6 py-4 text-right">LATENCY</th>
+                    <th className="px-6 py-4 text-right">RESULTS</th>
+                    <th className="px-6 py-4">MODE</th>
+                    <th className="px-6 py-4">STATUS</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-800/50">
-                  {items.map((item) => {
+                  {filteredItems.map((item) => {
                     const isActive = item.query_id === selectedId
                     const date = new Date(item.created_at)
                     const dateStr = date.toLocaleDateString([], { month: 'short', day: 'numeric' })
@@ -154,30 +244,32 @@ export function AuditLogsPage({
                         key={item.query_id}
                         onClick={() => setSelectedId(isActive ? null : item.query_id)}
                         className={cn(
-                          "cursor-pointer transition-colors hover:bg-zinc-800/50",
+                          "cursor-pointer transition-colors hover:bg-zinc-800/80",
                           isActive && "bg-cyan-950/20"
                         )}
                       >
-                        <td className="whitespace-nowrap px-4 py-3 font-mono text-xs text-zinc-400">
+                        <td className="whitespace-nowrap px-6 py-4 font-mono text-xs text-zinc-400">
                           <span className="block text-zinc-500">{dateStr}</span>
                           <span>{timeStr}</span>
                         </td>
-                        <td className="px-4 py-3 text-sm text-zinc-300">
+                        <td className="px-6 py-4 text-sm text-zinc-300">
                           {item.user_identity}
                         </td>
-                        <td className="px-4 py-3">
+                        <td className="px-6 py-4">
                           <span className="line-clamp-2 text-sm font-medium text-zinc-200">
                             {item.question}
                           </span>
                         </td>
-                        <td className="whitespace-nowrap px-4 py-3 text-right font-mono text-xs text-zinc-400">
-                          <span className="block">{item.result_count?.toLocaleString() ?? '-'} items</span>
-                          <span className="text-zinc-500">{item.latency_ms ?? '-'}ms</span>
+                        <td className="whitespace-nowrap px-6 py-4 text-right font-mono text-xs text-zinc-500">
+                          {item.latency_ms ?? '-'}ms
                         </td>
-                        <td className="px-4 py-3">
+                        <td className="whitespace-nowrap px-6 py-4 text-right font-mono text-xs text-zinc-400">
+                          {item.result_count?.toLocaleString() ?? '-'}
+                        </td>
+                        <td className="px-6 py-4">
                           <ModeBadge mode={item.mode} />
                         </td>
-                        <td className="px-4 py-3">
+                        <td className="px-6 py-4">
                           <StatusBadge status={item.status} />
                         </td>
                       </tr>
@@ -189,9 +281,9 @@ export function AuditLogsPage({
           </div>
 
           {/* Pagination */}
-          <div className="flex items-center justify-between border-t border-zinc-800 bg-zinc-950 p-3 text-sm text-zinc-400">
+          <div className="flex shrink-0 items-center justify-between border-t border-zinc-800 bg-zinc-950 p-4 text-sm text-zinc-400">
             <div>
-              Page {page + 1} of {Math.max(1, totalPages)}
+              Page {page + 1} of {Math.max(1, totalPages)} &middot; {total.toLocaleString()} total
             </div>
             <div className="flex gap-2">
               <Button
