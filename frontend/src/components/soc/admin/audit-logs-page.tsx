@@ -7,7 +7,7 @@ import type { AuditLogItem, SearchHistoryDetailDto } from "@/types/soc"
 import { ModeBadge, StatusBadge } from "../investigations/investigation-badges"
 import { InvestigationDetailPanel } from "../investigations/investigation-detail-panel"
 
-const FILTERS = ["All", "Success", "Failed", "SEARCH", "AGGREGATION"]
+const FILTERS = ["All", "Success", "Failed", "Search", "Aggregation"]
 
 export function AuditLogsPage({
   onBack,
@@ -99,8 +99,8 @@ export function AuditLogsPage({
       // 2. Pill Filter
       if (activeFilter === 'Success') return item.status === 'SUCCESS'
       if (activeFilter === 'Failed') return item.status === 'FAILED'
-      if (activeFilter === 'SEARCH') return item.mode === 'search'
-      if (activeFilter === 'AGGREGATION') return item.mode === 'aggregation'
+      if (activeFilter === 'Search') return item.mode.toLowerCase() === 'search'
+      if (activeFilter === 'Aggregation') return item.mode.toLowerCase() === 'aggregation'
       return true
     })
   }, [items, searchQuery, activeFilter])
@@ -166,16 +166,16 @@ export function AuditLogsPage({
       </header>
 
       {/* Main Content Area */}
-      <div className="flex min-h-0 flex-1 overflow-hidden">
+      <div className="flex min-h-0 flex-1 overflow-hidden relative">
         {/* Master List */}
         <div
           className={cn(
-            "flex h-full min-h-0 flex-col border-r border-zinc-800 transition-all duration-300",
-            selectedId ? "w-1/2 bg-zinc-950/50" : "w-full"
+            "flex h-full min-h-0 flex-col border-r border-zinc-800 transition-all duration-300 ease-in-out shrink-0",
+            selectedId ? "w-0 hidden md:flex md:w-[35%] bg-zinc-950/50" : "w-full"
           )}
         >
           {/* Table / Cards Container */}
-          <div className="min-h-0 flex-1 overflow-auto">
+          <div className="min-h-0 flex-1 overflow-y-auto">
             {loading && items.length === 0 ? (
               <div className="flex h-full items-center justify-center text-zinc-500">
                 <Search className="mr-2 size-4 animate-spin" />
@@ -188,29 +188,36 @@ export function AuditLogsPage({
               </div>
             ) : selectedId ? (
               // Cards View (when details open)
-              <div className="flex flex-col gap-2 p-4">
+              <div className="flex flex-col gap-2 p-2">
                 {filteredItems.map(item => {
                   const isActive = item.query_id === selectedId
                   const date = new Date(item.created_at)
-                  const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+                  const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 
                   return (
                     <div
                       key={item.query_id}
                       onClick={() => setSelectedId(isActive ? null : item.query_id)}
                       className={cn(
-                        "cursor-pointer rounded-lg border bg-zinc-900/50 p-4 transition-all hover:bg-zinc-800/80",
-                        isActive ? "border-cyan-500 bg-zinc-800 shadow-[0_0_15px_-3px_rgba(6,182,212,0.2)]" : "border-zinc-800"
+                        "group w-full cursor-pointer rounded-lg border p-3 text-left transition-all",
+                        isActive
+                          ? "border-cyan-500/50 bg-cyan-500/[0.06] shadow-[0_0_0_1px_rgba(34,211,238,0.15),0_0_18px_-6px_rgba(34,211,238,0.5)]"
+                          : "border-zinc-800 bg-zinc-900/40 hover:border-zinc-700 hover:bg-zinc-900/70"
                       )}
                     >
-                      <div className="mb-2 flex items-center justify-between text-xs text-zinc-500">
-                        <span className="font-mono">{timeStr}</span>
-                        <span>{item.user_identity}</span>
+                      <div className="mb-1.5 flex items-center justify-between font-mono text-xs text-zinc-500">
+                        <span>{timeStr}</span>
+                        <span className="font-sans text-zinc-400">{item.user_identity}</span>
                       </div>
-                      <p className="mb-3 line-clamp-2 text-sm font-medium leading-relaxed text-zinc-200">
+                      <p
+                        className={cn(
+                          "mb-2 line-clamp-2 text-sm font-medium leading-snug text-pretty",
+                          isActive ? "text-zinc-100" : "text-zinc-300"
+                        )}
+                      >
                         {item.question}
                       </p>
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-1.5">
                         <ModeBadge mode={item.mode} />
                         <StatusBadge status={item.status} />
                       </div>
@@ -311,26 +318,33 @@ export function AuditLogsPage({
         </div>
 
         {/* Detail Panel */}
-        {selectedId && (
-          <div className="flex w-1/2 min-w-0 flex-col bg-zinc-900/30">
-            {detailLoading ? (
-              <div className="flex h-full items-center justify-center text-zinc-500">
-                <Search className="mr-2 size-4 animate-spin" />
-                Loading detail...
-              </div>
-            ) : detailError ? (
-              <div className="flex h-full flex-col items-center justify-center text-rose-400 p-6 text-center">
-                <ShieldAlert className="mb-4 size-10 opacity-50" />
-                <p>{detailError}</p>
-              </div>
-            ) : selectedItemDetail ? (
-              <InvestigationDetailPanel
-                item={selectedItemDetail}
-                onClose={() => setSelectedId(null)}
-              />
-            ) : null}
-          </div>
-        )}
+        <div
+          className={cn(
+            "min-h-0 overflow-hidden transition-all duration-300 ease-in-out shrink-0 bg-zinc-900/30",
+            selectedId ? "w-full opacity-100 md:w-[65%]" : "w-0 opacity-0"
+          )}
+        >
+          {selectedId && (
+            <div className="flex h-full flex-col">
+              {detailLoading ? (
+                <div className="flex h-full items-center justify-center text-zinc-500">
+                  <Search className="mr-2 size-4 animate-spin" />
+                  Loading detail...
+                </div>
+              ) : detailError ? (
+                <div className="flex h-full flex-col items-center justify-center text-rose-400 p-6 text-center">
+                  <ShieldAlert className="mb-4 size-10 opacity-50" />
+                  <p>{detailError}</p>
+                </div>
+              ) : selectedItemDetail ? (
+                <InvestigationDetailPanel
+                  item={selectedItemDetail}
+                  onClose={() => setSelectedId(null)}
+                />
+              ) : null}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )
