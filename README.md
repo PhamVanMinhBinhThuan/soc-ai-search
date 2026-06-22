@@ -1,6 +1,6 @@
 # 🛡️ SOC AI Search MVP
 
-<details>
+<details open>
   <summary><b>📖 Table of Contents</b></summary>
 
   - [🚀 Live Demonstration](#live-demonstration)

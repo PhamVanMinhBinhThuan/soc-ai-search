@@ -1,6 +1,6 @@
 # 🏗️ System Architecture - SOC AI Search MVP
 
-<details>
+<details open>
   <summary><b>📖 Table of Contents</b></summary>
 
   - [📝 1. Executive Summary](#1-executive-summary)

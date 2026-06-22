@@ -2,7 +2,7 @@
 
 ![Keycloak](https://img.shields.io/badge/Keycloak-EE0000?style=for-the-badge&logo=keycloak&logoColor=white) ![Spring Boot](https://img.shields.io/badge/spring_boot-%236DB33F.svg?style=for-the-badge&logo=spring-boot&logoColor=white)
 
-<details>
+<details open>
   <summary><b>📖 Table of Contents</b></summary>
 
   - [🔄 1. Identity Onboarding Workflow](#1-identity-onboarding-workflow)

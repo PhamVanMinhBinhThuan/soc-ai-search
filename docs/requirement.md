@@ -1,6 +1,6 @@
 # 📋 System Requirements Specification - SOC AI Search MVP
 
-<details>
+<details open>
   <summary><b>📖 Table of Contents</b></summary>
 
   - [🎯 1. Executive Objective](#1-executive-objective)

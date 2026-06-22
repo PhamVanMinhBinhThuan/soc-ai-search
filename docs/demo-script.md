@@ -1,6 +1,6 @@
 # 🎤 5-Minute Executive Demonstration Script - SOC AI Search MVP
 
-<details>
+<details open>
   <summary><b>📖 Table of Contents</b></summary>
 
   - [⏱️ 0:00 - 0:30 | Executive Overview](#000---030-executive-overview)

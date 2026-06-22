@@ -1,6 +1,6 @@
 # 📐 Architectural Decision Record: Search Engine Selection - SOC AI Search MVP
 
-<details>
+<details open>
   <summary><b>📖 Table of Contents</b></summary>
 
   - [🎯 1. Executive Conclusion](#1-executive-conclusion)
