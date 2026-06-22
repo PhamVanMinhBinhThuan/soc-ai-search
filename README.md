@@ -187,7 +187,7 @@ Demo credentials are sent separately and never stored in Git.
 | Login and view dashboard | Yes | Yes | Yes |
 | Run natural language search | Yes | Yes | Yes |
 | View event detail | Yes | Yes | Yes |
-| View own/recent history | Yes | Yes | Yes |
+| View own/recent history | Không | Có | Có |
 | Export CSV | Không | Có | Có |
 | View audit logs | No | No | Yes |
 | Manage Keycloak users | No | No | Admin Console only |

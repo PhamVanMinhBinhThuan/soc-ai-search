@@ -22,6 +22,7 @@ export function SearchSection({
   currentQueryId,
   isPinned,
   onTogglePin,
+  canPin = true,
 }: {
   question: string
   scenarios: MockScenario[]
@@ -33,6 +34,7 @@ export function SearchSection({
   currentQueryId?: string | null
   isPinned?: boolean
   onTogglePin?: (pinned: boolean) => void
+  canPin?: boolean
 }) {
   const canSubmit = question.trim().length > 0 && !isLoading
 
@@ -74,11 +76,12 @@ export function SearchSection({
           />
           <div className="flex shrink-0 flex-col gap-2 sm:items-end">
             <div className="flex items-center gap-2">
-              {currentQueryId && onTogglePin && (
+              {currentQueryId && canPin && (
                 <Button
                   type="button"
+                  size="sm"
                   variant="outline"
-                  onClick={() => onTogglePin(!isPinned)}
+                  onClick={() => onTogglePin?.(!isPinned)}
                   className={`px-3 border-border ${isPinned ? 'text-amber-400 bg-amber-400/10 hover:bg-amber-400/20' : 'text-muted-foreground hover:text-foreground hover:bg-zinc-800'}`}
                   title={isPinned ? 'Unpin this query' : 'Pin this query to Investigations'}
                 >

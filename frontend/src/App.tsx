@@ -574,6 +574,7 @@ function App() {
             currentQueryId={response?.query_id}
             isPinned={isCurrentQueryPinned}
             onTogglePin={handleTogglePinCurrentQuery}
+            canPin={canUseHistory}
           />
 
           {requestStatus === 'idle' ? (
