@@ -220,7 +220,7 @@ export type MockScenario = {
 }
 
 export type AuditLogItem = {
-  id: string
+  query_id: string
   user_identity: string
   question: string
   mode: SearchMode

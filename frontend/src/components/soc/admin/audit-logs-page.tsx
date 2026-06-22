@@ -144,15 +144,15 @@ export function AuditLogsPage({
                 </thead>
                 <tbody className="divide-y divide-zinc-800/50">
                   {items.map((item) => {
-                    const isActive = item.id === selectedId
+                    const isActive = item.query_id === selectedId
                     const date = new Date(item.created_at)
                     const dateStr = date.toLocaleDateString([], { month: 'short', day: 'numeric' })
                     const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
 
                     return (
                       <tr
-                        key={item.id}
-                        onClick={() => setSelectedId(isActive ? null : item.id)}
+                        key={item.query_id}
+                        onClick={() => setSelectedId(isActive ? null : item.query_id)}
                         className={cn(
                           "cursor-pointer transition-colors hover:bg-zinc-800/50",
                           isActive && "bg-cyan-950/20"
