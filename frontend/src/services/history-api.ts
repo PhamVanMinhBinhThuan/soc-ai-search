@@ -35,15 +35,15 @@ export async function getAuditLogs(
 
   const payload = await requestJson(`/api/v1/audit-logs?${query}`, { signal })
 
-  if (!isRecord(payload) || !Array.isArray(payload.content)) {
+  if (!isRecord(payload) || !Array.isArray(payload.items)) {
     throw new Error('Invalid audit logs response')
   }
 
   return {
-    items: payload.content as import('@/types/soc').AuditLogItem[],
-    page: (payload.page_number as number) || 0,
-    size: (payload.page_size as number) || 0,
-    total: (payload.total_elements as number) || 0,
+    items: payload.items as import('@/types/soc').AuditLogItem[],
+    page: (payload.page as number) || 0,
+    size: (payload.size as number) || 0,
+    total: (payload.total as number) || 0,
     total_pages: (payload.total_pages as number) || 0,
   }
 }
