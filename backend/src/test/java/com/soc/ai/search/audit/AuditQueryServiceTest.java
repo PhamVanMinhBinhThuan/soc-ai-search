@@ -22,8 +22,10 @@ class AuditQueryServiceTest {
             org.mockito.Mockito.mock(SearchQueryLogRepository.class);
     private final CurrentUserService currentUserService =
             org.mockito.Mockito.mock(CurrentUserService.class);
+    private final com.soc.ai.search.security.RbacPermissionService rbacPermissionService =
+            org.mockito.Mockito.mock(com.soc.ai.search.security.RbacPermissionService.class);
     private final AuditQueryService service =
-            new AuditQueryService(repository, currentUserService);
+            new AuditQueryService(repository, currentUserService, rbacPermissionService);
 
     @Test
     void historyUsesStableSortAndMapsQueryId() {

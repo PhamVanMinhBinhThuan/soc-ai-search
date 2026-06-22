@@ -25,6 +25,7 @@ class AuditQueryServicePinTest {
 
     private SearchQueryLogRepository repository;
     private CurrentUserService currentUserService;
+    private com.soc.ai.search.security.RbacPermissionService rbacPermissionService;
     private AuditQueryService service;
 
     private UUID queryId;
@@ -34,7 +35,8 @@ class AuditQueryServicePinTest {
     void setUp() {
         repository = mock(SearchQueryLogRepository.class);
         currentUserService = mock(CurrentUserService.class);
-        service = new AuditQueryService(repository, currentUserService);
+        rbacPermissionService = mock(com.soc.ai.search.security.RbacPermissionService.class);
+        service = new AuditQueryService(repository, currentUserService, rbacPermissionService);
 
         queryId = UUID.randomUUID();
         log = new SearchQueryLog(
@@ -93,6 +95,7 @@ class AuditQueryServicePinTest {
     @Test
     void getHistoryDetailSuccess() {
         when(currentUserService.currentIdentity()).thenReturn("analyst.demo");
+        when(rbacPermissionService.hasAdmin(any())).thenReturn(false);
         when(repository.findByIdAndUserIdentity(queryId, "analyst.demo")).thenReturn(Optional.of(log));
 
         var result = service.getHistoryDetail(queryId);
@@ -104,6 +107,7 @@ class AuditQueryServicePinTest {
     @Test
     void cannotGetHistoryDetailOfOtherUser() {
         when(currentUserService.currentIdentity()).thenReturn("other.user");
+        when(rbacPermissionService.hasAdmin(any())).thenReturn(false);
         when(repository.findByIdAndUserIdentity(queryId, "other.user")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.getHistoryDetail(queryId))

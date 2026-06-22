@@ -50,7 +50,7 @@ describe('SocSidebar RBAC navigation', () => {
       screen.queryByRole('button', { name: /investigations/i }),
     ).not.toBeInTheDocument()
     expect(
-      screen.queryByRole('button', { name: /admin console/i }),
+      screen.queryByRole('button', { name: /admin tools/i }),
     ).not.toBeInTheDocument()
     expectRemovedNavigationItems()
   })
@@ -65,7 +65,7 @@ describe('SocSidebar RBAC navigation', () => {
       screen.getByRole('button', { name: /investigations/i }),
     ).toBeInTheDocument()
     expect(
-      screen.queryByRole('button', { name: /admin console/i }),
+      screen.queryByRole('button', { name: /admin tools/i }),
     ).not.toBeInTheDocument()
     expectRemovedNavigationItems()
   })
@@ -77,7 +77,7 @@ describe('SocSidebar RBAC navigation', () => {
       screen.getByRole('button', { name: /event search/i }),
     ).toBeInTheDocument()
     expect(
-      screen.getByRole('button', { name: /admin console/i }),
+      screen.getByRole('button', { name: /admin tools/i }),
     ).toBeInTheDocument()
     expectRemovedNavigationItems()
   })
@@ -92,7 +92,7 @@ describe('SocSidebar RBAC navigation', () => {
       screen.queryByRole('button', { name: /investigations/i }),
     ).not.toBeInTheDocument()
     expect(
-      screen.queryByRole('button', { name: /admin console/i }),
+      screen.queryByRole('button', { name: /admin tools/i }),
     ).not.toBeInTheDocument()
     expectRemovedNavigationItems()
   })
