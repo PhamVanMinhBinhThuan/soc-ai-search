@@ -509,9 +509,11 @@ function App() {
 
       {activePage === 'audit-logs' ? (
         canUseAuditLogs ? (
-          <AuditLogsPage onBack={() => setActivePage('search')} />
+          <div className="flex-1 w-full relative min-w-0 flex flex-col h-svh">
+            <AuditLogsPage onBack={() => setActivePage('search')} />
+          </div>
         ) : (
-          <div className="flex h-full w-full flex-col items-center justify-center bg-zinc-950 text-rose-500">
+          <div className="flex-1 w-full relative min-w-0 flex flex-col h-svh items-center justify-center bg-zinc-950 text-rose-500">
             <h1 className="text-2xl font-bold">403 Forbidden</h1>
             <p className="mt-2 text-zinc-400">You do not have permission to view System Audit Logs.</p>
             <Button className="mt-4" onClick={() => setActivePage('search')}>Return to Search</Button>
