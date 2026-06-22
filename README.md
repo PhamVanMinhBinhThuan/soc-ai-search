@@ -58,12 +58,12 @@ flowchart LR
 - SearchPlan transparency: response trả `search_plan` và `generated_dsl` dạng JSON object, không phải string escaped.
 - Event detail drawer qua `GET /api/v1/events/{event_id}`; `event_id` map từ Elasticsearch `_id`.
 - AI summary best-effort/fallback: lỗi summary không làm search fail.
-- Recent investigation history, audit log, query replay, and a dedicated `All Investigations` page with Pinned query support.
-- Static Query Suggestions and Playbooks (e.g. Malware Triage, Failed login investigation) for context-aware next steps.
+- Recent investigation history, audit log, query replay, và trang `All Investigations` với tính năng Pin/Unpin (Ghim câu hỏi nhanh qua icon sao).
+- Thêm `Suggested next steps` (gợi ý điều tra tiếp theo) tự động theo ngữ cảnh sau mỗi kết quả search.
 - Live `SOC Overview Dashboard` fetching Total Events, Failed Logins, Critical Alerts, Events Over Time, and Top Source IPs with 10m auto-refresh (no LLM calls).
 - CSV export theo `query_id`, giới hạn 10.000 dòng, không nhận DSL từ client.
-- Keycloak OIDC/RBAC với `SOC_VIEWER`, `SOC_ANALYST`, `SOC_ADMIN`.
-- Frontend dark-mode SOC console, charts Recharts, raw event table, detail drawer, history sheet, full investigations view.
+- Hệ thống Full Auth: Đăng nhập, Đăng ký (Self-registration), Quên mật khẩu (gửi Email), cùng Keycloak OIDC/RBAC với các role `SOC_VIEWER`, `SOC_ANALYST`, `SOC_ADMIN`.
+- Frontend dark-mode SOC console tối ưu không gian hiển thị, biểu đồ Recharts, raw event table, detail drawer, history sheet.
 - CI/CD GitHub Actions: backend verify, frontend test/lint/build, compose config và deploy VPS qua SSH.
 
 ## Tech Stack
@@ -161,18 +161,19 @@ Open `http://localhost:8082/admin`. Admin credential is configured through `.env
 
 ### User Onboarding Flow
 
-Self-registration is disabled. Admin creates all user accounts:
+Người dùng có thể tự đăng ký tài khoản (Self-registration) hoặc được Admin cấp tài khoản:
 
 ```text
-Admin creates user in Keycloak Admin Console
+Người dùng tự Đăng ký (Register) trên trang Auth
         ↓
-Admin assigns role (SOC_VIEWER / SOC_ANALYST / SOC_ADMIN)
+Người dùng xác thực Email (Verify Email)
         ↓
-Admin sends "Execute actions email" (Verify Email + Update Password)
+Admin cấp quyền role phù hợp (SOC_VIEWER / SOC_ANALYST / SOC_ADMIN) nếu cần nâng quyền
         ↓
-User receives email, clicks link, sets password and verifies email
-        ↓
-User logs in to SOC AI Search
+Người dùng đăng nhập vào SOC AI Search
+
+Hoặc nếu quên mật khẩu:
+Người dùng nhấn "Forgot Password" -> Nhận email -> Đặt lại mật khẩu mới.
 ```
 
 For this flow to work, SMTP must be configured in Keycloak. See `infra/keycloak/README.md` for detailed SMTP setup. Without SMTP, admin can set a temporary password manually from the Credentials tab.
