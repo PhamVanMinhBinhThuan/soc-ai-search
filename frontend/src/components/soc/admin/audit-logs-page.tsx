@@ -64,9 +64,7 @@ export function AuditLogsPage({
     }
 
     const abortController = new AbortController()
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setDetailLoading(true)
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setDetailError(null)
 
     getSearchHistoryDetail(selectedId, abortController.signal)

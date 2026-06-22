@@ -14,8 +14,8 @@ const flagByCountryCode: Record<string, string> = {
   VN: vnFlag,
 }
 
-export function CountryCode({ code }: { code: string }) {
-  const normalizedCode = code.trim().toUpperCase()
+export function CountryCode({ code }: { code?: string | null }) {
+  const normalizedCode = code?.trim().toUpperCase() || ''
   const flag = flagByCountryCode[normalizedCode]
 
   return (

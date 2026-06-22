@@ -278,7 +278,7 @@ function RawEventsView({
               }}
             >
               <TableCell className="font-mono text-xs text-muted-foreground">
-                {event.timestamp.replace('T', ' ').replace('Z', '')}
+                {event.timestamp?.replace('T', ' ')?.replace('Z', '') || 'N/A'}
               </TableCell>
               <TableCell>
                 <SeverityBadge severity={event.severity} />
