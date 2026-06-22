@@ -1,21 +1,39 @@
-﻿# Sequence Flow - SOC AI Search MVP
+# 🌊 System Sequence Flows - SOC AI Search MVP
 
-## 1. Tổng quan
+<details>
+  <summary><b>📖 Table of Contents</b></summary>
 
-Tài liệu này mô tả các flow runtime chính của SOC AI Search MVP:
+  - [📝 1. Executive Summary](#1-executive-summary)
+  - [🔐 2. Authentication and RBAC Pipeline](#2-authentication-and-rbac-pipeline)
+  - [🔍 3. Natural Language Search Pipeline](#3-natural-language-search-pipeline)
+  - [🛠️ 4. LLM Fault Tolerance: Repair-Once Flow](#4-llm-fault-tolerance-repair-once-flow)
+  - [📊 5. Natural Language Aggregation Pipeline](#5-natural-language-aggregation-pipeline)
+  - [⚙️ 6. Technical SearchPlan Execution Pipeline](#6-technical-searchplan-execution-pipeline)
+  - [🔬 7. Forensic Event Drilldown Pipeline](#7-forensic-event-drilldown-pipeline)
+  - [🤖 8. Best-Effort AI Summarization Logic](#8-best-effort-ai-summarization-logic)
+  - [📜 9. Immutable Audit and Query Telemetry Pipeline](#9-immutable-audit-and-query-telemetry-pipeline)
+  - [💾 10. Secure CSV Extraction Pipeline (Replay Mode)](#10-secure-csv-extraction-pipeline-replay-mode)
+  - [🛡️ 11. Core Error Handling Philosophy](#11-core-error-handling-philosophy)
+</details>
 
-1. Login và RBAC.
-2. Natural language search.
-3. Natural language aggregation.
-4. Technical SearchPlan endpoint.
-5. Event detail.
-6. Summary best-effort.
-7. Audit/history.
-8. CSV export.
+## 📝 1. Executive Summary
 
-Contract API dùng JSON snake_case như `query_id`, `original_question`, `generated_dsl`, `search_plan`, `aggregation_results`, `chart_metadata`.
+This document delineates the primary runtime execution flows comprising the SOC AI Search MVP:
 
-## 2. Login và RBAC
+1. 🔐 Identity Authentication and Role-Based Access Control (RBAC).
+2. 🔍 Natural Language Search Execution.
+3. 📊 Natural Language Analytical Aggregation.
+4. ⚙️ Technical SearchPlan Execution.
+5. 🔬 Forensic Event Detail Extraction.
+6. 🤖 Best-Effort AI Summarization.
+7. 📜 System Audit and Query History Logging.
+8. 💾 Secure CSV Data Extraction (Replay Pipeline).
+
+All API contracts rigidly adhere to a `snake_case` JSON standard (e.g., `query_id`, `original_question`, `generated_dsl`, `search_plan`, `aggregation_results`, `chart_metadata`).
+
+## 🔐 2. Authentication and RBAC Pipeline
+
+![Keycloak](https://img.shields.io/badge/Keycloak-EE0000?style=for-the-badge&logo=keycloak&logoColor=white) ![Spring Boot](https://img.shields.io/badge/spring_boot-%236DB33F.svg?style=for-the-badge&logo=spring-boot&logoColor=white)
 
 ```mermaid
 sequenceDiagram
@@ -25,20 +43,22 @@ sequenceDiagram
     participant KC as Keycloak
     participant BE as Spring Boot Backend
 
-    User->>FE: Open SOC console
-    FE->>KC: Redirect to OIDC login
-    KC-->>FE: Authorization code callback
-    FE->>KC: Exchange code for tokens
-    KC-->>FE: ID token + access token
-    FE->>BE: GET /api/v1/auth/me with Bearer token
-    BE->>KC: Validate JWT issuer/JWKS
-    BE-->>FE: identity + roles + permissions
-    FE-->>User: Render role-aware UI
+    User->>FE: Access SOC Investigation Console
+    FE->>KC: Redirect via OIDC Authorization Flow
+    KC-->>FE: Authorization Code Callback
+    FE->>KC: Cryptographic Code Exchange
+    KC-->>FE: Transmit ID Token + Access Token (JWT)
+    FE->>BE: GET /api/v1/auth/me (Bearer Token injected)
+    BE->>KC: Validate JWT Issuer and JWKS Signatures
+    BE-->>FE: Return Principal Identity, Roles, and Permissions
+    FE-->>User: Render Role-Gated User Interface
 ```
 
-Backend authorization remains authoritative even if frontend hides or disables UI actions.
+*Architectural Principle:* Backend authorization policies maintain absolute authority over the transaction lifecycle, irrespective of the UI elements rendered or disabled by the frontend.
 
-## 3. Natural language search
+## 🔍 3. Natural Language Search Pipeline
+
+![React](https://img.shields.io/badge/react-20232A?style=for-the-badge&logo=react&logoColor=61DAFB) ![Spring Boot](https://img.shields.io/badge/spring_boot-%236DB33F.svg?style=for-the-badge&logo=spring-boot&logoColor=white) ![Gemini](https://img.shields.io/badge/Google_Gemini-8E75C2?style=for-the-badge&logo=googlegemini&logoColor=white) ![Elasticsearch](https://img.shields.io/badge/elasticsearch-%23005571.svg?style=for-the-badge&logo=elasticsearch&logoColor=white)
 
 ```mermaid
 sequenceDiagram
@@ -56,30 +76,30 @@ sequenceDiagram
     participant Audit as AuditService
     participant PG as PostgreSQL
 
-    User->>FE: Submit question, page, size
+    User->>FE: Submit NLP query, pagination directives
     FE->>API: POST /api/v1/search
-    API->>NL: search(request, identity)
-    NL->>LLM: System prompt + question + schema/allowlist
-    LLM-->>NL: Raw SearchPlan JSON
-    NL->>Parser: parse(raw JSON)
-    Parser->>Guard: validate SearchPlan
-    Guard-->>Parser: valid
-    Parser-->>NL: SearchPlan
-    NL->>NL: Override page/size from request
-    NL->>Compiler: compile SearchPlan
-    Compiler-->>NL: Compiled query with generated_dsl
-    NL->>ES: Execute search with timeout + track_total_hits
-    ES-->>NL: Hits + total
-    NL->>Summary: Build bounded summary
-    Summary-->>NL: summary + summary_source
-    NL->>Audit: save success
-    Audit->>PG: insert search_query_logs
-    PG-->>Audit: query_id
-    NL-->>API: NaturalLanguageSearchResponse
-    API-->>FE: 200 OK
+    API->>NL: Invokes search(request, identity)
+    NL->>LLM: Dispatches System Prompt + User Query + Schema Allowlist
+    LLM-->>NL: Returns Raw SearchPlan JSON
+    NL->>Parser: Executes strict parse(raw JSON)
+    Parser->>Guard: Enforces Bean Validation against SearchPlan
+    Guard-->>Parser: Validation Succeeded
+    Parser-->>NL: Structured SearchPlan Object
+    NL->>NL: Overrides pagination with strict API limits
+    NL->>Compiler: Compiles SearchPlan into DSL
+    Compiler-->>NL: Returns Compiled Query alongside generated_dsl
+    NL->>ES: Executes Elasticsearch query (Timeout + track_total_hits applied)
+    ES-->>NL: Returns Document Hits + Total Count
+    NL->>Summary: Triggers asynchronous bounded summary generation
+    Summary-->>NL: Returns summary payload + summary_source
+    NL->>Audit: Records successful transaction
+    Audit->>PG: Commits telemetry to search_query_logs
+    PG-->>Audit: Returns immutable query_id
+    NL-->>API: Constructs NaturalLanguageSearchResponse
+    API-->>FE: HTTP 200 OK
 ```
 
-Search response shape:
+**Standardized Search Response Schema:**
 
 ```json
 {
@@ -101,7 +121,7 @@ Search response shape:
 }
 ```
 
-## 4. Repair once flow
+## 🛠️ 4. LLM Fault Tolerance: Repair-Once Flow
 
 ```mermaid
 sequenceDiagram
@@ -110,24 +130,24 @@ sequenceDiagram
     participant LLM as LlmClient
     participant Parser as Parser/Validator
 
-    NL->>LLM: Initial prompt
-    LLM-->>NL: Invalid output
-    NL->>Parser: parse + validate
-    Parser-->>NL: Error details
-    NL->>LLM: Repair prompt with question, bad output, errors
-    LLM-->>NL: Repaired raw JSON
-    NL->>Parser: parse + validate
+    NL->>LLM: Dispatch Initial Prompt
+    LLM-->>NL: Return Malformed/Invalid Output
+    NL->>Parser: Execute Parse + Validate
+    Parser-->>NL: Return Structural Error Details
+    NL->>LLM: Dispatch Repair Prompt (Injecting Original Query, Malformed Output, and Error Trace)
+    LLM-->>NL: Return Repaired Raw JSON
+    NL->>Parser: Execute Parse + Validate
 
-    alt valid after repair
-        Parser-->>NL: SearchPlan
-    else still invalid
-        NL-->>NL: Controlled 502/503 error
+    alt Validation Succeeds Post-Repair
+        Parser-->>NL: Return Structured SearchPlan
+    else Validation Fails Post-Repair
+        NL-->>NL: Trigger Controlled HTTP 502/503 Exception
     end
 ```
 
-Repair is limited to one attempt.
+*Constraint:* The system strictly limits self-healing operations to a maximum of one attempt to prevent recursive loop degradation.
 
-## 5. Natural language aggregation
+## 📊 5. Natural Language Aggregation Pipeline
 
 ```mermaid
 sequenceDiagram
@@ -143,29 +163,29 @@ sequenceDiagram
     participant Summary as SummaryService
     participant Audit as AuditService
 
-    User->>FE: Ask aggregation question
+    User->>FE: Submit Analytical Aggregation Query
     FE->>API: POST /api/v1/search
-    API->>NL: search(request, identity)
-    NL->>LLM: Prompt with aggregation schema
-    LLM-->>NL: SearchPlan mode=aggregation
-    NL->>Guard: validate aggregation plan
-    NL->>Compiler: compile aggregation DSL
-    Compiler-->>NL: generated_dsl
-    NL->>ES: Execute aggregation
-    ES-->>NL: hits.total + buckets
-    NL->>Summary: Summarize aggregation_results directly
-    Summary-->>NL: summary or fallback
-    NL->>Audit: save success/failure
-    NL-->>API: Aggregation response
-    API-->>FE: 200 OK
+    API->>NL: Invokes search(request, identity)
+    NL->>LLM: Dispatches Prompt integrating Aggregation Schema
+    LLM-->>NL: Returns SearchPlan (mode=aggregation)
+    NL->>Guard: Validates Aggregation Operations
+    NL->>Compiler: Compiles Aggregation DSL
+    Compiler-->>NL: Returns generated_dsl
+    NL->>ES: Executes Aggregation Pipeline
+    ES-->>NL: Returns hits.total + aggregation buckets
+    NL->>Summary: Summarizes existing aggregation_results without querying ES
+    Summary-->>NL: Returns contextual summary or deterministic fallback
+    NL->>Audit: Records transaction telemetry
+    NL-->>API: Constructs Aggregation Response
+    API-->>FE: HTTP 200 OK
 ```
 
-Aggregation response shape:
+**Standardized Aggregation Response Schema:**
 
 ```json
 {
   "query_id": "uuid",
-  "original_question": "Top 10 IP có nhiều alert nhất tháng này",
+  "original_question": "Show the top 10 IP addresses with the most alerts this month",
   "mode": "aggregation",
   "search_plan": {},
   "generated_dsl": {},
@@ -185,36 +205,36 @@ Aggregation response shape:
 }
 ```
 
-## 6. Technical SearchPlan endpoint
+## ⚙️ 6. Technical SearchPlan Execution Pipeline
 
-Endpoint:
+**System Endpoint:**
 
 ```text
 POST /api/v1/search/plan
 ```
 
-This endpoint is for validating the SearchPlan core without LLM.
+This endpoint is structurally designed to validate the core SearchPlan architecture, bypassing the LLM integration entirely.
 
 ```mermaid
 sequenceDiagram
     autonumber
-    participant Client as Swagger/Tester
+    participant Client as Swagger/Automation Tester
     participant API as SearchPlan Controller
     participant Guard as SearchPlanValidator
     participant Compiler as SearchPlanCompiler
     participant ES as Elasticsearch
 
-    Client->>API: POST SearchPlan JSON
-    API->>Guard: validate
-    Guard-->>API: ok
-    API->>Compiler: compile
-    Compiler-->>API: generated_dsl
-    API->>ES: execute search or aggregation
-    ES-->>API: response
-    API-->>Client: normalized response
+    Client->>API: POST Structural SearchPlan JSON
+    API->>Guard: Enforces Validation
+    Guard-->>API: Validation Succeeded
+    API->>Compiler: Compiles DSL
+    Compiler-->>API: Returns generated_dsl
+    API->>ES: Executes Search or Aggregation operation
+    ES-->>API: Returns Cluster Response
+    API-->>Client: Returns Normalized Response Payload
 ```
 
-## 7. Event detail
+## 🔬 7. Forensic Event Drilldown Pipeline
 
 ```mermaid
 sequenceDiagram
@@ -224,20 +244,20 @@ sequenceDiagram
     participant ES as Elasticsearch
 
     FE->>API: GET /api/v1/events/{event_id}
-    API->>API: trim and validate event_id
-    API->>ES: Get document by _id
+    API->>API: Trims and sanitizes event_id parameter
+    API->>ES: Executes Direct Document Lookup via _id
 
-    alt found
-        ES-->>API: _id, _index, _source
-        API-->>FE: EventDetailResponse including raw
-    else not found
-        API-->>FE: 404 { "message": "Event not found: ..." }
-    else search dependency error
-        API-->>FE: 503 controlled error
+    alt Document Located
+        ES-->>API: Returns _id, _index, and _source payload
+        API-->>FE: Returns EventDetailResponse containing raw log data
+    else Document Not Found
+        API-->>FE: HTTP 404 { "message": "Event not found: ..." }
+    else Infrastructure Dependency Failure
+        API-->>FE: Controlled HTTP 503 Exception
     end
 ```
 
-## 8. Summary best-effort
+## 🤖 8. Best-Effort AI Summarization Logic
 
 ```mermaid
 sequenceDiagram
@@ -247,60 +267,64 @@ sequenceDiagram
     participant ES as Elasticsearch
     participant LLM as LlmClient
 
-    Search->>Summary: Search/aggregation response data
+    Search->>Summary: Submits Search/Aggregation response payload
 
-    alt mode search and total > 0
-        Summary->>ES: At most one bounded summary query
-        ES-->>Summary: compact statistics
-        Summary->>LLM: sanitized payload max size
-    else mode aggregation and buckets exist
-        Summary->>LLM: top aggregation_results only
-    else no result
-        Summary-->>Search: deterministic fallback, no LLM call
+    alt mode == search AND total_hits > 0
+        Summary->>ES: Executes a maximum of one bounded contextual query
+        ES-->>Summary: Returns compact statistical telemetry
+        Summary->>LLM: Dispatches heavily sanitized, size-constrained payload
+    else mode == aggregation AND buckets exist
+        Summary->>LLM: Dispatches top-tier aggregation_results exclusively
+    else Dataset is Empty
+        Summary-->>Search: Injects deterministic fallback string (No LLM invocation)
     end
 
-    alt LLM valid 3-5 plain text sentences
-        LLM-->>Summary: summary
+    alt LLM returns valid analytical prose (3-5 sentences)
+        LLM-->>Summary: Valid Summary payload
         Summary-->>Search: summary_source=llm
-    else timeout/invalid/error
-        Summary-->>Search: fallback summary_source=fallback
+    else LLM Timeout / Invalid JSON / Upstream Error
+        Summary-->>Search: Injects deterministic fallback (summary_source=fallback)
     end
 ```
 
-## 9. Audit and history
+## 📜 9. Immutable Audit and Query Telemetry Pipeline
+
+![PostgreSQL](https://img.shields.io/badge/postgresql-%23316192.svg?style=for-the-badge&logo=postgresql&logoColor=white)
 
 ```mermaid
 sequenceDiagram
     autonumber
-    participant Search as Search Flow
+    participant Search as Search Execution Flow
     participant Audit as AuditPersistenceService
     participant PG as PostgreSQL
 
-    alt success
-        Search->>Audit: saveSuccess(query_id, plan, dsl, result_count, latency)
-    else failure
-        Search->>Audit: saveFailure(query_id, status, failure_stage, sanitized_error)
+    alt Transaction Success
+        Search->>Audit: Executes saveSuccess(query_id, plan, dsl, result_count, latency)
+    else Transaction Failure
+        Search->>Audit: Executes saveFailure(query_id, status, failure_stage, sanitized_error)
     end
 
-    Audit->>PG: short transaction insert
-    PG-->>Audit: persisted
+    Audit->>PG: Commits payload via short-lived transactional insert
+    PG-->>Audit: Acknowledges Persistence
 ```
 
-History endpoint:
+**History Retrieval Endpoint:**
 
 ```text
 GET /api/v1/search/history?page=0&size=20
 ```
 
-Audit endpoint:
+**Administrative Audit Endpoint:**
 
 ```text
 GET /api/v1/audit-logs?page=0&size=50
 ```
 
-Both return paged response with `items`, `page`, `size`, `total`, `total_pages`.
+*Both endpoints yield standard paginated payloads containing: `items`, `page`, `size`, `total`, and `total_pages`.*
 
-## 10. CSV export
+## 💾 10. Secure CSV Extraction Pipeline (Replay Mode)
+
+![Spring Boot](https://img.shields.io/badge/spring_boot-%236DB33F.svg?style=for-the-badge&logo=spring-boot&logoColor=white) ![PostgreSQL](https://img.shields.io/badge/postgresql-%23316192.svg?style=for-the-badge&logo=postgresql&logoColor=white)
 
 ```mermaid
 sequenceDiagram
@@ -313,28 +337,28 @@ sequenceDiagram
     participant Compiler as Compiler
     participant ES as Elasticsearch
 
-    User->>FE: Click Export CSV
+    User->>FE: Invokes CSV Export Action
     FE->>API: GET /api/v1/search/{query_id}/export.csv
-    API->>PG: Load stored query by query_id
-    PG-->>API: SearchPlan snapshot
-    API->>Guard: validate SearchPlan
-    API->>Compiler: compile DSL
-    API->>ES: Replay live query with max 10000 rows
-    ES-->>API: Current result set
-    API-->>FE: CSV stream + headers
+    API->>PG: Retrieves persisted SearchPlan snapshot mapped to query_id
+    PG-->>API: Returns SearchPlan Snapshot
+    API->>Guard: Enforces structural validation on SearchPlan
+    API->>Compiler: Re-compiles executable DSL
+    API->>ES: Executes Live Replay Query (Hard-capped at 10,000 document limit)
+    ES-->>API: Returns truncated result set
+    API-->>FE: Streams text/csv payload + Security Headers
 ```
 
-CSV headers exposed to browser:
+**Browser-Exposed Security Headers:**
 
-- `Content-Disposition`
-- `X-Export-Truncated`
+- 📑 `Content-Disposition` (Dictates safe file download handling).
+- ⚠️ `X-Export-Truncated` (Signals to the UI whether the 10,000 document limit was breached).
 
-## 11. Error handling principles
+## 🛡️ 11. Core Error Handling Philosophy
 
-- Bad request: 400 with clear message.
-- Unauthorized: 401.
-- Forbidden by role: 403.
-- Event not found: 404.
-- LLM unavailable or invalid after repair: controlled 502/503.
-- Elasticsearch dependency error: controlled 503.
-- No stack trace or internal exception class in API response.
+- ❌ **Malformed Client Requests:** HTTP 400 accompanied by a sanitized string explaining the breach.
+- 🚫 **Unauthenticated Access:** HTTP 401.
+- 👮 **RBAC Entitlement Violation:** HTTP 403.
+- 🕳️ **Resource Resolution Failure:** HTTP 404.
+- 🤖 **LLM Outage or Unrecoverable Repair:** Controlled HTTP 502/503.
+- 📉 **Elasticsearch Outage:** Controlled HTTP 503.
+- ⚠️ **Critical Security Mandate:** Raw stack traces, internal exception classes, or unhandled null pointers must **never** leak into external API payloads.

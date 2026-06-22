@@ -1,143 +1,163 @@
-# Auth Onboarding Guide
+# 🔐 Authentication & Identity Onboarding Guide
 
-This document describes the user onboarding flow for SOC AI Search. Users are created by an admin; there is no public self-registration.
+![Keycloak](https://img.shields.io/badge/Keycloak-EE0000?style=for-the-badge&logo=keycloak&logoColor=white) ![Spring Boot](https://img.shields.io/badge/spring_boot-%236DB33F.svg?style=for-the-badge&logo=spring-boot&logoColor=white)
 
-## Onboarding Flow
+<details>
+  <summary><b>📖 Table of Contents</b></summary>
+
+  - [🔄 1. Identity Onboarding Workflow](#1-identity-onboarding-workflow)
+  - [📋 2. Administrator Provisioning Playbook](#2-administrator-provisioning-playbook)
+    - [👤 2.1. Identity Creation](#21-identity-creation)
+    - [🛡️ 2.2. Role Assignment & Entitlements](#22-role-assignment-entitlements)
+    - [📧 2.3. Dispatching Authentication Directives](#23-dispatching-authentication-directives)
+    - [🧑‍💻 2.4. End-User Action Lifecycle](#24-end-user-action-lifecycle)
+  - [📨 3. SMTP Infrastructure Providers](#3-smtp-infrastructure-providers)
+    - [Provider Matrix Comparison](#provider-matrix-comparison)
+  - [🆘 4. Fallback Workflow: Manual Password Provisioning](#4-fallback-workflow-manual-password-provisioning)
+  - [🩺 5. Incident Troubleshooting Guide](#5-incident-troubleshooting-guide)
+    - [❌ 5.1. User fails to receive the onboarding email](#51-user-fails-to-receive-the-onboarding-email)
+    - [❌ 5.2. Keycloak throws an "Invalid redirect URI" error](#52-keycloak-throws-an-invalid-redirect-uri-error)
+    - [❌ 5.3. User fails to authenticate post-password establishment](#53-user-fails-to-authenticate-post-password-establishment)
+    - [❌ 5.4. Required actions fail to trigger for new identities](#54-required-actions-fail-to-trigger-for-new-identities)
+  - [🛡️ 6. Enterprise Security Posture](#6-enterprise-security-posture)
+</details>
+
+This document delineates the standardized identity provisioning and onboarding workflow for SOC AI Search. To adhere to strict enterprise security postures, identities are centrally managed and provisioned by an Administrator; public self-registration is structurally disabled by default.
+
+## 🔄 1. Identity Onboarding Workflow
 
 ```text
-Admin creates user in Keycloak Admin Console
+Administrator provisions identity within the Keycloak Admin Console
         ↓
-Admin fills: username, email, first name, last name
+Administrator populates core telemetry: username, email, first name, last name
         ↓
-Admin assigns realm role: SOC_VIEWER / SOC_ANALYST / SOC_ADMIN
+Administrator assigns target Realm Role: SOC_VIEWER / SOC_ANALYST / SOC_ADMIN
         ↓
-Admin sends "Execute actions email" (Verify Email + Update Password)
+Administrator dispatches an "Execute Actions Email" (Verify Email + Update Password directives)
         ↓
-User receives email with action link
+User receives secure cryptographic action link via Email
         ↓
-User clicks link → sets password → verifies email
+User authenticates link → Establishes secure password → Verifies email address authenticity
         ↓
-User logs in to SOC AI Search
+User successfully authenticates into the SOC AI Search Console
         ↓
-Frontend shows role-appropriate UI (export, audit, etc.)
+Frontend Application resolves JWT claims to render Role-Appropriate UI (export, audit interfaces, etc.)
 ```
 
-## Admin Step-By-Step
+## 📋 2. Administrator Provisioning Playbook
 
-### 1. Create User
+### 👤 2.1. Identity Creation
 
-1. Open Keycloak Admin Console:
-   - Local: `http://localhost:8082/admin`
-   - Production: `https://auth.soc-ai-search.app/admin`
-2. Select realm **soc-ai-search** (top-left dropdown).
+1. Access the Keycloak Administrative Console:
+   - **Local Environment:** `http://localhost:8082/admin`
+   - **Production Environment:** `https://auth.soc-ai-search.app/admin`
+2. Select the designated target realm: **soc-ai-search** (located in the top-left navigational dropdown).
 3. Navigate to **Users** → **Create new user**.
-4. Fill in:
-   - **Username**: e.g. `new.analyst`
-   - **Email**: user's real email or Mailtrap test address
-   - **First name** and **Last name**
-   - **Email verified**: OFF (will be verified through email action)
-5. Click **Create**.
+4. Populate the Identity attributes:
+   - **Username**: Standardized nomenclature (e.g., `new.analyst`).
+   - **Email**: The user's corporate email address (or Mailtrap sink address for testing).
+   - **First name** and **Last name**.
+   - **Email verified**: Ensure this toggle is **OFF** (verification will be handled asynchronously via the email action directive).
+5. Click **Create** to persist the identity.
 
-### 2. Assign Role
+### 🛡️ 2.2. Role Assignment & Entitlements
 
-1. Open the newly created user's detail page.
-2. Go to **Role mapping** tab.
-3. Click **Assign role**.
-4. Filter by **realm roles**.
-5. Select the appropriate role:
+1. Access the newly created user's identity detail panel.
+2. Navigate to the **Role mapping** tab.
+3. Select **Assign role**.
+4. Filter by available **realm roles**.
+5. Assign the corresponding enterprise role:
 
-| Role | Capabilities |
+| Authorized Role | Entitlement Capabilities |
 | --- | --- |
-| `SOC_VIEWER` | View dashboard, search, event details, own history |
-| `SOC_ANALYST` | All viewer capabilities + CSV export |
-| `SOC_ADMIN` | All analyst capabilities + audit logs + Keycloak user management |
+| `SOC_VIEWER` | Read-only access to dashboard, search operations, event drilldowns, and personal query histories. |
+| `SOC_ANALYST` | Inherits all Viewer capabilities + Authorized to execute CSV Data Exports. |
+| `SOC_ADMIN` | Inherits all Analyst capabilities + Authorized to inspect System Audit Logs and manage Keycloak Identity lifecycles. |
 
-6. Click **Assign**.
+6. Click **Assign** to bind the entitlement.
 
-### 3. Send Email
+### 📧 2.3. Dispatching Authentication Directives
 
-1. On the user detail page, find the **Execute actions email** button (or dropdown).
-2. Select actions:
+1. Within the user detail panel, locate the **Execute actions email** mechanism (accessible via button or dropdown).
+2. Select the mandatory security actions:
    - **Verify Email**
    - **Update Password**
-3. Optionally adjust the link expiration (default is usually 12 hours).
+3. Optionally constrain the cryptographic link expiration threshold (industry standard default is 12 hours).
 4. Click **Send email**.
 
-The realm is configured with `VERIFY_EMAIL` and `UPDATE_PASSWORD` as default required actions. New users will have these actions automatically assigned.
+*Operational Note:* The realm architecture is pre-configured with `VERIFY_EMAIL` and `UPDATE_PASSWORD` as baseline Required Actions. Newly provisioned identities will inherit these mandates automatically.
 
-### 4. User Completes Onboarding
+### 🧑‍💻 2.4. End-User Action Lifecycle
 
-The user receives an email from the configured SMTP sender (e.g. `no-reply@soc-ai-search.app`). The email contains a link that takes the user to Keycloak where they:
+The end-user will receive a standardized email originating from the configured SMTP sender (e.g., `no-reply@soc-ai-search.app`). This email contains an ephemeral cryptographic link redirecting the user to the Keycloak IdP, where they must:
 
-1. Set a new password (meets Keycloak password policy).
-2. Verify their email address.
+1. 🔑 Establish a new password strictly adhering to the realm's enforced password complexity policy.
+2. 📩 Verify ownership of the associated email address.
 
-After completing these actions, Keycloak shows a `Back to Application` link that redirects to the SOC AI Search frontend.
+Upon successful completion of these directives, Keycloak exposes a `Back to Application` redirect, seamlessly bridging the user into the SOC AI Search frontend application.
 
-## SMTP Providers
+## 📨 3. SMTP Infrastructure Providers
 
-SMTP is configured in Keycloak Admin Console under **Realm settings → Email**. See `infra/keycloak/README.md` for detailed setup instructions.
+SMTP integration is centrally managed within the Keycloak Admin Console via **Realm settings → Email**. For extensive setup topologies, refer to `infra/keycloak/README.md`.
 
-### Comparison
+### Provider Matrix Comparison
 
-| Provider | Use Case | Cost | Setup |
+| Service Provider | Targeted Use Case | Cost Architecture | Implementation Profile |
 | --- | --- | --- | --- |
-| Mailtrap | Local development and testing | Free tier available | Sandbox inbox, no real emails sent |
-| Brevo | Production demo | Free tier (300/day) | Requires account + SMTP setup |
-| Amazon SES | Production at scale | Pay per email | Requires AWS account + domain verification |
-| SendGrid | Production at scale | Free tier (100/day) | Requires account + domain verification |
+| **Mailtrap** | Localized Development & Integration Testing | Free tier available | Virtualized sandbox inbox; prevents accidental external email dispatch. |
+| **Brevo** | Production Demonstrations | Free tier (300 emails/day) | Requires account registration and standard SMTP configurations. |
+| **Amazon SES** | Enterprise Production at Scale | Consumption-based pricing | Requires AWS infrastructure presence and stringent domain verification. |
+| **SendGrid** | Enterprise Production at Scale | Free tier (100 emails/day) | Requires account registration and stringent domain verification. |
 
-For this MVP, Mailtrap (local) and Brevo (production) are recommended.
+*Recommendation:* For this MVP cycle, Mailtrap is strongly recommended for local workflows, whereas Brevo is suitable for production demonstrations.
 
-## Without SMTP (Manual Password)
+## 🆘 4. Fallback Workflow: Manual Password Provisioning
 
-If SMTP is not configured or not available:
+In operational scenarios where SMTP infrastructure is unavailable or deliberately isolated:
 
-1. Create the user as described above.
-2. Go to the **Credentials** tab.
-3. Click **Set password**.
-4. Enter a temporary password.
-5. Set **Temporary** to ON.
+1. Create the user identity as outlined in Section 2.1.
+2. Navigate to the **Credentials** tab.
+3. Select **Set password**.
+4. Input a robust temporary password.
+5. Ensure the **Temporary** toggle is set to **ON** (forcing a password rotation upon initial login).
 6. Click **Save**.
-7. Communicate the temporary password to the user through a secure channel (not Git).
+7. Transmit the temporary password to the end-user via an encrypted, out-of-band communication channel. *Never commit credentials to version control.*
 
-The user will be prompted to change the password on first login.
+## 🩺 5. Incident Troubleshooting Guide
 
-## Troubleshooting
+### ❌ 5.1. User fails to receive the onboarding email
 
-### User does not receive email
-
-- Verify SMTP is configured in **Realm settings → Email**.
-- Click **Test connection** to check SMTP credentials.
-- If using Mailtrap, check the Mailtrap inbox (emails are captured, not forwarded).
-- Check Keycloak container logs for SMTP errors:
+- 🔍 Verify SMTP configurations within **Realm settings → Email**.
+- 🛠️ Execute the **Test connection** utility to validate SMTP credential integrity.
+- 📬 If utilizing Mailtrap, physically inspect the Mailtrap sandbox inbox (emails are intercepted, not forwarded).
+- 📋 Inspect Keycloak container logs for underlying SMTP transmission errors:
 
 ```bash
 docker compose --profile auth logs keycloak | grep -i smtp
 ```
 
-### "Invalid redirect URI" after email action
+### ❌ 5.2. Keycloak throws an "Invalid redirect URI" error
 
-- Verify the client `soc-ai-search-frontend` has the correct redirect URIs.
-- For production, ensure `https://soc-ai-search.app/*` is in redirect URIs.
-- Check **post.logout.redirect.uris** in client attributes.
+- 🔗 Validate that the target client `soc-ai-search-frontend` possesses the correct authorized redirect URIs.
+- 🌐 For production environments, rigorously ensure `https://soc-ai-search.app/*` is explicitly whitelisted.
+- 🔍 Inspect the **post.logout.redirect.uris** parameters within the client attributes.
 
-### User cannot log in after setting password
+### ❌ 5.3. User fails to authenticate post-password establishment
 
-- Check the user's **Email verified** status in Admin Console.
-- Verify the user has a realm role assigned.
-- Check that the frontend `VITE_KEYCLOAK_AUTHORITY` matches the Keycloak issuer.
+- 👁️ Audit the user's **Email verified** boolean status within the Admin Console.
+- 🛡️ Verify the identity has been explicitly mapped to an authorized realm role.
+- 🔑 Confirm that the frontend application's `VITE_KEYCLOAK_AUTHORITY` variable symmetrically matches the actual Keycloak issuer URI.
 
-### Required actions not showing for new users
+### ❌ 5.4. Required actions fail to trigger for new identities
 
-- Go to **Authentication → Required actions** in Admin Console.
-- Verify `Verify Email` and `Update Password` are enabled and set as default.
-- If the realm was imported before the `requiredActions` update, enable them manually.
+- ⚙️ Navigate to **Authentication → Required actions** within the Admin Console.
+- ✅ Verify that `Verify Email` and `Update Password` are toggled as Enabled and designated as Default Actions.
+- 🔄 If the realm configuration was imported prior to the `requiredActions` schema update, manually enable the directives.
 
-## Security Notes
+## 🛡️ 6. Enterprise Security Posture
 
-- Never commit SMTP passwords, app passwords, or user credentials to Git.
-- Demo credentials are communicated separately to reviewers.
-- The `.env.example` file contains only placeholder values.
-- SMTP password in Keycloak Admin Console is stored in the `keycloak_data` Docker volume.
-- Production SMTP should use a dedicated email account, not a personal one.
+- 🚫 **Absolute Prohibition:** Never commit SMTP passwords, application passwords, or Identity credentials into the Git repository.
+- 🔏 Demonstration credentials must be communicated asynchronously via isolated channels to reviewing stakeholders.
+- 📝 The `infra/.env.example` file is strictly designed to contain non-functional placeholder values.
+- 💾 The SMTP password supplied to the Keycloak Admin Console is persistently encrypted and stored within the `keycloak_data` Docker volume.
+- 📧 Production-grade SMTP deployments must utilize dedicated service accounts, strictly prohibiting the use of personal email addresses.

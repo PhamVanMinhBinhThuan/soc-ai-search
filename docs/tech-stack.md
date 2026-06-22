@@ -1,72 +1,75 @@
-﻿# Tech Stack - SOC AI Search MVP
+# 💻 Technology Stack Matrix - SOC AI Search MVP
 
-## 1. Tổng quan
+<details>
+  <summary><b>📖 Table of Contents</b></summary>
 
-SOC AI Search MVP là một modular monolith gồm frontend React và backend Spring Boot. Hệ thống dùng Elasticsearch làm event store, PostgreSQL lưu audit/history, Keycloak làm OIDC provider, Caddy làm reverse proxy HTTPS và GitHub Actions để CI/CD.
+  - [🚀 1. Executive Summary](#1-executive-summary)
+  - [🛠️ 2. Core Technology Matrix](#2-core-technology-matrix)
+  - [🖥️ 3. Frontend Architecture](#3-frontend-architecture)
+  - [⚙️ 4. Backend Engine Architecture](#4-backend-engine-architecture)
+  - [🔍 5. Elasticsearch Topography](#5-elasticsearch-topography)
+  - [🗄️ 6. PostgreSQL Topography](#6-postgresql-topography)
+  - [🤖 7. Large Language Model (LLM) Integration](#7-large-language-model-llm-integration)
+  - [🔑 8. Identity & Authorization (RBAC)](#8-identity-authorization-rbac)
+  - [🚀 9. Production Deployment Topology](#9-production-deployment-topology)
+  - [🚫 10. Explicitly Excluded Technologies (MVP Scope)](#10-explicitly-excluded-technologies-mvp-scope)
+</details>
 
-## 2. Stack chính
+## 🚀 1. Executive Summary
 
-| Thành phần | Công nghệ | Vai trò |
+The SOC AI Search MVP is engineered as a robust modular monolith, coupling a React-based frontend SPA with a Spring Boot backend engine. The infrastructure leverages Elasticsearch as the primary event store, PostgreSQL for immutable audit/history logging, Keycloak for enterprise-grade OIDC authentication, Caddy as the edge HTTPS reverse proxy, and GitHub Actions to orchestrate continuous integration and continuous deployment (CI/CD) pipelines.
+
+## 🛠️ 2. Core Technology Matrix
+
+| Category | Technologies | Architectural Responsibility |
 | --- | --- | --- |
-| Frontend | React + TypeScript + Vite | SOC investigation console |
-| UI | Tailwind CSS + shadcn/ui + lucide-react | Dark theme, components, icons |
-| Chart | Recharts | Aggregation visualization |
-| Backend | Java 21 + Spring Boot 3 | REST API, orchestration, validation, compiler |
-| Security | Spring Security Resource Server | Verify Keycloak JWT and enforce RBAC |
-| Auth Provider | Keycloak | OIDC login, realm roles, user management |
-| Search Engine | Elasticsearch `9.4.2` Basic | Event storage, search, aggregation |
-| Database | PostgreSQL 17 + Flyway | Audit/history/export replay metadata |
-| AI Provider | Mock LLM + Gemini | SearchPlan generation and summary |
-| API Docs | Springdoc OpenAPI / Swagger | API testing and documentation |
-| Testing | JUnit 5, Mockito, MockMvc, Vitest, React Testing Library | Backend/frontend verification |
-| Packaging | Docker Compose | Local and VPS runtime |
-| Reverse Proxy | Caddy | HTTPS, routing, certificates |
-| Hosting | DigitalOcean Droplet | Public demo server |
-| DNS | Name.com | `soc-ai-search.app` and subdomains |
-| CI/CD | GitHub Actions | Verify, build and deploy via SSH |
+| **🖥️ Frontend** | ![Next.js](https://img.shields.io/badge/next.js-000000?style=for-the-badge&logo=nextdotjs&logoColor=white) ![React](https://img.shields.io/badge/react-20232A?style=for-the-badge&logo=react&logoColor=61DAFB) ![TypeScript](https://img.shields.io/badge/typescript-%23007ACC.svg?style=for-the-badge&logo=typescript&logoColor=white) ![Vite](https://img.shields.io/badge/vite-%23646CFF.svg?style=for-the-badge&logo=vite&logoColor=white) ![TailwindCSS](https://img.shields.io/badge/tailwindcss-%2338B2AC.svg?style=for-the-badge&logo=tailwind-css&logoColor=white) | SOC investigation and visualization console. Standardized dark theme, atomic components, charting. |
+| **⚙️ Backend** | ![Java](https://img.shields.io/badge/java-%23ED8B00.svg?style=for-the-badge&logo=openjdk&logoColor=white) ![Spring Boot](https://img.shields.io/badge/spring_boot-%236DB33F.svg?style=for-the-badge&logo=spring-boot&logoColor=white) | REST API provisioning, pipeline orchestration, JSON validation, DSL compilation, JWT verification. |
+| **💾 Data & Search** | ![Elasticsearch](https://img.shields.io/badge/elasticsearch-%23005571.svg?style=for-the-badge&logo=elasticsearch&logoColor=white) ![PostgreSQL](https://img.shields.io/badge/postgresql-%23316192.svg?style=for-the-badge&logo=postgresql&logoColor=white) | High-velocity event storage, text search, bucket aggregation, immutable audit logging, and query history. |
+| **🛡️ DevOps & Security & AI** | ![Keycloak](https://img.shields.io/badge/Keycloak-EE0000?style=for-the-badge&logo=keycloak&logoColor=white) ![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white) ![DigitalOcean](https://img.shields.io/badge/DigitalOcean-%230080FF.svg?style=for-the-badge&logo=DigitalOcean&logoColor=white) ![GitHub Actions](https://img.shields.io/badge/github%20actions-%232671E5.svg?style=for-the-badge&logo=githubactions&logoColor=white) ![Gemini](https://img.shields.io/badge/Google_Gemini-8E75C2?style=for-the-badge&logo=googlegemini&logoColor=white) | IAM, OIDC lifecycle, Containerization, Public-facing hosting, CI/CD, NLP SearchPlan generation. |
 
-## 3. Frontend
+## 🖥️ 3. Frontend Architecture
 
-Frontend responsibilities:
+**Frontend Operational Responsibilities:**
 
-- Natural language search input.
-- Display `search_plan` and `generated_dsl` as pretty JSON.
-- Render raw event table, event detail drawer and raw log.
-- Render aggregation charts and summary table.
-- Show summary, latency, mode, result count and history.
-- Enforce UI-level RBAC visibility while backend remains source of truth.
+- 🔍 Ingesting raw natural language search queries.
+- 📄 Rendering the `search_plan` and `generated_dsl` artifacts as strictly formatted JSON structures to ensure transparency.
+- 📊 Displaying paginated raw event data tables, detailed forensic inspection drawers, and raw log payloads.
+- 📈 Plotting analytical aggregation charts paired with supplementary statistical tables.
+- 🤖 Exposing contextual AI summaries, query execution latencies, current operational modes, result counts, and historical logs.
+- 🛡️ Enforcing superficial, UI-level RBAC (hiding unauthorized buttons) while acknowledging the backend as the ultimate security authority.
 
-Important notes:
+**Crucial Implementation Directives:**
 
-- `VITE_*` variables are build-time variables. Rebuild frontend after changing them.
-- `VITE_USE_MOCK=true` can be used for isolated mock UI work.
-- Production `VITE_API_BASE_URL` should be `https://api.soc-ai-search.app`.
-- Production `VITE_KEYCLOAK_AUTHORITY` should be `https://auth.soc-ai-search.app/realms/soc-ai-search`.
+- ⚙️ `VITE_*` environmental variables are explicitly injected at build-time. Modifying these variables structurally requires a full rebuild of the frontend container.
+- 🔧 Setting `VITE_USE_MOCK=true` enforces an air-gapped mock UI environment, accelerating frontend development without backend dependencies.
+- 🌐 Production Target `VITE_API_BASE_URL` strictly maps to `https://api.soc-ai-search.app`.
+- 🔑 Production Target `VITE_KEYCLOAK_AUTHORITY` strictly maps to `https://auth.soc-ai-search.app/realms/soc-ai-search`.
 
-## 4. Backend
+## ⚙️ 4. Backend Engine Architecture
 
-Backend responsibilities:
+**Backend Operational Responsibilities:**
 
-- REST API and Swagger.
-- Event ingest and detail lookup.
-- LLM prompt building and response parsing.
-- SearchPlan validation/guardrail.
-- SearchPlan compiler to Elasticsearch Query DSL.
-- Search and aggregation execution.
-- Best-effort summary.
-- Audit/history persistence.
-- CSV export replay.
-- Keycloak JWT role mapping and authorization.
+- 🌐 Provisioning REST APIs mapped via Swagger OpenAPI.
+- 📥 Orchestrating single and bulk event ingestion alongside forensic detail lookups.
+- 🧠 Constructing context-aware LLM prompts and executing strict parsing of JSON responses.
+- 🛡️ Enforcing aggressive SearchPlan validation guardrails.
+- 🔨 Operating the SearchPlan compiler to safely generate Elasticsearch Query DSL.
+- ⚡ Executing multi-threaded search and aggregation cluster queries.
+- 📝 Managing asynchronous, best-effort LLM summarization.
+- 💾 Persisting immutable audit logs and historical query data into PostgreSQL.
+- 🔐 Governing secure CSV export replays decoupled from client DSL injection.
+- 🛂 Mapping Keycloak JWT claims to internal Spring Security realm roles for definitive authorization.
 
-Backend packages are organized by capability, not by microservice. Calls between modules are Java method calls inside one Spring Boot application.
+*Structural Note:* Backend modules are structurally organized by capability domain, not physically segregated into microservices. Inter-module communication relies on high-speed internal Java method invocations within a unified Spring Boot application context.
 
-## 5. Elasticsearch
+## 🔍 5. Elasticsearch Topography
 
-Elasticsearch `9.4.2` Basic is used as the only event store in MVP.
+Elasticsearch `9.4.2` Basic functions as the exclusive SOC event store for the MVP.
 
-Mapping summary:
+**Core Schema Mapping:**
 
-| Field | Type |
+| Field Name | Elasticsearch Data Type |
 | --- | --- |
 | `timestamp` | `date` |
 | `source` | `keyword` |
@@ -79,74 +82,71 @@ Mapping summary:
 | `message` | `text` |
 | `raw` | `text`, `index: false` |
 
-The compiler does not add `.keyword` because MVP mapping already defines aggregatable fields as `keyword` or `ip` directly.
+*Compiler Constraint:* The compiler algorithm deliberately omits appending `.keyword` modifiers, as the MVP mapping statically defines all aggregatable fields as native `keyword` or `ip` types at the cluster level.
 
-## 6. PostgreSQL
+## 🗄️ 6. PostgreSQL Topography
 
-PostgreSQL stores application metadata only:
+PostgreSQL functions exclusively as the metadata and application state repository:
 
-- Query history.
-- Audit log.
-- SearchPlan and generated DSL snapshots.
-- Summary and summary source.
-- Result count and latency.
-- Data needed for CSV export replay.
+- 📜 Maintains comprehensive historical query logs.
+- 🛡️ Stores the immutable administrative audit log.
+- 📸 Snapshots point-in-time SearchPlans and generated DSL payloads.
+- 💾 Caches AI-generated summaries and identifies their origin (LLM vs. Fallback).
+- ⏱️ Tracks execution latencies and total hit counts.
+- 📤 Serves as the authoritative data source required for authenticated CSV export replays.
 
-PostgreSQL does not store SOC event documents.
+*Hard Constraint:* PostgreSQL is strictly prohibited from storing or indexing SOC event documents.
 
-## 7. LLM
+## 🤖 7. Large Language Model (LLM) Integration
 
-Providers:
+**Supported Providers:**
 
-- `mock`: deterministic provider for local/dev/test/CI; no API key required.
-- `gemini`: hosted provider for integration or public demo with runtime API key.
+- `mock`: A highly deterministic, air-gapped provider utilized for local development, automated testing, and CI environments; inherently bypasses external API key requirements.
+- `gemini`: The hosted Google Gemini provider deployed for live integration testing and public demonstrations, configured securely via runtime API keys.
 
-LLM constraints:
+**LLM Security Constraints:**
 
-- LLM returns JSON `SearchPlan`, not Elasticsearch DSL.
-- Parser rejects markdown, prose, unknown fields and non-object JSON.
-- Repair/retry is limited to one attempt.
-- Summary is best-effort and has fallback.
-- Raw log and full event documents are not sent to LLM.
+- 🛡️ The LLM is restricted to generating pure JSON `SearchPlan` documents; it must never output Elasticsearch DSL.
+- 🚫 The system parser aggressively rejects markdown formatting, conversational prose, unknown keys, and non-object JSON payloads.
+- 🔄 The backend bounds LLM repair/retry logic to a maximum of one cycle to prevent cascading failures.
+- ⚡ Summarization is executed as a non-blocking, best-effort task with deterministic fallbacks to guarantee search reliability.
+- 🔒 Under no circumstances are raw forensic logs or comprehensive event documents transmitted externally to the LLM.
 
-## 8. Auth/RBAC
+## 🔑 8. Identity & Authorization (RBAC)
 
-Keycloak realm: `soc-ai-search`.
+- **Target Keycloak Realm:** `soc-ai-search`.
+- **Target Frontend Client:** `soc-ai-search-frontend`.
+- **Authorized Enterprise Roles:**
+  - `SOC_VIEWER`
+  - `SOC_ANALYST`
+  - `SOC_ADMIN`
 
-Frontend client: `soc-ai-search-frontend`.
+Spring Security extracts `realm_access.roles` to instantiate `ROLE_*` authorities, applying a hierarchical evaluation model ensuring administrators natively inherit all analyst and viewer capabilities.
 
-Roles:
+## 🚀 9. Production Deployment Topology
 
-- `SOC_VIEWER`
-- `SOC_ANALYST`
-- `SOC_ADMIN`
+The production architecture mandates:
 
-Spring Security maps `realm_access.roles` to `ROLE_*` authorities and applies role hierarchy so admin inherits analyst/viewer capabilities.
+- ☁️ DigitalOcean Droplets running hardened Ubuntu environments.
+- 🌐 Name.com functioning as the primary DNS routing authority.
+- 🔒 Caddy acting as the reverse proxy managing automatic TLS/HTTPS termination.
+- 🐳 Docker Compose executing explicit `auth` and `proxy` configuration profiles.
+- 🚢 GitHub Actions orchestrating continuous delivery over secured SSH connections.
 
-## 9. Deployment
+**Production Port Exposure Matrix:**
 
-Production deployment uses:
-
-- DigitalOcean Droplet Ubuntu.
-- Name.com DNS.
-- Caddy reverse proxy and automatic HTTPS.
-- Docker Compose with `auth` and `proxy` profiles.
-- GitHub Actions CD over SSH.
-
-Production public ports:
-
-| Port | Public | Purpose |
+| Port | Public Edge Exposure | Infrastructure Purpose |
 | --- | --- | --- |
-| `22` | Yes | SSH |
-| `80` | Yes | Caddy HTTP challenge/redirect |
-| `443` | Yes | HTTPS |
-| `3000` | No | Frontend internal/local only |
-| `8081` | No | Backend internal/local only |
-| `8082` | No | Keycloak internal/local only |
-| `9200` | No | Elasticsearch internal/local only |
-| `5433` | No | PostgreSQL host-local only |
-| `5601` | No | Kibana optional local tool |
+| `22` | **Yes** | Authorized SSH Management |
+| `80` | **Yes** | Caddy HTTP ACME Challenge & Redirects |
+| `443` | **Yes** | Secure HTTPS Traffic |
+| `3000` | No | Frontend container (Local loopback only) |
+| `8081` | No | Backend API container (Local loopback only) |
+| `8082` | No | Keycloak IdP container (Local loopback only) |
+| `9200` | No | Elasticsearch node (Local loopback only) |
+| `5433` | No | PostgreSQL instance (Host loopback only) |
+| `5601` | No | Kibana diagnostics (Optional local tool) |
 
-## 10. Tools not used in current deployment
+## 🚫 10. Explicitly Excluded Technologies (MVP Scope)
 
-Deployment MVP hiện tại không dùng AWS, Route53, Nginx làm reverse proxy ở edge, Certbot, Jenkins, ArgoCD hoặc Kubernetes. Nginx chỉ có thể xuất hiện như static server bên trong frontend container; reverse proxy production ở edge là Caddy.
+To minimize deployment complexity while maximizing demonstration velocity, the following technologies are explicitly excluded from the current MVP deployment architecture: AWS managed services, Route53, Nginx Edge Proxies, Certbot, Jenkins, ArgoCD, and Kubernetes. Nginx is solely authorized to serve static assets internally within the frontend container boundaries; the public edge reverse proxy remains exclusively Caddy.

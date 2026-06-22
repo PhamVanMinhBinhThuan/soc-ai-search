@@ -1,47 +1,60 @@
-﻿# Quyết Định Search Engine - SOC AI Search MVP
+# 📐 Architectural Decision Record: Search Engine Selection - SOC AI Search MVP
 
-## 1. Kết luận
+<details>
+  <summary><b>📖 Table of Contents</b></summary>
 
-MVP chọn **Elasticsearch `9.4.2` Basic self-managed** làm search engine duy nhất và dùng **Elasticsearch Query DSL** làm query runtime sau khi backend compile từ `SearchPlan`.
+  - [🎯 1. Executive Conclusion](#1-executive-conclusion)
+  - [⚖️ 2. Technical Justification for Elasticsearch](#2-technical-justification-for-elasticsearch)
+  - [🗺️ 3. Data Mapping Architecture (MVP)](#3-data-mapping-architecture-mvp)
+  - [🛡️ 4. Architectural Guardrail: The SearchPlan Contract](#4-architectural-guardrail-the-searchplan-contract)
+  - [🧩 5. Defined DSL Topologies](#5-defined-dsl-topologies)
+  - [📊 6. Strategic Technology Comparison](#6-strategic-technology-comparison)
+  - [⚙️ 7. Operational Guidelines](#7-operational-guidelines)
+  - [🔄 8. Strategic Re-evaluation Triggers](#8-strategic-re-evaluation-triggers)
+</details>
 
-Không triển khai đồng thời Elasticsearch, OpenSearch và ClickHouse trong MVP. Một search engine đã đủ cho yêu cầu tìm kiếm, filter, aggregation, event detail và CSV replay; thêm engine thứ hai sẽ tăng độ phức tạp ingest/test/deploy nhưng chưa tạo thêm giá trị rõ ràng cho bản demo.
+## 🎯 1. Executive Conclusion
 
-## 2. Lý do chọn Elasticsearch
+For the Minimum Viable Product (MVP) phase, the architectural board has selected ![Elasticsearch](https://img.shields.io/badge/elasticsearch-%23005571.svg?style=for-the-badge&logo=elasticsearch&logoColor=white) **Elasticsearch `9.4.2` (Basic, self-managed)** as the singular, authoritative search engine. The platform standardizes on **Elasticsearch Query DSL** as the query runtime, which is dynamically compiled by the backend engine after validating the AI-generated `SearchPlan`.
 
-Elasticsearch phù hợp với bài toán SOC event search vì hỗ trợ tốt:
+We deliberately reject the concurrent deployment of multiple indexing engines (e.g., Elasticsearch alongside OpenSearch or ClickHouse) for the MVP. A unified search engine satisfies all current requirements regarding high-velocity searching, filtering, statistical aggregation, forensic event drilldowns, and CSV replay mechanisms. Integrating secondary engines at this maturity stage would exponentially increase the complexity of data ingestion, testing pipelines, and deployment topologies without delivering proportional business value.
 
-- Full-text search trên `message`.
-- Exact filter trên keyword/IP fields.
-- Time range query trên `timestamp`.
-- Aggregation `terms` cho `group_by`/`top_n`.
-- Aggregation `date_histogram` cho time-series.
-- Search API, pagination, sorting và `_source` để xem event detail.
-- Docker image chính thức và tài liệu phong phú.
+## ⚖️ 2. Technical Justification for Elasticsearch
 
-Elasticsearch Basic self-managed đủ cho toàn bộ MVP. Các tính năng paid/native nâng cao như Elastic ML anomaly detection, native audit logging cấp cluster, document-level security hoặc native RRF không phải yêu cầu bắt buộc trong đồ án hiện tại.
+Elasticsearch was strategically chosen because its native capability matrix closely aligns with Security Operations Center (SOC) event telemetry requirements. It provides highly optimized support for:
 
-## 3. Mapping MVP
+- 🔍 Broad-spectrum full-text search capabilities across the `message` field.
+- ⚡ High-performance exact-match filtering against highly cardinal fields (keywords and IP addresses).
+- ⏱️ Precision time-range querying against `timestamp` indices.
+- 📊 Efficient `terms` aggregations supporting critical `group_by` and `top_n` analytical operations.
+- 📈 Robust `date_histogram` aggregations essential for temporal event plotting.
+- 🔎 Comprehensive Search APIs, deep pagination, sorting algorithms, and direct `_source` extraction for granular event forensics.
+- 🐳 Industry-standard Docker imagery supported by extensive enterprise documentation.
 
-Index: `soc-events-v1`.
+The self-managed Basic tier of Elasticsearch is functionally complete for the MVP scope. Advanced, commercial-tier capabilities (such as Elastic Machine Learning anomaly detection, native cluster-level audit logging, Document-Level Security (DLS), or native Reciprocal Rank Fusion) are deemed out-of-scope for the current implementation phase.
 
-| Field | Elasticsearch type | Dùng cho |
+## 🗺️ 3. Data Mapping Architecture (MVP)
+
+Target Index: `soc-events-v1`.
+
+| Telemetry Field | Elasticsearch Type | Operational Purpose |
 | --- | --- | --- |
-| `timestamp` | `date` | Range filter, sort, date histogram |
-| `source` | `keyword` | Filter, group/top |
-| `severity` | `keyword` | Filter, group/top |
-| `event_type` | `keyword` | Filter, group/top |
-| `user` | `keyword` | Filter, group/top |
-| `host` | `keyword` | Filter, group/top |
-| `ip` | `ip` | Exact filter, top IP |
-| `country_code` | `keyword` | Filter, group/top |
-| `message` | `text` | Full-text `match` |
-| `raw` | `text`, `index: false` | Event detail raw log |
+| `timestamp` | `date` | Range filtering, chronological sorting, date histograms |
+| `source` | `keyword` | Exact filtering, grouping, top-N calculations |
+| `severity` | `keyword` | Exact filtering, grouping, top-N calculations |
+| `event_type` | `keyword` | Exact filtering, grouping, top-N calculations |
+| `user` | `keyword` | Exact filtering, grouping, top-N calculations |
+| `host` | `keyword` | Exact filtering, grouping, top-N calculations |
+| `ip` | `ip` | Exact IP filtering, highly cardinal Top IP analytics |
+| `country_code` | `keyword` | Exact filtering, grouping, top-N calculations |
+| `message` | `text` | Full-text `match` queries and tokenization |
+| `raw` | `text`, `index: false` | Forensic log storage (unindexed payload) |
 
-Compiler không thêm `.keyword` vì các field aggregation đã là `keyword`/`ip` trực tiếp trong mapping.
+*Compiler Constraint:* The backend query compiler intentionally does not append `.keyword` modifiers, as the foundational MVP mapping already strictly defines aggregatable fields natively as `keyword` or `ip` data types.
 
-## 4. SearchPlan thay vì LLM sinh DSL
+## 🛡️ 4. Architectural Guardrail: The SearchPlan Contract
 
-MVP không cho LLM sinh Elasticsearch DSL trực tiếp. Luồng đúng là:
+The MVP strictly prohibits the Large Language Model (LLM) from directly generating executable Elasticsearch Query DSL. The mandated execution pipeline is:
 
 ```mermaid
 flowchart LR
@@ -56,44 +69,44 @@ flowchart LR
     Q --> LLM --> Plan --> Guard --> Compiler --> DSL --> ES
 ```
 
-Lý do:
+**Security and Engineering Rationale:**
 
-- Dễ reject field/operation ngoài MVP.
-- Dễ test DSL shape bằng unit test.
-- Tránh LLM sinh `script`, wildcard đắt đỏ, query string tự do hoặc DSL nguy hiểm.
-- UI vẫn hiển thị `generated_dsl` để đảm bảo transparency.
+- 🛑 Establishes a rigid, deterministic boundary to reject fields or operational directives outside the MVP scope.
+- 🧪 Facilitates comprehensive unit testing of the DSL structural shape.
+- 💉 Actively mitigates prompt injection vulnerabilities preventing the LLM from synthesizing computationally expensive wildcard queries, unconstrained query strings, or destructive inline `script` execution.
+- 👁️ Ensures system transparency by continuously exposing the safely compiled `generated_dsl` back to the User Interface for human auditing.
 
-## 5. DSL shape trong MVP
+## 🧩 5. Defined DSL Topologies
 
-Search mode:
+**Search Execution Mode:**
 
-- `bool.filter` cho filter chính xác.
-- `term` cho `user`, `host`, `ip`.
-- `terms` cho list fields như `severity`, `event_type`, `country_code`.
-- `range` cho `timestamp`.
-- `match` trên `message` khi có `message_query`.
-- `sort` mặc định `timestamp desc`.
+- `bool.filter` enforces precise, non-scoring exact matches.
+- `term` queries execute against singular fields (`user`, `host`, `ip`).
+- `terms` queries execute against enumerable list fields (`severity`, `event_type`, `country_code`).
+- `range` queries strictly bound the `timestamp` axis.
+- `match` queries execute tokenized analysis against the `message` field exclusively when `message_query` is invoked.
+- `sort` enforces a deterministic `timestamp desc` default sequence.
 
-Aggregation mode:
+**Aggregation Execution Mode:**
 
-- `count`: `size = 0`, không sinh `aggs` rỗng; lấy `hits.total`.
-- `group_by`: `terms` aggregation, default bucket limit 20 nếu thiếu `top_n`.
-- `top_n`: `terms` aggregation, `top_n` bắt buộc 1-100.
-- `date_histogram`: field `timestamp`, `fixed_interval` `1m`, `1h`, `1d`.
+- `count`: Enforces `size = 0` to suppress payload bloat, bypassing empty `aggs` generation, and directly extracts the `hits.total` metric.
+- `group_by`: Utilizes `terms` aggregation mechanisms. If a `top_n` parameter is absent, the compiler hardcodes a default bucket threshold of 20 to preserve memory.
+- `top_n`: Utilizes `terms` aggregation mechanisms, mandating a strict `top_n` validation boundary of 1 to 100.
+- `date_histogram`: Anchored to the `timestamp` field, restricted to standardized `fixed_interval` mappings (`1m`, `1h`, `1d`).
 
-## 6. So sánh lựa chọn
+## 📊 6. Strategic Technology Comparison
 
-| Engine | Điểm mạnh | Trade-off | Quyết định MVP |
+| Search Engine | Core Strengths | Technical Trade-offs | MVP Decision |
 | --- | --- | --- | --- |
-| Elasticsearch Basic | Search-first, full-text tốt, aggregation đủ, nhiều tài liệu, Docker official | JVM cần RAM, một số tính năng advanced cần subscription | Chọn |
-| OpenSearch | Tương tự Elasticsearch, Apache 2.0, phù hợp nếu cần ecosystem OpenSearch | Không tạo lợi thế đủ lớn để đổi engine trong MVP | Dự phòng sau MVP |
-| ClickHouse | Aggregation/log analytics rất mạnh, SQL dễ đọc | Search relevance và event detail workflow cần thêm đánh giá; không cần cho MVP search-first | Benchmark sau MVP nếu workload analytics rất lớn |
+| **Elasticsearch Basic** | Search-first architecture, superior full-text capabilities, comprehensive aggregation framework, ubiquitous industry documentation, official Docker support. | High JVM heap footprint; advanced security/ML features locked behind commercial subscriptions. | **✅ Selected** |
+| **OpenSearch** | Functionally identical to ES Basic, Apache 2.0 open-source licensing, optimal if integrating deeply into an existing AWS OpenSearch ecosystem. | Fails to provide a disruptive technical advantage sufficient to pivot away from the industry standard for this MVP. | **⏸️ Deferred** (Post-MVP Reserve) |
+| **ClickHouse** | Unrivaled aggregation and log analytics performance over massive datasets; intuitive SQL dialect. | Search relevance scoring and raw event detail retrieval require intensive architectural redesign; misaligned with our search-first MVP priorities. | **⏸️ Deferred** (Slated for Post-MVP benchmarking at extreme scale) |
 
-## 7. Vận hành
+## ⚙️ 7. Operational Guidelines
 
-Local dataset mặc định 10.000 event để nhẹ máy. Trước demo có thể seed lớn hơn bằng script theo batch.
+The local development environment is configured to bootstrap 10,000 synthetic events to minimize resource starvation. Prior to formal demonstrations, this dataset can be expanded via the provided batch ingestion scripts.
 
-Trên Linux, Elasticsearch cần:
+When deploying Elasticsearch within Linux environments, virtual memory allocation must be explicitly tuned:
 
 ```bash
 sysctl -w vm.max_map_count=262144
@@ -101,15 +114,15 @@ echo "vm.max_map_count=262144" > /etc/sysctl.d/99-elasticsearch.conf
 sysctl --system
 ```
 
-Elasticsearch không được public trực tiếp trên VPS. Production traffic đi qua backend API và Caddy; Elasticsearch chỉ nằm trong Docker network hoặc bind local khi debug.
+*Security Posture:* Elasticsearch must never be exposed directly to the public internet. Production traffic is strictly routed through the backend API and Caddy edge proxy. Elasticsearch bindings are restricted to internal Docker overlay networks or loopback interfaces during debugging.
 
-## 8. Khi nào xem lại quyết định
+## 🔄 8. Strategic Re-evaluation Triggers
 
-Xem lại nếu:
+The architectural board will revisit this decision if any of the following operational thresholds are breached:
 
-- Dataset tăng lên hàng trăm triệu event và aggregation workload trở thành trọng tâm.
-- Cần native vector/hybrid search hoặc advanced ML beyond MVP.
-- Tổ chức có sẵn Elastic/OpenSearch/ClickHouse cluster chuẩn nội bộ.
-- Yêu cầu multi-tenant/document-level security trở thành bắt buộc ở production.
+- 🚀 The active dataset scales into the hundreds of millions of events, shifting the primary workload bottleneck from full-text search to complex statistical aggregations (triggering a potential ClickHouse migration).
+- 🧠 Functional requirements mandate the integration of native Vector/Hybrid semantic search modalities or advanced internal Machine Learning heuristics.
+- 🏢 The overarching enterprise standardizes on a managed OpenSearch or ClickHouse cluster infrastructure.
+- 🔒 Production compliance mandates the immediate implementation of granular Multi-Tenant logically isolated namespaces or Document-Level Security (DLS).
 
-Với phạm vi đồ án hiện tại, Elasticsearch Basic là lựa chọn cân bằng tốt giữa tốc độ triển khai, khả năng demo, tài liệu và đường mở rộng.
+Given the current MVP scope, Elasticsearch Basic delivers an optimal equilibrium between deployment velocity, demonstration capability, operational documentation, and horizontal scalability.
