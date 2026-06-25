@@ -14,3 +14,16 @@ generated-data/
 *.iml
 
 soc-ai-search/
+
+# LaTeX generated files
+*.aux
+*.log
+*.toc
+*.out
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.lof
+*.lot
+*.bbl
+*.blg
