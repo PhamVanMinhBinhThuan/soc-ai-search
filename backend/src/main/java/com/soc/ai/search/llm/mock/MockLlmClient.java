@@ -2,6 +2,7 @@ package com.soc.ai.search.llm.mock;
 
 import java.text.Normalizer;
 import java.util.Locale;
+import java.util.regex.Pattern;
 
 import com.soc.ai.search.llm.LlmClient;
 import com.soc.ai.search.llm.LlmProperties;
@@ -10,6 +11,9 @@ import com.soc.ai.search.llm.LlmSearchPlanRequest;
 import com.soc.ai.search.llm.LlmSummaryRequest;
 
 public class MockLlmClient implements LlmClient {
+
+    private static final Pattern TOP_N_PATTERN = Pattern.compile("\\btop\\s+(\\d{1,3})\\b");
+    private static final Pattern LAST_DAYS_PATTERN = Pattern.compile("\\b(?:last|trong)\\s+(\\d{1,2})\\s+(?:day|days|ngay)\\b");
 
     private final LlmProperties properties;
 
@@ -44,7 +48,7 @@ public class MockLlmClient implements LlmClient {
         }
 
         if (containsTopIpAlerts(normalized)) {
-            return topIpAlertsAggregationPlan();
+            return topIpAlertsAggregationPlan(extractTopN(normalized, 10), extractLastDays(normalized, 30));
         }
 
         if (containsEventsByHour(normalized)) {
@@ -242,20 +246,20 @@ public class MockLlmClient implements LlmClient {
                 """;
     }
 
-    private String topIpAlertsAggregationPlan() {
+    private String topIpAlertsAggregationPlan(int topN, int days) {
         return """
                 {
                   "mode": "aggregation",
                   "filters": {
-                    "timestamp": { "from": "now-30d", "to": "now" }
+                    "timestamp": { "from": "now-%dd", "to": "now" }
                   },
                   "aggregation": {
                     "type": "top_n",
                     "field": "ip",
-                    "top_n": 10
+                    "top_n": %d
                   }
                 }
-                """;
+                """.formatted(days, topN);
     }
 
     private String eventsByHourAggregationPlan() {
@@ -287,5 +291,27 @@ public class MockLlmClient implements LlmClient {
         return Normalizer.normalize(lowerCase, Normalizer.Form.NFD)
                 .replaceAll("\\p{M}", "")
                 .replace('đ', 'd');
+    }
+
+    private int extractTopN(String value, int defaultValue) {
+        var matcher = TOP_N_PATTERN.matcher(value);
+        if (!matcher.find()) {
+            return defaultValue;
+        }
+
+        return clamp(Integer.parseInt(matcher.group(1)), 1, 100);
+    }
+
+    private int extractLastDays(String value, int defaultValue) {
+        var matcher = LAST_DAYS_PATTERN.matcher(value);
+        if (!matcher.find()) {
+            return defaultValue;
+        }
+
+        return clamp(Integer.parseInt(matcher.group(1)), 1, 90);
+    }
+
+    private int clamp(int value, int min, int max) {
+        return Math.max(min, Math.min(max, value));
     }
 }

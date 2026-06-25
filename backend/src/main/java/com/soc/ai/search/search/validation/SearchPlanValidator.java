@@ -9,6 +9,7 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 import com.soc.ai.search.search.plan.AggregationPlan;
 import com.soc.ai.search.search.plan.AggregationType;
@@ -22,11 +23,9 @@ import org.springframework.stereotype.Service;
 @Service
 public class SearchPlanValidator {
 
-    private static final Set<String> SUPPORTED_RELATIVE_TIMES = Set.of(
-            "now",
-            "now-24h",
-            "now-7d",
-            "now-30d");
+    private static final Pattern RELATIVE_TIME_PATTERN = Pattern.compile("^now-(\\d+)(h|d)$");
+    private static final int MAX_RELATIVE_HOURS = 720;
+    private static final int MAX_RELATIVE_DAYS = 90;
 
     private static final Set<String> AGGREGATION_FIELD_ALLOWLIST = Set.of(
             "source",
@@ -207,11 +206,11 @@ public class SearchPlanValidator {
             return;
         }
 
-        if (SUPPORTED_RELATIVE_TIMES.contains(value) || parseAbsoluteTime(value).isPresent()) {
+        if ("now".equals(value) || isSupportedRelativeTime(value) || parseAbsoluteTime(value).isPresent()) {
             return;
         }
 
-        errors.add(field + ": must be ISO-8601 or one of now, now-24h, now-7d, now-30d");
+        errors.add(field + ": must be ISO-8601, now, now-<number>h up to now-720h, or now-<number>d up to now-90d");
     }
 
     private void validateAbsoluteTimeOrder(TimeRange timeRange, List<String> errors) {
@@ -224,7 +223,7 @@ public class SearchPlanValidator {
     }
 
     private Optional<Instant> parseAbsoluteTime(String value) {
-        if (value == null || value.isBlank() || SUPPORTED_RELATIVE_TIMES.contains(value)) {
+        if (value == null || value.isBlank() || "now".equals(value) || isSupportedRelativeTime(value)) {
             return Optional.empty();
         }
 
@@ -237,6 +236,25 @@ public class SearchPlanValidator {
                 return Optional.empty();
             }
         }
+    }
+
+    private boolean isSupportedRelativeTime(String value) {
+        var matcher = RELATIVE_TIME_PATTERN.matcher(value);
+        if (!matcher.matches()) {
+            return false;
+        }
+
+        var amount = Integer.parseInt(matcher.group(1));
+        var unit = matcher.group(2);
+        if (amount < 1) {
+            return false;
+        }
+
+        return switch (unit) {
+            case "h" -> amount <= MAX_RELATIVE_HOURS;
+            case "d" -> amount <= MAX_RELATIVE_DAYS;
+            default -> false;
+        };
     }
 
     private void rejectDangerousValues(String field, List<String> values, List<String> errors) {

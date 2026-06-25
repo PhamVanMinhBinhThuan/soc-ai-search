@@ -54,6 +54,13 @@ class SearchPlanValidatorTest {
     private static Stream<Arguments> validPlans() {
         return Stream.of(
                 Arguments.of("failed_login CN last 24h", validFailedLoginCnPlan()),
+                Arguments.of("flexible relative time 10 days", withTimeRange(new TimeRange("now-10d", "now"))),
+                Arguments.of("flexible relative time 11 days", withTimeRange(new TimeRange("now-11d", "now"))),
+                Arguments.of("flexible relative time 12 days", withTimeRange(new TimeRange("now-12d", "now"))),
+                Arguments.of("flexible relative time 36 hours", withTimeRange(new TimeRange("now-36h", "now"))),
+                Arguments.of("absolute ISO-8601 timestamp", withTimeRange(new TimeRange(
+                        "2026-06-01T00:00:00Z",
+                        "2026-06-02T00:00:00Z"))),
                 Arguments.of("critical severity 7 days", new SearchPlan(
                         SEARCH,
                         new SearchFilters(
@@ -88,7 +95,12 @@ class SearchPlanValidatorTest {
                 Arguments.of("invalid country code", withCountryCode(List.of("cn")), "countryCode"),
                 Arguments.of("invalid size > 100", new SearchPlan(SEARCH, validFilters(), 0, 101), "size"),
                 Arguments.of("mode null", new SearchPlan(null, validFilters(), 0, 20), "mode"),
-                Arguments.of("unsupported relative time", withTimeRange(new TimeRange("now-2h", "now")), "timestamp.from"),
+                Arguments.of("relative time zero days", withTimeRange(new TimeRange("now-0d", "now")), "timestamp.from"),
+                Arguments.of("relative time zero hours", withTimeRange(new TimeRange("now-0h", "now")), "timestamp.from"),
+                Arguments.of("relative time too many days", withTimeRange(new TimeRange("now-9999d", "now")), "timestamp.from"),
+                Arguments.of("relative time plus syntax", withTimeRange(new TimeRange("now+7d", "now")), "timestamp.from"),
+                Arguments.of("relative time unsupported unit", withTimeRange(new TimeRange("now-1y", "now")), "timestamp.from"),
+                Arguments.of("relative time rounded date math", withTimeRange(new TimeRange("now-7d||/d", "now")), "timestamp.from"),
                 Arguments.of("absolute from after to", withTimeRange(new TimeRange(
                         "2026-06-04T10:00:00Z",
                         "2026-06-03T10:00:00Z")), "timestamp"),

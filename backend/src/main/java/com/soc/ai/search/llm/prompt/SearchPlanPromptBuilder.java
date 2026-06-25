@@ -37,9 +37,8 @@ public class SearchPlanPromptBuilder {
 
     private static final List<String> SUPPORTED_TIME_VALUES = List.of(
             "now",
-            "now-24h",
-            "now-7d",
-            "now-30d",
+            "now-<number>h for relative hours, for example now-12h or now-24h",
+            "now-<number>d for relative days, for example now-10d, now-11d, now-12d, or now-30d",
             "ISO-8601 absolute timestamp");
 
     private static final List<String> SUPPORTED_SEVERITIES = List.of(
@@ -67,6 +66,11 @@ public class SearchPlanPromptBuilder {
                 - If the question does not specify a filter, omit that filter. Do not infer or hallucinate filter values.
                 - page and size may be omitted. Backend owns pagination and will override them from the API request.
                 - Never include raw logs, search results, event documents, API keys, passwords, or secrets.
+                - For relative time, preserve the user's requested amount:
+                  last 12 hours -> "now-12h";
+                  last 10 days -> "now-10d";
+                  last 11 days -> "now-11d";
+                  last 12 days -> "now-12d".
 
                 SearchPlan schema:
                 {

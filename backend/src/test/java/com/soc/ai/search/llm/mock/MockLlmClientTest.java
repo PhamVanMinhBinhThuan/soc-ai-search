@@ -215,6 +215,16 @@ class MockLlmClientTest {
                                 "now-30d",
                                 "now")),
                 Arguments.of(
+                        "Show the top 3 source IPs with the most alerts in the last 12 days",
+                        new ExpectedAggregationPlan(
+                                AggregationType.TOP_N,
+                                "ip",
+                                3,
+                                null,
+                                null,
+                                "now-12d",
+                                "now")),
+                Arguments.of(
                         "Số event theo giờ trong 24h qua",
                         new ExpectedAggregationPlan(
                                 AggregationType.DATE_HISTOGRAM,
