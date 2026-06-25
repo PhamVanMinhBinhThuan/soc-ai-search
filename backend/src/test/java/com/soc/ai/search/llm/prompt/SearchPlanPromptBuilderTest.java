@@ -68,6 +68,49 @@ class SearchPlanPromptBuilderTest {
     }
 
     @Test
+    void systemPromptContainsSeedVocabularyAndStructuredMappingGuidance() {
+        var prompt = promptBuilder.buildSystemPrompt();
+
+        assertThat(prompt)
+                .contains("Prefer structured filters over message_query")
+                .contains("Use message_query only for free-text phrases")
+                .contains("SearchPlan has no filters.source field")
+                .contains("Use source only as aggregation.field")
+                .contains("Supported event_type values")
+                .contains("failed_login")
+                .contains("account_lockout")
+                .contains("firewall_block")
+                .contains("malware_detected")
+                .contains("privilege_escalation")
+                .contains("suspicious_outbound")
+                .contains("data_exfiltration")
+                .contains("large_transfer")
+                .contains("successful_login")
+                .contains("dns_query")
+                .contains("process_start")
+                .contains("file_access")
+                .contains("\"privilege escalation\", \"leo thang đặc quyền\" -> event_type [\"privilege_escalation\"]")
+                .contains("\"malware\", \"malware detected\", \"mã độc\" -> event_type [\"malware_detected\"]")
+                .contains("Known source values for aggregation.field = \"source\"")
+                .contains("windows-auth")
+                .contains("vpn")
+                .contains("firewall")
+                .contains("edr")
+                .contains("proxy")
+                .contains("dns")
+                .contains("Known demo hosts")
+                .contains("vpn-gw-01")
+                .contains("finance-ws-07")
+                .contains("dc-01")
+                .contains("Known demo country_code values")
+                .contains("CN")
+                .contains("VN")
+                .contains("Known demo IP values")
+                .contains("203.0.113.45")
+                .contains("198.51.100.200");
+    }
+
+    @Test
     void buildsRepairPromptWithOriginalQuestionInvalidOutputAndErrors() {
         var request = promptBuilder.buildRepairSearchPlanRequest(
                 "failed login china",

@@ -47,6 +47,84 @@ public class SearchPlanPromptBuilder {
             "high",
             "critical");
 
+    private static final List<String> SUPPORTED_EVENT_TYPES = List.of(
+            "failed_login",
+            "account_lockout",
+            "firewall_block",
+            "malware_detected",
+            "privilege_escalation",
+            "suspicious_outbound",
+            "data_exfiltration",
+            "large_transfer",
+            "successful_login",
+            "dns_query",
+            "process_start",
+            "file_access");
+
+    private static final List<String> SUPPORTED_SOURCES = List.of(
+            "windows-auth",
+            "vpn",
+            "firewall",
+            "edr",
+            "proxy",
+            "dns");
+
+    private static final List<String> KNOWN_USERS = List.of(
+            "admin",
+            "vpn.user",
+            "finance.user",
+            "svc.backup",
+            "alice",
+            "bob",
+            "analyst1",
+            "guest01",
+            "jdoe",
+            "unknown");
+
+    private static final List<String> KNOWN_HOSTS = List.of(
+            "dc-01",
+            "vpn-gw-01",
+            "finance-ws-07",
+            "endpoint-014",
+            "endpoint-023",
+            "proxy-01",
+            "dns-01",
+            "srv-app-02",
+            "firewall-edge-01");
+
+    private static final List<String> KNOWN_COUNTRY_CODES = List.of(
+            "VN",
+            "CN",
+            "US",
+            "RU",
+            "SG",
+            "DE");
+
+    private static final List<String> KNOWN_IPS = List.of(
+            "203.0.113.45",
+            "203.0.113.77",
+            "198.51.100.200",
+            "192.0.2.88",
+            "10.10.1.15",
+            "10.10.2.24",
+            "10.20.5.33",
+            "172.16.10.42",
+            "192.168.20.55");
+
+    private static final List<String> EVENT_TYPE_MAPPING_EXAMPLES = List.of(
+            "\"failed login\", \"login thất bại\", \"đăng nhập thất bại\" -> event_type [\"failed_login\"]",
+            "\"account lockout\", \"khóa tài khoản\" -> event_type [\"account_lockout\"]",
+            "\"firewall block\", \"blocked by firewall\", \"tường lửa chặn\" -> event_type [\"firewall_block\"]",
+            "\"malware\", \"malware detected\", \"mã độc\" -> event_type [\"malware_detected\"]",
+            "\"privilege escalation\", \"leo thang đặc quyền\" -> event_type [\"privilege_escalation\"]",
+            "\"suspicious outbound\", \"outbound đáng ngờ\" -> event_type [\"suspicious_outbound\"]",
+            "\"data exfiltration\", \"rò rỉ dữ liệu\" -> event_type [\"data_exfiltration\"]",
+            "\"large transfer\" -> event_type [\"large_transfer\"]",
+            "\"successful login\" -> event_type [\"successful_login\"]",
+            "\"dns query\" -> event_type [\"dns_query\"]",
+            "\"process start\" -> event_type [\"process_start\"]",
+            "\"file access\" -> event_type [\"file_access\"]");
+
     public LlmSearchPlanRequest buildSearchPlanRequest(String userQuestion) {
         return new LlmSearchPlanRequest(buildSystemPrompt(), userQuestion);
     }
@@ -66,6 +144,9 @@ public class SearchPlanPromptBuilder {
                 - If the question does not specify a filter, omit that filter. Do not infer or hallucinate filter values.
                 - page and size may be omitted. Backend owns pagination and will override them from the API request.
                 - Never include raw logs, search results, event documents, API keys, passwords, or secrets.
+                - Prefer structured filters over message_query when the intent matches a supported event_type, severity, user, host, ip, or country_code.
+                - Use message_query only for free-text phrases that cannot be represented by structured fields.
+                - SearchPlan has no filters.source field. Use source only as aggregation.field when the user asks to group/top/count by source.
                 - For relative time, preserve the user's requested amount:
                   last 12 hours -> "now-12h";
                   last 10 days -> "now-10d";
@@ -127,6 +208,27 @@ public class SearchPlanPromptBuilder {
                 Supported severity values:
                 %s
 
+                Supported event_type values:
+                %s
+
+                Event type mapping examples:
+                %s
+
+                Known source values for aggregation.field = "source":
+                %s
+
+                Known demo users:
+                %s
+
+                Known demo hosts:
+                %s
+
+                Known demo country_code values:
+                %s
+
+                Known demo IP values:
+                %s
+
                 Country codes must be ISO-3166 alpha-2 uppercase values such as CN, VN, or US.
                 page must be >= 0.
                 size must be between 1 and 100.
@@ -135,7 +237,14 @@ public class SearchPlanPromptBuilder {
                 bulletList(ALLOWED_FIELDS),
                 bulletList(AGGREGATION_FIELDS),
                 bulletList(SUPPORTED_TIME_VALUES),
-                bulletList(SUPPORTED_SEVERITIES));
+                bulletList(SUPPORTED_SEVERITIES),
+                bulletList(SUPPORTED_EVENT_TYPES),
+                bulletList(EVENT_TYPE_MAPPING_EXAMPLES),
+                bulletList(SUPPORTED_SOURCES),
+                bulletList(KNOWN_USERS),
+                bulletList(KNOWN_HOSTS),
+                bulletList(KNOWN_COUNTRY_CODES),
+                bulletList(KNOWN_IPS));
     }
 
     public LlmSearchPlanRequest buildRepairSearchPlanRequest(
