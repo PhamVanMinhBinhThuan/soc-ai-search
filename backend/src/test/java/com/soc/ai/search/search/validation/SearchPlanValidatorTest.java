@@ -65,8 +65,22 @@ class SearchPlanValidatorTest {
                         SEARCH,
                         new SearchFilters(
                                 new TimeRange("now-7d", "now"),
+                                List.of("edr"),
                                 List.of("critical"),
                                 List.of("malware_detected"),
+                                null,
+                                null,
+                                null,
+                                null),
+                        0,
+                        20)),
+                Arguments.of("source edr filter", new SearchPlan(
+                        SEARCH,
+                        new SearchFilters(
+                                new TimeRange("now-7d", "now"),
+                                List.of("edr", "windows-auth"),
+                                null,
+                                null,
                                 null,
                                 null,
                                 null,
@@ -93,6 +107,7 @@ class SearchPlanValidatorTest {
                 Arguments.of("invalid severity", withSeverity(List.of("urgent")), "severity"),
                 Arguments.of("invalid IP", withIp("999.999.999.999"), "ip"),
                 Arguments.of("invalid country code", withCountryCode(List.of("cn")), "countryCode"),
+                Arguments.of("invalid source uppercase", withSource(List.of("EDR")), "source"),
                 Arguments.of("invalid size > 100", new SearchPlan(SEARCH, validFilters(), 0, 101), "size"),
                 Arguments.of("mode null", new SearchPlan(null, validFilters(), 0, 20), "mode"),
                 Arguments.of("relative time zero days", withTimeRange(new TimeRange("now-0d", "now")), "timestamp.from"),
@@ -105,6 +120,7 @@ class SearchPlanValidatorTest {
                         "2026-06-04T10:00:00Z",
                         "2026-06-03T10:00:00Z")), "timestamp"),
                 Arguments.of("wildcard query syntax", withEventType(List.of("failed*login")), "wildcard"),
+                Arguments.of("source wildcard query syntax", withSource(List.of("edr*")), "wildcard"),
                 Arguments.of("script query syntax", withUser("painless script"), "script"),
                 Arguments.of("blank message query", withMessageQuery(" "), "messageQuery"),
                 Arguments.of("message query too long", withMessageQuery("a".repeat(201)), "messageQuery"),
@@ -165,6 +181,23 @@ class SearchPlanValidatorTest {
                 new SearchFilters(
                         filters.timestamp(),
                         severity,
+                        filters.eventType(),
+                        filters.user(),
+                        filters.host(),
+                        filters.ip(),
+                        filters.countryCode()),
+                0,
+                20);
+    }
+
+    private static SearchPlan withSource(List<String> source) {
+        var filters = validFilters();
+        return new SearchPlan(
+                SEARCH,
+                new SearchFilters(
+                        filters.timestamp(),
+                        source,
+                        filters.severity(),
                         filters.eventType(),
                         filters.user(),
                         filters.host(),

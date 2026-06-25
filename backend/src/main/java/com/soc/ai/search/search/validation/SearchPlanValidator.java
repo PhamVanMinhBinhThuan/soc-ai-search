@@ -186,6 +186,7 @@ public class SearchPlanValidator {
         }
 
         validateTimeRange(filters.timestamp(), errors);
+        rejectDangerousValues("filters.source", filters.source(), errors);
         rejectDangerousValues("filters.event_type", filters.eventType(), errors);
         rejectDangerousValue("filters.user", filters.user(), errors);
         rejectDangerousValue("filters.host", filters.host(), errors);

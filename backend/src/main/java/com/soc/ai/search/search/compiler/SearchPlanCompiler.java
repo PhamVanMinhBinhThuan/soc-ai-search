@@ -124,6 +124,7 @@ public class SearchPlanCompiler {
         }
 
         addTimestampRange(searchFilters.timestamp(), filters);
+        addTermsFilter("source", searchFilters.source(), filters);
         addTermsFilter("severity", searchFilters.severity(), filters);
         addTermsFilter("event_type", searchFilters.eventType(), filters);
         addTermFilter("user", searchFilters.user(), filters);

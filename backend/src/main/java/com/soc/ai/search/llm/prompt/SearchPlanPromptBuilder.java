@@ -12,6 +12,7 @@ public class SearchPlanPromptBuilder {
     private static final List<String> ALLOWED_FIELDS = List.of(
             "timestamp.from",
             "timestamp.to",
+            "source",
             "severity",
             "event_type",
             "user",
@@ -144,9 +145,10 @@ public class SearchPlanPromptBuilder {
                 - If the question does not specify a filter, omit that filter. Do not infer or hallucinate filter values.
                 - page and size may be omitted. Backend owns pagination and will override them from the API request.
                 - Never include raw logs, search results, event documents, API keys, passwords, or secrets.
-                - Prefer structured filters over message_query when the intent matches a supported event_type, severity, user, host, ip, or country_code.
+                - Prefer structured filters over message_query when the intent matches a supported source, event_type, severity, user, host, ip, or country_code.
                 - Use message_query only for free-text phrases that cannot be represented by structured fields.
-                - SearchPlan has no filters.source field. Use source only as aggregation.field when the user asks to group/top/count by source.
+                - Use filters.source for source/vendor/log-origin filters such as windows-auth, vpn, firewall, edr, proxy, or dns.
+                - Use aggregation.field = "source" only when the user asks to group/top/count by source.
                 - For relative time, preserve the user's requested amount:
                   last 12 hours -> "now-12h";
                   last 10 days -> "now-10d";
@@ -158,6 +160,7 @@ public class SearchPlanPromptBuilder {
                   "mode": "search",
                   "filters": {
                     "timestamp": { "from": "now-24h", "to": "now" },
+                    "source": ["windows-auth"],
                     "severity": ["high", "critical"],
                     "event_type": ["failed_login"],
                     "user": "admin",
@@ -208,13 +211,13 @@ public class SearchPlanPromptBuilder {
                 Supported severity values:
                 %s
 
+                Supported source filter values:
+                %s
+
                 Supported event_type values:
                 %s
 
                 Event type mapping examples:
-                %s
-
-                Known source values for aggregation.field = "source":
                 %s
 
                 Known demo users:
@@ -238,9 +241,9 @@ public class SearchPlanPromptBuilder {
                 bulletList(AGGREGATION_FIELDS),
                 bulletList(SUPPORTED_TIME_VALUES),
                 bulletList(SUPPORTED_SEVERITIES),
+                bulletList(SUPPORTED_SOURCES),
                 bulletList(SUPPORTED_EVENT_TYPES),
                 bulletList(EVENT_TYPE_MAPPING_EXAMPLES),
-                bulletList(SUPPORTED_SOURCES),
                 bulletList(KNOWN_USERS),
                 bulletList(KNOWN_HOSTS),
                 bulletList(KNOWN_COUNTRY_CODES),

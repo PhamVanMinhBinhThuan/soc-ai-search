@@ -61,6 +61,7 @@ class MockLlmClientTest {
         assertThat(plan.filters().timestamp().to()).isEqualTo(expected.to());
 
         assertList(plan.filters().eventType(), expected.eventType());
+        assertList(plan.filters().source(), expected.source());
         assertList(plan.filters().countryCode(), expected.countryCode());
         assertList(plan.filters().severity(), expected.severity());
         assertThat(plan.filters().user()).isEqualTo(expected.user());
@@ -156,36 +157,41 @@ class MockLlmClientTest {
         return Stream.of(
                 Arguments.of(
                         "Show me failed login attempts from China in the last 24h",
-                        new ExpectedPlan(List.of("failed_login"), List.of("CN"), null, null, null, "now-24h", "now")),
+                        new ExpectedPlan(List.of("failed_login"), null, List.of("CN"), null, null, null, "now-24h", "now")),
                 Arguments.of(
-                        "Tìm login thất bại từ Trung Quốc trong 24 giờ qua",
-                        new ExpectedPlan(List.of("failed_login"), List.of("CN"), null, null, null, "now-24h", "now")),
+                        "Tim login that bai tu Trung Quoc trong 24 gio qua",
+                        new ExpectedPlan(List.of("failed_login"), null, List.of("CN"), null, null, null, "now-24h", "now")),
                 Arguments.of(
-                        "Tìm alert critical trong 7 ngày qua",
-                        new ExpectedPlan(null, null, List.of("critical"), null, null, "now-7d", "now")),
+                        "Tim alert critical trong 7 ngay qua",
+                        new ExpectedPlan(null, null, null, List.of("critical"), null, null, "now-7d", "now")),
                 Arguments.of(
                         "Show critical alerts in the last 7 days",
-                        new ExpectedPlan(null, null, List.of("critical"), null, null, "now-7d", "now")),
+                        new ExpectedPlan(null, null, null, List.of("critical"), null, null, "now-7d", "now")),
                 Arguments.of(
-                        "Tìm malware detected trong 7 ngày qua",
-                        new ExpectedPlan(null, null, null, null, "malware detected", "now-7d", "now")),
+                        "Show EDR events in the last 7 days",
+                        new ExpectedPlan(null, List.of("edr"), null, null, null, null, "now-7d", "now")),
+                Arguments.of(
+                        "Show windows-auth events for admin in the last 24h",
+                        new ExpectedPlan(null, List.of("windows-auth"), null, null, "admin", null, "now-24h", "now")),
+                Arguments.of(
+                        "Tim malware detected trong 7 ngay qua",
+                        new ExpectedPlan(null, null, null, null, null, "malware detected", "now-7d", "now")),
                 Arguments.of(
                         "Show malware detected events in the last 7 days",
-                        new ExpectedPlan(null, null, null, null, "malware detected", "now-7d", "now")),
+                        new ExpectedPlan(null, null, null, null, null, "malware detected", "now-7d", "now")),
                 Arguments.of(
-                        "Tìm firewall block từ CN",
-                        new ExpectedPlan(List.of("firewall_block"), List.of("CN"), null, null, null, "now-30d", "now")),
+                        "Tim firewall block tu CN",
+                        new ExpectedPlan(List.of("firewall_block"), null, List.of("CN"), null, null, null, "now-30d", "now")),
                 Arguments.of(
                         "Show privilege escalation by admin",
-                        new ExpectedPlan(List.of("privilege_escalation"), null, null, "admin", null, "now-30d", "now")),
+                        new ExpectedPlan(List.of("privilege_escalation"), null, null, null, "admin", null, "now-30d", "now")),
                 Arguments.of(
-                        "Tìm account lockout trong 7 ngày qua",
-                        new ExpectedPlan(List.of("account_lockout"), null, null, null, null, "now-7d", "now")),
+                        "Tim account lockout trong 7 ngay qua",
+                        new ExpectedPlan(List.of("account_lockout"), null, null, null, null, null, "now-7d", "now")),
                 Arguments.of(
                         "Show failed login events for user admin",
-                        new ExpectedPlan(List.of("failed_login"), null, null, "admin", null, "now-30d", "now")));
+                        new ExpectedPlan(List.of("failed_login"), null, null, null, "admin", null, "now-30d", "now")));
     }
-
     private static Stream<Arguments> synonymQuestions() {
         return Stream.of(
                 Arguments.of("failed login china", "failed login from cn"),
@@ -251,6 +257,7 @@ class MockLlmClientTest {
 
     private record ExpectedPlan(
             List<String> eventType,
+            List<String> source,
             List<String> countryCode,
             List<String> severity,
             String user,

@@ -47,6 +47,24 @@ class SearchPlanJsonParserTest {
     }
 
     @Test
+    void parsesSourceFilter() {
+        var plan = parser.parse("""
+                {
+                  "mode": "search",
+                  "filters": {
+                    "timestamp": { "from": "now-7d", "to": "now" },
+                    "source": ["edr", "windows-auth"]
+                  },
+                  "page": 0,
+                  "size": 20
+                }
+                """);
+
+        assertThat(plan.filters().source()).containsExactly("edr", "windows-auth");
+        assertThat(plan.filters().timestamp().from()).isEqualTo("now-7d");
+    }
+
+    @Test
     void backendPaginationOverrideWinsOverLlmPagination() {
         var plan = parser.parseWithPaginationOverride("""
                 {

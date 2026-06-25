@@ -21,6 +21,7 @@ class SearchPlanJacksonTest {
                   "mode": "search",
                   "filters": {
                     "timestamp": { "from": "now-24h", "to": "now" },
+                    "source": ["windows-auth"],
                     "severity": ["high", "critical"],
                     "event_type": ["failed_login"],
                     "user": "admin",
@@ -37,6 +38,7 @@ class SearchPlanJacksonTest {
         var plan = objectMapper.readValue(json, SearchPlan.class);
 
         assertThat(plan.mode()).isEqualTo(SearchMode.SEARCH);
+        assertThat(plan.filters().source()).containsExactly("windows-auth");
         assertThat(plan.filters().eventType()).containsExactly("failed_login");
         assertThat(plan.filters().countryCode()).containsExactly("CN");
         assertThat(plan.filters().timestamp().from()).isEqualTo("now-24h");
@@ -50,6 +52,7 @@ class SearchPlanJacksonTest {
                 SearchMode.SEARCH,
                 new SearchFilters(
                         new TimeRange("now-24h", "now"),
+                        List.of("windows-auth"),
                         List.of("high", "critical"),
                         List.of("failed_login"),
                         "admin",
@@ -63,6 +66,7 @@ class SearchPlanJacksonTest {
         var root = objectMapper.readTree(objectMapper.writeValueAsString(plan));
 
         assertThat(root.path("mode").asText()).isEqualTo("search");
+        assertThat(root.path("filters").path("source").get(0).asText()).isEqualTo("windows-auth");
         assertThat(root.path("filters").path("event_type").get(0).asText()).isEqualTo("failed_login");
         assertThat(root.path("filters").path("country_code").get(0).asText()).isEqualTo("CN");
         assertThat(root.path("message_query").asText()).isEqualTo("malware detected");

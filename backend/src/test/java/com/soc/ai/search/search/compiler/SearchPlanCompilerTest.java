@@ -85,6 +85,25 @@ class SearchPlanCompilerTest {
                             assertTerms(searchSpec, "severity", List.of("critical"));
                         }),
                 Arguments.of(
+                        "source uses terms filter",
+                        new SearchPlan(
+                                SEARCH,
+                                new SearchFilters(
+                                        new TimeRange("now-7d", "now"),
+                                        List.of("edr", "windows-auth"),
+                                        null,
+                                        null,
+                                        null,
+                                        null,
+                                        null,
+                                        null),
+                                0,
+                                20),
+                        (DslAssertion) searchSpec -> {
+                            assertRange(searchSpec, "now-7d", "now");
+                            assertTerms(searchSpec, "source", List.of("edr", "windows-auth"));
+                        }),
+                Arguments.of(
                         "multi severity uses terms not term with array",
                         validSearchPlan(),
                         (DslAssertion) searchSpec -> {

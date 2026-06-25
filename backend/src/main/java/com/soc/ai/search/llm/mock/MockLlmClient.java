@@ -55,6 +55,14 @@ public class MockLlmClient implements LlmClient {
             return eventsByHourAggregationPlan();
         }
 
+        if (containsWindowsAuthAdmin(normalized)) {
+            return windowsAuthAdminPlan();
+        }
+
+        if (containsEdrEvents(normalized)) {
+            return edrEventsSevenDaysPlan();
+        }
+
         if (containsFailedLoginAdmin(normalized)) {
             return failedLoginAdminPlan();
         }
@@ -117,6 +125,17 @@ public class MockLlmClient implements LlmClient {
         return value.contains("failed login") && value.contains("admin");
     }
 
+    private boolean containsEdrEvents(String value) {
+        return value.contains("edr")
+                && (value.contains("event") || value.contains("alert"));
+    }
+
+    private boolean containsWindowsAuthAdmin(String value) {
+        return value.contains("windows-auth")
+                && value.contains("admin")
+                && (value.contains("event") || value.contains("alert"));
+    }
+
     private boolean containsFirewallBlockCn(String value) {
         return value.contains("firewall") && value.contains("block")
                 && (value.contains(" cn") || value.contains("china") || value.contains("trung quoc"));
@@ -170,6 +189,35 @@ public class MockLlmClient implements LlmClient {
                   "filters": {
                     "timestamp": { "from": "now-7d", "to": "now" },
                     "severity": ["critical"]
+                  },
+                  "page": 0,
+                  "size": 20
+                }
+                """;
+    }
+
+    private String edrEventsSevenDaysPlan() {
+        return """
+                {
+                  "mode": "search",
+                  "filters": {
+                    "timestamp": { "from": "now-7d", "to": "now" },
+                    "source": ["edr"]
+                  },
+                  "page": 0,
+                  "size": 20
+                }
+                """;
+    }
+
+    private String windowsAuthAdminPlan() {
+        return """
+                {
+                  "mode": "search",
+                  "filters": {
+                    "timestamp": { "from": "now-24h", "to": "now" },
+                    "source": ["windows-auth"],
+                    "user": "admin"
                   },
                   "page": 0,
                   "size": 20
