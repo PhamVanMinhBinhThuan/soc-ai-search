@@ -12,7 +12,7 @@ import {
 import { useSocAuth } from '@/auth/use-auth'
 import { EventDetailDrawer } from '@/components/soc/event-detail-drawer'
 import { HistorySheet } from '@/components/soc/history-sheet'
-import { MetricsSummary } from '@/components/soc/metrics-summary'
+import { AiSummaryCard, MetricsSummaryCards } from '@/components/soc/metrics-summary'
 import { QueryTransparency } from '@/components/soc/query-transparency'
 import {
   ResultTabs,
@@ -572,17 +572,6 @@ function App() {
 
               {response ? (
                 <>
-                  <MetricsSummary
-                    mode={response.mode}
-                    total={response.total}
-                    llmLatencyMs={response.llm_latency_ms}
-                    searchLatencyMs={response.search_latency_ms}
-                    summary={response.summary}
-                    summarySource={response.summary_source}
-                    summaryLatencyMs={response.summary_latency_ms}
-                    isMockMode={isMockMode}
-                  />
-
                   <QueryTransparency
                     searchPlan={response.search_plan}
                     generatedDsl={response.generated_dsl}
@@ -634,6 +623,13 @@ function App() {
                     }}
                   />
 
+                  <AiSummaryCard
+                    summary={response.summary}
+                    summarySource={response.summary_source}
+                    summaryLatencyMs={response.summary_latency_ms}
+                    isMockMode={isMockMode}
+                  />
+
                   <ResultTabs
                     mode={response.mode}
                     activeTab={activeTab}
@@ -662,6 +658,13 @@ function App() {
                     onSelectEvent={openEventDetail}
                     onExport={() => void handleExport(response.query_id)}
                     onSuggestionClick={submitQuestion}
+                  />
+
+                  <MetricsSummaryCards
+                    mode={response.mode}
+                    total={response.total}
+                    llmLatencyMs={response.llm_latency_ms}
+                    searchLatencyMs={response.search_latency_ms}
                   />
                 </>
               ) : null}

@@ -33,24 +33,16 @@ const metricStyles = [
   },
 ]
 
-export function MetricsSummary({
+export function MetricsSummaryCards({
   mode,
   total,
   llmLatencyMs,
   searchLatencyMs,
-  summary,
-  summarySource,
-  summaryLatencyMs,
-  isMockMode,
 }: {
   mode: SearchMode
   total: number
   llmLatencyMs: number
   searchLatencyMs: number
-  summary: string
-  summarySource: SummarySource
-  summaryLatencyMs: number
-  isMockMode: boolean
 }) {
   const metrics = [
     {
@@ -79,20 +71,6 @@ export function MetricsSummary({
       hint: 'Elasticsearch query',
     },
   ]
-  const isBruteForceRisk =
-    summary?.toLowerCase().includes('failed login') ||
-    summary?.toLowerCase().includes('brute force')
-  const summaryLabel = isMockMode
-    ? 'Mock AI Summary'
-    : summarySource === 'llm'
-      ? 'AI Summary'
-      : 'Fallback Summary'
-  const summaryBadge = isMockMode
-    ? 'MOCK'
-    : summarySource === 'llm'
-      ? 'LLM'
-      : 'FALLBACK'
-
   return (
     <section className="space-y-3">
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
@@ -130,7 +108,37 @@ export function MetricsSummary({
           )
         })}
       </div>
+    </section>
+  )
+}
 
+export function AiSummaryCard({
+  summary,
+  summarySource,
+  summaryLatencyMs,
+  isMockMode,
+}: {
+  summary: string
+  summarySource: SummarySource
+  summaryLatencyMs: number
+  isMockMode: boolean
+}) {
+  const isBruteForceRisk =
+    summary?.toLowerCase().includes('failed login') ||
+    summary?.toLowerCase().includes('brute force')
+  const summaryLabel = isMockMode
+    ? 'Mock AI Summary'
+    : summarySource === 'llm'
+      ? 'AI Summary'
+      : 'Fallback Summary'
+  const summaryBadge = isMockMode
+    ? 'MOCK'
+    : summarySource === 'llm'
+      ? 'LLM'
+      : 'FALLBACK'
+
+  return (
+    <section className="space-y-3">
       <div className="ai-summary-glow relative overflow-hidden rounded-xl p-px">
         <div className="relative rounded-[11px] bg-card/95 px-4 py-3 backdrop-blur-sm">
           <div className="mb-2 flex flex-wrap items-center gap-2 text-sm font-semibold">
