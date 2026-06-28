@@ -14,7 +14,6 @@ export function TopSourceIps({ data }: { data: TopSourceIpItem[] }) {
       <div className="flex items-center justify-between border-b border-zinc-800 px-5 py-3.5 shrink-0">
         <div>
           <h2 className="text-sm font-semibold text-zinc-100">Top Source IPs</h2>
-          <p className="text-xs text-zinc-400">By event volume, last 24h</p>
         </div>
         <span className="rounded border border-zinc-800 bg-zinc-950/60 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-zinc-500">
           Live

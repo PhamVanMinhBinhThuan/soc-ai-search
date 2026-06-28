@@ -11,7 +11,7 @@ export function KpiCards({ data }: { data: KpiData }) {
     glow: string
   }[] = [
     {
-      label: "Total Events",
+      label: "Events",
       value: data.total_events.toLocaleString(),
       icon: Activity,
       valueClass: "text-zinc-50",
@@ -19,7 +19,7 @@ export function KpiCards({ data }: { data: KpiData }) {
       glow: "hover:border-cyan-500/40 hover:shadow-[0_0_25px_-8px_rgba(34,211,238,0.45)]",
     },
     {
-      label: "Critical / High Alerts",
+      label: "Critical / High Events",
       value: data.critical_high_alerts.toLocaleString(),
       icon: AlertTriangle,
       valueClass: "text-rose-500",

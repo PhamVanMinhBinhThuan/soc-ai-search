@@ -27,11 +27,7 @@ export function EventsOverTime({ data }: { data: EventsOverTimePoint[] }) {
       <div className="flex items-center justify-between border-b border-zinc-800 px-5 py-3.5 shrink-0">
         <div>
           <h2 className="text-sm font-semibold text-zinc-100">Events Over Time</h2>
-          <p className="text-xs text-zinc-400">Ingested security events, 5-minute buckets</p>
         </div>
-        <span className="rounded-md border border-zinc-800 bg-zinc-950/60 px-2.5 py-1 text-xs font-medium text-zinc-400">
-          Last 24H
-        </span>
       </div>
 
       <div className="p-5 flex-1 min-h-[300px]">

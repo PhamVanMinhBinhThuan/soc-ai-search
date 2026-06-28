@@ -136,13 +136,13 @@ export function SocDashboard() {
             <div className="flex size-9 items-center justify-center rounded-lg border border-cyan-500/30 bg-cyan-500/10">
               <LayoutDashboard className="size-5 text-cyan-300" />
             </div>
-            <div>
+            <div className="flex flex-col items-start gap-1.5">
               <h1 className="text-xl font-semibold tracking-tight text-zinc-100">
                 SOC Overview
               </h1>
-              <p className="text-sm text-zinc-500">
-                Real-time security telemetry and alerts
-              </p>
+              <span className="rounded border border-zinc-800 bg-zinc-950/60 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-zinc-500">
+                Last 24h
+              </span>
             </div>
           </div>
           <div className="flex items-center gap-3">

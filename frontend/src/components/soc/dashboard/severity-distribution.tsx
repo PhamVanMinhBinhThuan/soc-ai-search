@@ -36,7 +36,6 @@ export function SeverityDistribution({ data }: { data: SeverityDistributionItem[
     <div className="rounded-md border border-zinc-800 bg-zinc-900 flex flex-col h-full">
       <div className="border-b border-zinc-800 px-5 py-3.5 shrink-0">
         <h2 className="text-sm font-semibold text-zinc-100">Severity Distribution</h2>
-        <p className="text-xs text-zinc-400">Alerts by severity, last 24h</p>
       </div>
 
       <div className="flex flex-col items-center p-5 flex-1 min-h-0 justify-center">
