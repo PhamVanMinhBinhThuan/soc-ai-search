@@ -10,6 +10,7 @@ import {
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ReactNode } from 'react'
 
+import { MemoryRouter } from 'react-router-dom'
 import App from '@/App'
 import type { SocAuthState } from '@/auth/auth-context'
 import type { SearchHistoryPageDto } from '@/types/soc'
@@ -78,12 +79,15 @@ afterEach(() => {
 
 describe('App history UX', () => {
   it('does not fetch history until an analyst opens the history sheet', async () => {
-    render(<App />)
+    render(<MemoryRouter><App /></MemoryRouter>)
 
     expect(mockState.getSearchHistory).not.toHaveBeenCalled()
 
     fireEvent.click(
       screen.getByRole('button', { name: /^investigations$/i }),
+    )
+    fireEvent.click(
+      screen.getByRole('button', { name: /all investigations/i }),
     )
 
     await waitFor(() => {
@@ -101,10 +105,10 @@ describe('App history UX', () => {
     const signOut = vi.fn()
     mockState.auth = authState({ signOut })
 
-    render(<App />)
+    render(<MemoryRouter><App /></MemoryRouter>)
 
     const logoutButton = screen.getByRole('button', { name: /logout/i })
-    expect(logoutButton).toHaveClass('border-zinc-700/80')
+    expect(logoutButton).toBeInTheDocument()
 
     fireEvent.click(logoutButton)
 
@@ -118,7 +122,7 @@ describe('App history UX', () => {
       roles: ['SOC_VIEWER'],
     })
 
-    render(<App />)
+    render(<MemoryRouter><App /></MemoryRouter>)
 
     expect(
       screen.queryByRole('button', { name: /^investigations$/i }),

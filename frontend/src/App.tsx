@@ -1,8 +1,5 @@
-import {
-  LogOut,
-  ScrollText,
-} from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
+import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom'
 
 import {
   canEditSearchPlan,
@@ -30,7 +27,6 @@ import {
   SearchIdleState,
   SearchLoadingState,
 } from '@/components/soc/search-status'
-import { SocHero } from '@/components/hero/soc-hero'
 import { SocSidebar } from '@/components/soc/soc-sidebar'
 import { Button } from '@/components/ui/button'
 import { initialScenario, mockScenarios } from '@/lib/mock-data'
@@ -66,8 +62,6 @@ import type {
 
 const DEFAULT_SEARCH_PAGE_SIZE = 10
 const HISTORY_PAGE_SIZE = 5
-const LOGOUT_BUTTON_CLASS =
-  'border border-zinc-700/80 bg-zinc-900/40 text-zinc-300 shadow-[0_0_24px_-18px_rgba(34,211,238,0.9)] transition-all hover:border-cyan-400/60 hover:bg-cyan-400/10 hover:text-white hover:shadow-[0_0_30px_-16px_rgba(34,211,238,0.95)]'
 
 const initialResponse = isMockMode ? initialMockResponse() : null
 const initialRequest: NaturalLanguageSearchRequestDto | null = initialResponse
@@ -109,7 +103,13 @@ function App() {
   const [activeTab, setActiveTab] = useState<ResultTab>(
     initialResponse?.mode === 'aggregation' ? 'analytics' : 'raw',
   )
-  const [activePage, setActivePage] = useState<'dashboard' | 'search' | 'investigations' | 'audit-logs'>('search')
+  const location = useLocation()
+  const navigate = useNavigate()
+  const currentPath = location.pathname
+  const activePage = currentPath === '/dashboard' ? 'dashboard' 
+    : currentPath === '/investigations' ? 'investigations'
+    : currentPath === '/audit-logs' ? 'audit-logs'
+    : 'search'
 
   const [detailOpen, setDetailOpen] = useState(false)
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null)
@@ -426,7 +426,7 @@ function App() {
   }
 
   const navigateToAuditLogs = () => {
-    setActivePage('audit-logs')
+    navigate('/audit-logs')
   }
 
   const handleExport = async (overrideQueryId?: string) => {
@@ -489,83 +489,60 @@ function App() {
     ? formatTimeRangeLabel(response.search_plan)
     : 'All Time'
 
-  const isLandingPage = !submittedRequest && !response
-
   return (
     <div className="dark flex min-h-svh bg-background text-foreground">
-      {!isLandingPage ? (
-        <SocSidebar
-          identity={auth.email || auth.identity}
-          roles={auth.roles}
-          authLoading={auth.loading}
-          authEnabled={auth.enabled}
-          activePage={activePage}
-          onPageChange={setActivePage}
-          onOpenHistory={() => { setHistoryOpen(true); void loadHistory(0) }}
-          onOpenAuditLogs={navigateToAuditLogs}
-          onLogout={auth.signOut}
-        />
-      ) : null}
+      <SocSidebar
+        identity={auth.email || auth.identity}
+        roles={auth.roles}
+        authLoading={auth.loading}
+        authEnabled={auth.enabled}
+        activePage={activePage}
+        onPageChange={(p) => navigate(`/${p}`)}
+        onOpenHistory={() => { setHistoryOpen(true); void loadHistory(0) }}
+        onOpenAuditLogs={navigateToAuditLogs}
+        onLogout={auth.signOut}
+      />
 
-      {activePage === 'audit-logs' ? (
-        canUseAuditLogs ? (
+      <Routes>
+        <Route path="/" element={<Navigate to="/search" replace />} />
+        
+        <Route path="/audit-logs" element={
+          canUseAuditLogs ? (
+            <div className="flex-1 w-full relative min-w-0 flex flex-col h-svh">
+              <AuditLogsPage onBack={() => navigate('/search')} />
+            </div>
+          ) : (
+            <div className="flex-1 w-full relative min-w-0 flex flex-col h-svh items-center justify-center bg-zinc-950 text-rose-500">
+              <h1 className="text-2xl font-bold">403 Forbidden</h1>
+              <p className="mt-2 text-zinc-400">You do not have permission to view System Audit Logs.</p>
+              <Button className="mt-4" onClick={() => navigate('/search')}>Return to Search</Button>
+            </div>
+          )
+        } />
+
+        <Route path="/dashboard" element={
           <div className="flex-1 w-full relative min-w-0 flex flex-col h-svh">
-            <AuditLogsPage onBack={() => setActivePage('search')} />
+            <SocDashboard />
           </div>
-        ) : (
-          <div className="flex-1 w-full relative min-w-0 flex flex-col h-svh items-center justify-center bg-zinc-950 text-rose-500">
-            <h1 className="text-2xl font-bold">403 Forbidden</h1>
-            <p className="mt-2 text-zinc-400">You do not have permission to view System Audit Logs.</p>
-            <Button className="mt-4" onClick={() => setActivePage('search')}>Return to Search</Button>
+        } />
+
+        <Route path="/investigations" element={
+          <div className="flex-1 w-full relative min-w-0 flex flex-col h-svh">
+            <InvestigationsPage 
+              onRunAgain={(item) => {
+                navigate('/search')
+                runHistoryItem(item)
+              }}
+              onExport={(queryId) => void handleExport(queryId)}
+              canExport={canUseExport}
+              onBack={() => navigate('/search')}
+            />
           </div>
-        )
-      ) : activePage === 'dashboard' ? (
-        <div className="flex-1 w-full relative min-w-0 flex flex-col h-svh">
-          <SocDashboard />
-        </div>
-      ) : activePage === 'investigations' ? (
-        <div className="flex-1 w-full relative min-w-0 flex flex-col h-svh">
-          <InvestigationsPage 
-            onRunAgain={(item) => {
-              setActivePage('search')
-              runHistoryItem(item)
-            }}
-            onExport={(queryId) => void handleExport(queryId)}
-            canExport={canUseExport}
-            onBack={() => setActivePage('search')}
-          />
-        </div>
-      ) : isLandingPage ? (
-        <div className="flex-1 w-full relative">
-          <SocHero
-            topRightContent={
-              <div className="flex items-center gap-3">
-                {canUseHistory ? (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setActivePage('investigations')}
-                    className="text-zinc-300 hover:text-white hover:bg-white/10"
-                  >
-                    <ScrollText className="size-4 sm:mr-2" />
-                    <span className="hidden sm:inline">Investigations</span>
-                  </Button>
-                ) : null}
-                {auth.enabled ? (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={auth.signOut}
-                    className={LOGOUT_BUTTON_CLASS}
-                  >
-                    <LogOut className="size-4 mr-2" />
-                    Logout
-                  </Button>
-                ) : null}
-              </div>
-            }
-          >
-            <div className="w-full text-left">
+        } />
+
+        <Route path="/search" element={
+          <div className="min-w-0 flex-1">
+            <main className="mx-auto flex min-w-0 w-full max-w-[1500px] flex-col gap-5 p-4 sm:p-6">
               <SearchSection
                 question={question}
                 scenarios={mockScenarios}
@@ -574,144 +551,126 @@ function App() {
                 onQuestionChange={setQuestion}
                 onSubmitQuestion={submitQuestion}
                 onSelectSuggestion={submitQuestion}
-              />
-            </div>
-          </SocHero>
-        </div>
-      ) : (
-        <div className="min-w-0 flex-1">
-
-
-        <main className="mx-auto flex min-w-0 w-full max-w-[1500px] flex-col gap-5 p-4 sm:p-6">
-          <SearchSection
-            question={question}
-            scenarios={mockScenarios}
-            isLoading={requestStatus === 'loading'}
-            isMockMode={isMockMode}
-            onQuestionChange={setQuestion}
-            onSubmitQuestion={submitQuestion}
-            onSelectSuggestion={submitQuestion}
-            currentQueryId={response?.query_id}
-            isPinned={isCurrentQueryPinned}
-            onTogglePin={handleTogglePinCurrentQuery}
-            canPin={canUseHistory}
-          />
-
-          {requestStatus === 'idle' ? (
-            <SearchIdleState isMock={isMockMode} />
-          ) : null}
-
-          {requestStatus === 'loading' ? <SearchLoadingState /> : null}
-
-          {requestStatus === 'error' && searchError ? (
-            <SearchErrorState
-              error={searchError}
-              onRetry={retrySearch}
-            />
-          ) : null}
-
-          {response ? (
-            <>
-              <MetricsSummary
-                mode={response.mode}
-                total={response.total}
-                llmLatencyMs={response.llm_latency_ms}
-                searchLatencyMs={response.search_latency_ms}
-                summary={response.summary}
-                summarySource={response.summary_source}
-                summaryLatencyMs={response.summary_latency_ms}
-                isMockMode={isMockMode}
+                currentQueryId={response?.query_id}
+                isPinned={isCurrentQueryPinned}
+                onTogglePin={handleTogglePinCurrentQuery}
+                canPin={canUseHistory}
               />
 
-              <QueryTransparency
-                searchPlan={response.search_plan}
-                generatedDsl={response.generated_dsl}
-                canEditPlan={canEditPlan}
-                onRunEditedPlan={async (editedPlan) => {
-                   searchAbortRef.current?.abort()
-                   exportAbortRef.current?.abort()
-                   exportAbortRef.current = null
-                   const controller = new AbortController()
-                   searchAbortRef.current = controller
-                   closeDetail()
-                   // We do not setResponse(null) or setRequestStatus('loading') here
-                   // to keep the editor and current results visible while running.
-                   // The editor component handles its own loading spinner.
-                   
-                   try {
-                     const { runSearchPlan } = await import('@/services/search-plan-api')
-                     const nextResponse = await runSearchPlan(editedPlan, controller.signal)
-                     if (controller.signal.aborted) {
-                       return
-                     }
-                     setResponse(nextResponse)
-                     setIsCurrentQueryPinned(false)
-                     setSearchError(null)
-                     setExportStatus('idle')
-                     setExportMessage(null)
-                     setActiveTab(
-                       nextResponse.mode === 'aggregation' ? 'analytics' : 'raw',
-                     )
-                     const isEmpty =
-                       nextResponse.mode === 'search'
-                         ? nextResponse.events.length === 0
-                         : nextResponse.aggregation_results.length === 0
-                     setRequestStatus(isEmpty ? 'empty' : 'success')
-                   } catch (error) {
-                     if (isAbortError(error)) {
-                       return
-                     }
-                     // Let QueryTransparency handle the error to keep editor open
-                     throw error
-                   } finally {
-                     if (searchAbortRef.current === controller) {
-                       searchAbortRef.current = null
-                     }
-                     if (
-                       !controller.signal.aborted &&
-                       historyOpenRef.current &&
-                       canUseHistory
-                     ) {
-                       void loadHistory(historyPageRef.current)
-                     }
-                   }
-                }}
-              />
+              {requestStatus === 'idle' ? (
+                <SearchIdleState isMock={isMockMode} />
+              ) : null}
 
-              <ResultTabs
-                mode={response.mode}
-                activeTab={activeTab}
-                events={response.events}
-                aggregationResults={response.aggregation_results}
-                chartMetadata={response.chart_metadata}
-                total={response.total}
-                page={response.page}
-                size={response.size}
-                totalPages={response.total_pages}
-                isMockMode={isMockMode}
-                queryId={response.query_id}
-                exportStatus={exportStatus}
-                exportMessage={exportMessage}
-                canExportCsv={canUseExport}
-                exportDisabled={
-                  requestStatus === 'loading' ||
-                  exportStatus === 'loading' ||
-                  !response.query_id ||
-                  !canUseExport
-                }
-                timeRangeLabel={timeRangeLabel}
-                response={response}
-                onTabChange={setActiveTab}
-                onPageChange={changePage}
-                onSelectEvent={openEventDetail}
-                onExport={() => void handleExport(response.query_id)}
-                onSuggestionClick={submitQuestion}
-              />
-            </>
-          ) : null}
-        </main>
-      </div>
-      )}
+              {requestStatus === 'loading' ? <SearchLoadingState /> : null}
+
+              {requestStatus === 'error' && searchError ? (
+                <SearchErrorState
+                  error={searchError}
+                  onRetry={retrySearch}
+                />
+              ) : null}
+
+              {response ? (
+                <>
+                  <MetricsSummary
+                    mode={response.mode}
+                    total={response.total}
+                    llmLatencyMs={response.llm_latency_ms}
+                    searchLatencyMs={response.search_latency_ms}
+                    summary={response.summary}
+                    summarySource={response.summary_source}
+                    summaryLatencyMs={response.summary_latency_ms}
+                    isMockMode={isMockMode}
+                  />
+
+                  <QueryTransparency
+                    searchPlan={response.search_plan}
+                    generatedDsl={response.generated_dsl}
+                    canEditPlan={canEditPlan}
+                    onRunEditedPlan={async (editedPlan) => {
+                      searchAbortRef.current?.abort()
+                      exportAbortRef.current?.abort()
+                      exportAbortRef.current = null
+                      const controller = new AbortController()
+                      searchAbortRef.current = controller
+                      closeDetail()
+                      
+                      try {
+                        const { runSearchPlan } = await import('@/services/search-plan-api')
+                        const nextResponse = await runSearchPlan(editedPlan, controller.signal)
+                        if (controller.signal.aborted) {
+                          return
+                        }
+                        setResponse(nextResponse)
+                        setIsCurrentQueryPinned(false)
+                        setSearchError(null)
+                        setExportStatus('idle')
+                        setExportMessage(null)
+                        setActiveTab(
+                          nextResponse.mode === 'aggregation' ? 'analytics' : 'raw',
+                        )
+                        const isEmpty =
+                          nextResponse.mode === 'search'
+                            ? nextResponse.events.length === 0
+                            : nextResponse.aggregation_results.length === 0
+                        setRequestStatus(isEmpty ? 'empty' : 'success')
+                      } catch (error) {
+                        if (isAbortError(error)) {
+                          return
+                        }
+                        throw error
+                      } finally {
+                        if (searchAbortRef.current === controller) {
+                          searchAbortRef.current = null
+                        }
+                        if (
+                          !controller.signal.aborted &&
+                          historyOpenRef.current &&
+                          canUseHistory
+                        ) {
+                          void loadHistory(historyPageRef.current)
+                        }
+                      }
+                    }}
+                  />
+
+                  <ResultTabs
+                    mode={response.mode}
+                    activeTab={activeTab}
+                    events={response.events}
+                    aggregationResults={response.aggregation_results}
+                    chartMetadata={response.chart_metadata}
+                    total={response.total}
+                    page={response.page}
+                    size={response.size}
+                    totalPages={response.total_pages}
+                    isMockMode={isMockMode}
+                    queryId={response.query_id}
+                    exportStatus={exportStatus}
+                    exportMessage={exportMessage}
+                    canExportCsv={canUseExport}
+                    exportDisabled={
+                      requestStatus === 'loading' ||
+                      exportStatus === 'loading' ||
+                      !response.query_id ||
+                      !canUseExport
+                    }
+                    timeRangeLabel={timeRangeLabel}
+                    response={response}
+                    onTabChange={setActiveTab}
+                    onPageChange={changePage}
+                    onSelectEvent={openEventDetail}
+                    onExport={() => void handleExport(response.query_id)}
+                    onSuggestionClick={submitQuestion}
+                  />
+                </>
+              ) : null}
+            </main>
+          </div>
+        } />
+
+        <Route path="*" element={<Navigate to="/search" replace />} />
+      </Routes>
 
       <EventDetailDrawer
         event={eventDetail}
@@ -745,11 +704,11 @@ function App() {
         }}
         onViewAll={() => {
           setHistoryOpen(false)
-          setActivePage('investigations')
+          navigate('/investigations')
         }}
         onRunAgain={(item) => {
           setHistoryOpen(false)
-          setActivePage('search')
+          navigate('/search')
           runHistoryItem(item)
         }}
         onRetry={() => loadHistory(0)}
