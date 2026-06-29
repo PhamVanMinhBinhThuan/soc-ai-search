@@ -62,7 +62,6 @@ export function AuditLogsPage({
     if (!selectedId) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelectedItemDetail(null)
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setDetailError(null)
       return
     }
