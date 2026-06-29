@@ -11,17 +11,6 @@ import {
 import type { EventsOverTimePoint } from "@/types/soc"
 
 export function EventsOverTime({ data }: { data: EventsOverTimePoint[] }) {
-  // Format the timestamp for the X-axis (e.g., HH:mm)
-  const formattedData = useMemo(() => {
-    return data.map((d) => {
-      const date = new Date(d.timestamp)
-      return {
-        ...d,
-        timeLabel: date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      }
-    })
-  }, [data])
-
   return (
     <div className="rounded-md border border-zinc-800 bg-zinc-900 flex flex-col h-full">
       <div className="flex items-center justify-between border-b border-zinc-800 px-5 py-3.5 shrink-0">
@@ -38,7 +27,7 @@ export function EventsOverTime({ data }: { data: EventsOverTimePoint[] }) {
         ) : (
           <ResponsiveContainer width="100%" height="100%">
             <LineChart
-              data={formattedData}
+              data={data}
               margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
             >
               <defs>
@@ -54,12 +43,15 @@ export function EventsOverTime({ data }: { data: EventsOverTimePoint[] }) {
                 opacity={0.4}
               />
               <XAxis
-                dataKey="timeLabel"
+                dataKey="timestamp"
                 axisLine={false}
                 tickLine={false}
                 tick={{ fill: "#a1a1aa", fontSize: 12 }}
                 tickMargin={12}
                 minTickGap={30}
+                tickFormatter={(value) => {
+                  return new Date(value).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                }}
               />
               <YAxis
                 axisLine={false}
@@ -69,6 +61,9 @@ export function EventsOverTime({ data }: { data: EventsOverTimePoint[] }) {
                 width={40}
               />
               <Tooltip
+                labelFormatter={(value) => {
+                  return new Date(value).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                }}
                 contentStyle={{
                   backgroundColor: "#18181b",
                   border: "1px solid #27272a",
