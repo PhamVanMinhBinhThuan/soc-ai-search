@@ -32,7 +32,6 @@ import { Button } from '@/components/ui/button'
 import { initialScenario, mockScenarios } from '@/lib/mock-data'
 import {
   downloadMockCsv,
-  formatTimeRangeLabel,
 } from '@/lib/mock-presentation'
 import { setAccessTokenProvider } from '@/services/api-client'
 import { toUiError } from '@/services/api-error-messages'
@@ -495,10 +494,6 @@ function App() {
     }
   }
 
-  const timeRangeLabel = response
-    ? formatTimeRangeLabel(response.search_plan)
-    : 'All Time'
-
   return (
     <div className="dark flex min-h-svh bg-background text-foreground">
       <SocSidebar
@@ -664,7 +659,6 @@ function App() {
                       !response.query_id ||
                       !canUseExport
                     }
-                    timeRangeLabel={timeRangeLabel}
                     response={response}
                     onTabChange={setActiveTab}
                     onPageChange={changePage}

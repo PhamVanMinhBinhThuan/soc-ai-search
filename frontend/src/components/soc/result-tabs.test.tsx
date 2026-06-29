@@ -27,7 +27,6 @@ const baseProps = {
   exportStatus: 'idle' as const,
   exportMessage: null,
   exportDisabled: false,
-  timeRangeLabel: 'Last 24h',
   onTabChange: vi.fn(),
   onPageChange: vi.fn(),
   onSelectEvent: vi.fn(),

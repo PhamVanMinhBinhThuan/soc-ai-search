@@ -1,9 +1,10 @@
 import {
   BarChart3,
-  CalendarDays,
   Check,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
+  ChevronUp,
   DatabaseZap,
   Download,
   FileSearch,
@@ -364,7 +365,6 @@ export function ResultTabs({
   exportMessage,
   canExportCsv,
   exportDisabled,
-  timeRangeLabel,
   response,
   onTabChange,
   onPageChange,
@@ -387,7 +387,6 @@ export function ResultTabs({
   exportMessage: string | null
   canExportCsv: boolean
   exportDisabled: boolean
-  timeRangeLabel: string
   response: NaturalLanguageSearchResponseDto | null
   onTabChange: (tab: ResultTab) => void
   onPageChange: (page: number) => void
@@ -395,59 +394,75 @@ export function ResultTabs({
   onExport: () => void
   onSuggestionClick?: (question: string) => void
 }) {
+  const [expanded, setExpanded] = useState(true)
+  const ToggleIcon = expanded ? ChevronUp : ChevronDown
   const suggestions = useMemo(() => getSuggestions(response), [response])
 
   return (
     <div className="space-y-4">
       <Card className="gap-0 overflow-hidden border border-border bg-card py-0">
       <div className="flex flex-wrap items-center gap-2 border-b border-border px-4 py-3">
-        <span className="inline-flex h-8 items-center gap-2 rounded-lg border border-border bg-background/40 px-3 text-xs text-foreground">
-          <CalendarDays className="size-4" />
-          {timeRangeLabel}
-        </span>
-        <span className="rounded-lg border border-border bg-background/35 px-3 py-1.5 text-xs text-muted-foreground">
-          Mode: <strong className="text-foreground">{mode}</strong>
-        </span>
-        <Button
-          variant="outline"
-          size="sm"
-          className="ml-auto"
-          disabled={exportDisabled}
-          onClick={onExport}
-          aria-label={
-            !canExportCsv
-              ? 'CSV export requires analyst role'
-              : isMockMode
-                ? 'Export mock results as CSV'
-                : 'Export results as CSV'
-          }
-          aria-live="polite"
-          title={
-            !canExportCsv
-              ? 'Requires SOC_ANALYST or SOC_ADMIN role'
-              : queryId
-                ? `Export query ${queryId}`
-                : 'No query available'
-          }
-        >
-          {exportStatus === 'loading' ? (
-            <LoaderCircle className="animate-spin" />
-          ) : exportStatus === 'success' ? (
-            <Check className="text-emerald-300" />
-          ) : (
-            <Download />
-          )}
-          {exportStatus === 'loading'
-            ? 'Exporting...'
-            : exportStatus === 'success'
-              ? 'Exported'
-              : !canExportCsv
-                ? 'Export Locked'
+        <div className="flex items-center gap-2 ml-auto">
+          <span className="rounded-lg border border-border bg-background/35 px-3 py-1.5 text-xs text-muted-foreground">
+            Total Events: <strong className="text-foreground">{total.toLocaleString('en-US')}</strong>
+          </span>
+          <span className="rounded-lg border border-border bg-background/35 px-3 py-1.5 text-xs text-muted-foreground">
+            Mode: <strong className="text-foreground">{mode}</strong>
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={exportDisabled}
+            onClick={onExport}
+            aria-label={
+              !canExportCsv
+                ? 'CSV export requires analyst role'
                 : isMockMode
-                  ? 'Export Mock CSV'
-                  : 'Export CSV'}
-        </Button>
+                  ? 'Export mock results as CSV'
+                  : 'Export results as CSV'
+            }
+            aria-live="polite"
+            title={
+              !canExportCsv
+                ? 'Requires SOC_ANALYST or SOC_ADMIN role'
+                : queryId
+                  ? `Export query ${queryId}`
+                  : 'No query available'
+            }
+          >
+            {exportStatus === 'loading' ? (
+              <LoaderCircle className="animate-spin" />
+            ) : exportStatus === 'success' ? (
+              <Check className="text-emerald-300" />
+            ) : (
+              <Download />
+            )}
+            {exportStatus === 'loading'
+              ? 'Exporting...'
+              : exportStatus === 'success'
+                ? 'Exported'
+                : !canExportCsv
+                  ? 'Export Locked'
+                  : isMockMode
+                    ? 'Export Mock CSV'
+                    : 'Export CSV'}
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-7 text-muted-foreground hover:text-foreground"
+            aria-expanded={expanded}
+            aria-label={expanded ? 'Collapse results' : 'Expand results'}
+            onClick={() => setExpanded((current) => !current)}
+          >
+            <ToggleIcon className="size-4" />
+          </Button>
+        </div>
       </div>
+
+      {expanded ? (
+        <>
+
 
       {exportMessage ? (
         <div className="px-4 pt-3" aria-live="polite">
@@ -483,9 +498,8 @@ export function ResultTabs({
             <BarChart3 />
             Analytics View
           </TabsTrigger>
-          <TabsTrigger value="raw" disabled={mode !== 'search'}>
+          <TabsTrigger value="raw" disabled={mode !== 'search'} title="Raw Events">
             <DatabaseZap />
-            Raw Events
           </TabsTrigger>
         </TabsList>
 
@@ -506,7 +520,9 @@ export function ResultTabs({
             onSelectEvent={onSelectEvent}
           />
         </TabsContent>
-      </Tabs>
+        </Tabs>
+        </>
+      ) : null}
     </Card>
 
     {suggestions.length > 0 && (
