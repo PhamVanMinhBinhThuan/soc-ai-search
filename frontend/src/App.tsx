@@ -95,6 +95,9 @@ function App() {
     useState<NaturalLanguageSearchRequestDto | null>(initialRequest)
   const [response, setResponse] =
     useState<NaturalLanguageSearchResponseDto | null>(initialResponse)
+  const [originalAiSearchPlan, setOriginalAiSearchPlan] = useState(
+    initialResponse?.search_plan,
+  )
   const [isCurrentQueryPinned, setIsCurrentQueryPinned] = useState(false)
   const [requestStatus, setRequestStatus] = useState<RequestStatus>(
     initialResponse ? 'success' : 'idle',
@@ -248,6 +251,7 @@ function App() {
     setQuestion(normalizedRequest.question)
     setSubmittedRequest(normalizedRequest)
     setResponse(null)
+    setOriginalAiSearchPlan(undefined)
     setSearchError(null)
     setExportStatus('idle')
     setExportMessage(null)
@@ -263,6 +267,7 @@ function App() {
       }
 
       setResponse(nextResponse)
+      setOriginalAiSearchPlan(nextResponse.search_plan)
       setIsCurrentQueryPinned(false)
       setActiveTab(
         nextResponse.mode === 'aggregation' ? 'analytics' : 'raw',
@@ -277,6 +282,7 @@ function App() {
         return
       }
       setResponse(null)
+      setOriginalAiSearchPlan(undefined)
       setSearchError(toUiError(error))
       setRequestStatus('error')
     } finally {
@@ -574,6 +580,7 @@ function App() {
                 <>
                   <QueryTransparency
                     searchPlan={response.search_plan}
+                    resetSearchPlan={originalAiSearchPlan}
                     generatedDsl={response.generated_dsl}
                     canEditPlan={canEditPlan}
                     onRunEditedPlan={async (editedPlan) => {

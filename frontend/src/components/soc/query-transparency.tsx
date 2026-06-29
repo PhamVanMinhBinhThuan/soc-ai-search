@@ -62,10 +62,12 @@ function JsonViewer({
 
 function SearchPlanEditor({
   initialValue,
+  resetValue,
   onRun,
   onCancel,
 }: {
   initialValue: SearchPlanDto
+  resetValue: SearchPlanDto
   onRun: (plan: SearchPlanDto) => Promise<void>
   onCancel: () => void
 }) {
@@ -92,7 +94,7 @@ function SearchPlanEditor({
   }
 
   const handleReset = () => {
-    setCode(JSON.stringify(initialValue, null, 2))
+    setCode(JSON.stringify(resetValue, null, 2))
     setError(null)
   }
 
@@ -150,11 +152,13 @@ function SearchPlanEditor({
 
 export function QueryTransparency({
   searchPlan,
+  resetSearchPlan,
   generatedDsl,
   canEditPlan = false,
   onRunEditedPlan,
 }: {
   searchPlan: SearchPlanDto
+  resetSearchPlan?: SearchPlanDto
   generatedDsl: Record<string, unknown>
   canEditPlan?: boolean
   onRunEditedPlan?: (plan: SearchPlanDto) => Promise<void>
@@ -257,6 +261,7 @@ export function QueryTransparency({
             {isEditing ? (
               <SearchPlanEditor
                 initialValue={searchPlan}
+                resetValue={resetSearchPlan ?? searchPlan}
                 onCancel={() => setIsEditing(false)}
                 onRun={async (editedPlan) => {
                   await onRunEditedPlan?.(editedPlan)
