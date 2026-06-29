@@ -23,7 +23,7 @@ export async function runSearchPlan(
     )
   }
 
-  const payload = await requestJson('/api/v1/search/plan', {
+  const payload = await requestJson('/api/v1/search/plan?include_summary=true', {
     method: 'POST',
     signal,
     headers: {
@@ -44,8 +44,8 @@ export async function runSearchPlan(
   const normalizedPayload: NaturalLanguageSearchResponseDto = {
      query_id: `edited-${Date.now()}`,
      original_question: 'Edited SearchPlan', 
-     summary: 'Executed custom SearchPlan.',
-     summary_source: 'fallback',
+     summary: (responsePayload.summary as string) || 'Executed custom SearchPlan.',
+     summary_source: responsePayload.summary_source === 'llm' ? 'llm' : 'fallback',
      mode: (responsePayload.mode as SearchMode) || searchPlan.mode,
      search_plan: searchPlan,
      generated_dsl: (responsePayload.generated_dsl as Record<string, unknown>) || {},
@@ -54,8 +54,8 @@ export async function runSearchPlan(
      size: (responsePayload.size as number) || searchPlan.size,
      total_pages: (responsePayload.total_pages as number) || 0,
      llm_latency_ms: 0,
-     summary_latency_ms: 0,
-     search_latency_ms: (responsePayload.latency_ms as number) || 0,
+     summary_latency_ms: (responsePayload.summary_latency_ms as number) || 0,
+     search_latency_ms: (responsePayload.search_latency_ms as number) || (responsePayload.latency_ms as number) || 0,
      latency_ms: (responsePayload.latency_ms as number) || 0,
      aggregation_type: (responsePayload.aggregation_type as AggregationType) || null,
      aggregation_results: (responsePayload.aggregation_results as AggregationResultItemDto[]) || [],

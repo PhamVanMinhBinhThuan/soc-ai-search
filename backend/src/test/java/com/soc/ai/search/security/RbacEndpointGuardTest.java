@@ -40,6 +40,7 @@ import com.soc.ai.search.search.execution.SearchPlanExecutor;
 import com.soc.ai.search.search.execution.SearchPlanSearchResponse;
 import com.soc.ai.search.search.plan.SearchMode;
 import com.soc.ai.search.search.plan.SearchPlan;
+import com.soc.ai.search.summary.ResultSummaryService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -79,6 +80,9 @@ class RbacEndpointGuardTest {
 
     @MockitoBean
     private SearchPlanExecutor searchPlanExecutor;
+
+    @MockitoBean
+    private ResultSummaryService resultSummaryService;
 
     @MockitoBean
     private JwtDecoder jwtDecoder;

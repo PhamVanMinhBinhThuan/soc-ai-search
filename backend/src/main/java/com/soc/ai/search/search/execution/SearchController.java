@@ -4,6 +4,7 @@ import java.util.List;
 
 import com.soc.ai.search.search.plan.SearchPlan;
 import com.soc.ai.search.search.validation.SearchPlanValidationException;
+import com.soc.ai.search.summary.ResultSummaryService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -24,9 +26,13 @@ import org.springframework.web.bind.annotation.RestController;
 public class SearchController {
 
     private final SearchPlanExecutor searchPlanExecutor;
+    private final ResultSummaryService resultSummaryService;
 
-    public SearchController(SearchPlanExecutor searchPlanExecutor) {
+    public SearchController(
+            SearchPlanExecutor searchPlanExecutor,
+            ResultSummaryService resultSummaryService) {
         this.searchPlanExecutor = searchPlanExecutor;
+        this.resultSummaryService = resultSummaryService;
     }
 
     @PostMapping("/plan")
@@ -34,8 +40,47 @@ public class SearchController {
     @Operation(
             summary = "Execute a validated SearchPlan",
             description = "Requires SOC_VIEWER. Technical endpoint for deterministic search or aggregation SearchPlan execution.")
-    public Object searchByPlan(@Valid @RequestBody SearchPlan searchPlan) {
-        return searchPlanExecutor.execute(searchPlan);
+    public SearchPlanExecutionResponse searchByPlan(
+            @Valid @RequestBody SearchPlan searchPlan,
+            @RequestParam(name = "include_summary", defaultValue = "false") boolean includeSummary) {
+        var response = searchPlanExecutor.execute(searchPlan);
+        if (response instanceof SearchPlanSearchResponse searchResponse) {
+            if (!includeSummary) {
+                return SearchPlanExecutionResponse.fromSearch(searchResponse);
+            }
+            var summary = resultSummaryService.summarizeSearch(
+                    "Edited SearchPlan",
+                    searchPlan,
+                    searchResponse);
+            return SearchPlanExecutionResponse.fromSearch(
+                    searchResponse,
+                    summary.latencyMs(),
+                    summary.summary(),
+                    summary.source());
+        }
+
+        if (response instanceof AggregationSearchResponse aggregationResponse) {
+            if (!includeSummary) {
+                return SearchPlanExecutionResponse.fromAggregation(
+                        aggregationResponse,
+                        searchPlan.page(),
+                        searchPlan.size());
+            }
+            var summary = resultSummaryService.summarizeAggregation(
+                    "Edited SearchPlan",
+                    aggregationResponse);
+            return SearchPlanExecutionResponse.fromAggregation(
+                    aggregationResponse,
+                    searchPlan.page(),
+                    searchPlan.size(),
+                    summary.latencyMs(),
+                    summary.summary(),
+                    summary.source());
+        }
+
+        throw new SearchExecutionException(
+                "Unsupported SearchPlan execution response type",
+                new IllegalStateException(response == null ? "null" : response.getClass().getName()));
     }
 
     @ExceptionHandler(SearchPlanValidationException.class)

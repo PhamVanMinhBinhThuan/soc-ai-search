@@ -104,7 +104,11 @@ export type SearchPlanResponseDto = {
   aggregation_type?: AggregationType | null
   generated_dsl: Record<string, unknown>
   total: number
+  search_latency_ms?: number
+  summary_latency_ms?: number
   latency_ms: number
+  summary?: string
+  summary_source?: SummarySource
   aggregation_results?: AggregationResultItemDto[]
   chart_metadata?: ChartMetadataDto | null
   events?: SearchEventDto[]

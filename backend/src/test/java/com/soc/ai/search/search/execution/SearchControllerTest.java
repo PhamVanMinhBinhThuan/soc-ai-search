@@ -16,6 +16,9 @@ import com.soc.ai.search.search.plan.AggregationType;
 import com.soc.ai.search.search.plan.SearchMode;
 import com.soc.ai.search.search.plan.SearchPlan;
 import com.soc.ai.search.security.SecurityConfig;
+import com.soc.ai.search.summary.ResultSummaryService;
+import com.soc.ai.search.summary.SummaryResult;
+import com.soc.ai.search.summary.SummarySource;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -34,9 +37,13 @@ class SearchControllerTest {
     @MockitoBean
     private SearchPlanExecutor searchPlanExecutor;
 
+    @MockitoBean
+    private ResultSummaryService resultSummaryService;
+
     @Test
-    void searchPlanReturnsResponseForValidSearchPlan() throws Exception {
-        when(searchPlanExecutor.execute(any(SearchPlan.class))).thenReturn(responseWithOneEvent());
+    void searchPlanReturnsResponseWithoutSummaryByDefault() throws Exception {
+        var response = responseWithOneEvent();
+        when(searchPlanExecutor.execute(any(SearchPlan.class))).thenReturn(response);
 
         mockMvc.perform(post("/api/v1/search/plan")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -49,12 +56,39 @@ class SearchControllerTest {
                 .andExpect(jsonPath("$.page").value(0))
                 .andExpect(jsonPath("$.size").value(20))
                 .andExpect(jsonPath("$.total_pages").value(1))
+                .andExpect(jsonPath("$.search_latency_ms").value(12))
+                .andExpect(jsonPath("$.summary_latency_ms").value(0))
                 .andExpect(jsonPath("$.latency_ms").value(12))
+                .andExpect(jsonPath("$.summary").value(org.hamcrest.Matchers.nullValue()))
+                .andExpect(jsonPath("$.summary_source").value(org.hamcrest.Matchers.nullValue()))
                 .andExpect(jsonPath("$.events[0].event_id").value("seed-42-1"))
                 .andExpect(jsonPath("$.events[0].event_type").value("failed_login"))
                 .andExpect(jsonPath("$.events[0].country_code").value("CN"));
 
         verify(searchPlanExecutor).execute(any(SearchPlan.class));
+        verify(resultSummaryService, never()).summarizeSearch(any(), any(), any());
+    }
+
+    @Test
+    void searchPlanIncludesSummaryWhenRequested() throws Exception {
+        when(searchPlanExecutor.execute(any(SearchPlan.class))).thenReturn(responseWithOneEvent());
+        when(resultSummaryService.summarizeSearch(any(), any(), any()))
+                .thenReturn(new SummaryResult("Edited summary sentence. Second sentence. Third sentence.",
+                        SummarySource.LLM,
+                        7));
+
+        mockMvc.perform(post("/api/v1/search/plan")
+                        .queryParam("include_summary", "true")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validSearchPlanJson()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.search_latency_ms").value(12))
+                .andExpect(jsonPath("$.summary_latency_ms").value(7))
+                .andExpect(jsonPath("$.latency_ms").value(19))
+                .andExpect(jsonPath("$.summary").value("Edited summary sentence. Second sentence. Third sentence."))
+                .andExpect(jsonPath("$.summary_source").value("llm"));
+
+        verify(resultSummaryService).summarizeSearch(any(), any(), any());
     }
 
     @Test
@@ -131,12 +165,40 @@ class SearchControllerTest {
                 .andExpect(jsonPath("$.generated_dsl.query.bool.filter").isArray())
                 .andExpect(jsonPath("$.generated_dsl").isMap())
                 .andExpect(jsonPath("$.total").value(42))
+                .andExpect(jsonPath("$.search_latency_ms").value(9))
+                .andExpect(jsonPath("$.summary_latency_ms").value(0))
                 .andExpect(jsonPath("$.latency_ms").value(9))
+                .andExpect(jsonPath("$.summary").value(org.hamcrest.Matchers.nullValue()))
+                .andExpect(jsonPath("$.summary_source").value(org.hamcrest.Matchers.nullValue()))
                 .andExpect(jsonPath("$.aggregation_results[0].key").value("total"))
                 .andExpect(jsonPath("$.aggregation_results[0].value").value(42))
                 .andExpect(jsonPath("$.chart_metadata.chart_type").value("NUMBER"));
 
         verify(searchPlanExecutor).execute(any(SearchPlan.class));
+        verify(resultSummaryService, never()).summarizeAggregation(any(), any());
+    }
+
+    @Test
+    void aggregationSearchPlanIncludesSummaryWhenRequested() throws Exception {
+        when(searchPlanExecutor.execute(any(SearchPlan.class))).thenReturn(aggregationResponse());
+        when(resultSummaryService.summarizeAggregation(any(), any()))
+                .thenReturn(new SummaryResult("Aggregation summary sentence. Second sentence. Third sentence.",
+                        SummarySource.LLM,
+                        6));
+
+        mockMvc.perform(post("/api/v1/search/plan")
+                        .queryParam("include_summary", "true")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validAggregationPlanJson()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.mode").value("aggregation"))
+                .andExpect(jsonPath("$.search_latency_ms").value(9))
+                .andExpect(jsonPath("$.summary_latency_ms").value(6))
+                .andExpect(jsonPath("$.latency_ms").value(15))
+                .andExpect(jsonPath("$.summary").value("Aggregation summary sentence. Second sentence. Third sentence."))
+                .andExpect(jsonPath("$.summary_source").value("llm"));
+
+        verify(resultSummaryService).summarizeAggregation(any(), any());
     }
 
     private SearchPlanSearchResponse responseWithOneEvent() {
