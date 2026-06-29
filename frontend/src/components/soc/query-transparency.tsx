@@ -34,7 +34,7 @@ function JsonViewer({
   copyStatus: 'idle' | 'copied' | 'failed'
 }) {
   return (
-    <div className="relative h-[28rem] overflow-auto rounded-xl border border-border bg-[#090b10]">
+    <div className="relative h-[22rem] overflow-auto rounded-xl border border-border bg-[#090b10]">
       <Button
         variant="outline"
         size="sm"
@@ -53,7 +53,7 @@ function JsonViewer({
             ? 'Copy failed'
             : 'Copy'}
       </Button>
-      <pre className="min-w-max p-4 pr-24 font-mono text-xs leading-6 text-cyan-200">
+      <pre className="min-w-max p-3 pr-24 font-mono text-xs leading-6 text-cyan-200">
         {JSON.stringify(value, null, 2)}
       </pre>
     </div>
@@ -101,7 +101,7 @@ function SearchPlanEditor({
       <div className="relative overflow-hidden rounded-xl border border-border bg-[#090b10]">
         <CodeMirror
           value={code}
-          height="28rem"
+          height="22rem"
           theme={oneDark}
           extensions={[json()]}
           onChange={(value) => {
@@ -192,9 +192,6 @@ export function QueryTransparency({
       <div className="flex flex-wrap items-center gap-2 border-b border-border px-4 py-3">
         <Code2 className="size-4 text-cyan-300" />
         <h2 className="text-sm font-semibold">Query Transparency</h2>
-        <span className="hidden text-xs text-muted-foreground sm:inline">
-          Natural Language -&gt; Elasticsearch DSL
-        </span>
         <Button
           variant="ghost"
           size="sm"
@@ -214,9 +211,9 @@ export function QueryTransparency({
         <Tabs
           id="query-transparency-content"
           defaultValue="plan"
-          className="p-3 sm:p-4"
+          className="px-2 py-2 sm:px-3 sm:py-3"
         >
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between mb-2">
             <TabsList className="max-w-full overflow-x-auto">
               <TabsTrigger value="plan">
                 <FileJson2 />

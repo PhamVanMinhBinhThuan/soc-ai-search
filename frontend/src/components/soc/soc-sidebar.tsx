@@ -129,7 +129,7 @@ export function SocSidebar({
           >
             <span className="block text-base font-semibold">SOC Console</span>
             <span className="block text-xs text-muted-foreground">
-              AI Event Search
+              Events Search
             </span>
           </div>
           <Tooltip>

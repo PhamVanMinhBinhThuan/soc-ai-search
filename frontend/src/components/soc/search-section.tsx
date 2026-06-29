@@ -1,5 +1,4 @@
 import {
-  CornerDownLeft,
   LoaderCircle,
   Search,
   Sparkles,
@@ -106,10 +105,6 @@ export function SearchSection({
                     : 'Search'}
               </Button>
             </div>
-            <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
-              <CornerDownLeft className="size-3" />
-              Ctrl + Enter to run
-            </span>
           </div>
         </div>
       </form>
