@@ -245,8 +245,8 @@ export function QueryTransparency({
                   </Button>
                 )}
                 {!canEditPlan && (
-                   <span className="text-xs text-muted-foreground ml-auto hidden sm:inline">
-                     SearchPlan editing requires SOC_ANALYST or SOC_ADMIN.
+                   <span className="text-xs font-medium text-amber-500 bg-amber-500/10 px-2 py-1 rounded-md border border-amber-500/20 ml-auto hidden sm:inline-flex items-center">
+                     SearchPlan editing requires ANALYST or ADMIN.
                    </span>
                 )}
               </>
