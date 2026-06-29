@@ -25,6 +25,24 @@ const eventDetail: EventDetailResponseDto = {
 }
 
 describe('EventDetailDrawer RBAC rendering', () => {
+  it('shows formatted fields without event id or index', () => {
+    render(
+      <EventDetailDrawer
+        event={eventDetail}
+        status="success"
+        error={null}
+        canViewRawLog
+        open
+        onOpenChange={vi.fn()}
+        onRetry={vi.fn()}
+      />,
+    )
+
+    expect(screen.queryByText(/event_id/i)).not.toBeInTheDocument()
+    expect(screen.queryByText('soc-events-v1')).not.toBeInTheDocument()
+    expect(screen.getByText('13/06/2026, 03:42 PM')).toBeInTheDocument()
+  })
+
   it('locks raw log when backend redacts raw data for viewer', () => {
     render(
       <EventDetailDrawer

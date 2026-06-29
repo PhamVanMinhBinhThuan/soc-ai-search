@@ -2,7 +2,6 @@ import {
   AlertCircle,
   Braces,
   Clock3,
-  Database,
   FileText,
   Globe2,
   LockKeyhole,
@@ -24,7 +23,6 @@ import { Button } from '@/components/ui/button'
 import {
   Sheet,
   SheetContent,
-  SheetDescription,
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet'
@@ -68,6 +66,22 @@ function Field({ icon: Icon, label, value, mono = true }: FieldProps) {
   )
 }
 
+function formatEventTimestamp(value: string) {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) {
+    return value
+  }
+
+  return new Intl.DateTimeFormat('en-GB', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  }).format(date).replace(/\b(am|pm)\b/i, (period) => period.toUpperCase())
+}
+
 export function EventDetailDrawer({
   event,
   status,
@@ -98,11 +112,6 @@ export function EventDetailDrawer({
             Event Details
             {event ? <SeverityBadge severity={event.severity} /> : null}
           </SheetTitle>
-          <SheetDescription className="font-mono">
-            <span className="break-all">
-              event_id: {event?.event_id ?? 'loading'}
-            </span>
-          </SheetDescription>
         </SheetHeader>
 
         {status === 'loading' ? (
@@ -205,14 +214,9 @@ export function EventDetailDrawer({
               className="min-h-0 overflow-y-auto rounded-xl border border-border bg-background/40 px-4"
             >
               <Field
-                icon={Database}
-                label="Index"
-                value={event.index_name}
-              />
-              <Field
                 icon={Clock3}
                 label="Timestamp"
-                value={event.timestamp}
+                value={formatEventTimestamp(event.timestamp)}
               />
               <Field icon={Network} label="Source" value={event.source} />
               <Field

@@ -31,9 +31,8 @@ public class DeterministicSummaryGenerator {
 
     private String search(SummaryPayload payload) {
         if (payload.total() == 0) {
-            return "No SOC events matched the validated search criteria. "
-                    + "No entity or severity pattern is available for this query. "
-                    + "Review the filters or expand the time range before investigating again.";
+            return "No SOC events matched the validated SearchPlan criteria. "
+                    + "Review the search query and SearchPlan before investigating again. ";
         }
 
         var entity = firstAvailable(payload.topUsers(), payload.topHosts(), payload.topIps());
