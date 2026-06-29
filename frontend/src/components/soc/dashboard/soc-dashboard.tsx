@@ -123,10 +123,10 @@ export function SocDashboard() {
         {/* Header */}
         <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
           <div className="flex items-start gap-3">
-            <div className="flex size-9 items-center justify-center rounded-lg border border-cyan-500/30 bg-cyan-500/10 mt-0.5">
+            <div className="flex size-8 items-center justify-center rounded-lg border border-cyan-500/30 bg-cyan-500/10 mt-0.5">
               <LayoutDashboard className="size-5 text-cyan-300" />
             </div>
-            <div className="flex flex-col items-start gap-1.5">
+            <div className="flex flex-col items-start gap-0.2">
               <h1 className="text-xl font-semibold tracking-tight text-zinc-100 leading-none mt-1">
                 SOC Overview
               </h1>

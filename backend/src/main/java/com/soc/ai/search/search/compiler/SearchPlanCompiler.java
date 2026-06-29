@@ -64,7 +64,7 @@ public class SearchPlanCompiler {
         searchSpec.put("query", Map.of("bool", boolQuery));
         searchSpec.put("size", 0);
 
-        var aggregations = aggregations(validatedPlan.aggregation());
+        var aggregations = aggregations(validatedPlan);
         if (!aggregations.isEmpty()) {
             searchSpec.put("aggs", aggregations);
         }
@@ -72,12 +72,13 @@ public class SearchPlanCompiler {
         return new CompiledSearchQuery(searchSpec);
     }
 
-    private Map<String, Object> aggregations(AggregationPlan aggregation) {
+    private Map<String, Object> aggregations(SearchPlan validatedPlan) {
+        AggregationPlan aggregation = validatedPlan.aggregation();
         return switch (aggregation.type()) {
             case COUNT -> Map.of();
             case GROUP_BY -> termsAggregation("count_by_field", aggregation.field(), bucketLimit(aggregation));
             case TOP_N -> termsAggregation("top_values", aggregation.field(), aggregation.topN());
-            case DATE_HISTOGRAM -> dateHistogramAggregation(aggregation);
+            case DATE_HISTOGRAM -> dateHistogramAggregation(validatedPlan);
         };
     }
 
@@ -91,15 +92,25 @@ public class SearchPlanCompiler {
                                 "size", size)));
     }
 
-    private Map<String, Object> dateHistogramAggregation(AggregationPlan aggregation) {
+    private Map<String, Object> dateHistogramAggregation(SearchPlan validatedPlan) {
+        var aggregation = validatedPlan.aggregation();
+        var timeRange = validatedPlan.filters() != null ? validatedPlan.filters().timestamp() : null;
+
+        var dateHistogram = new LinkedHashMap<String, Object>();
+        dateHistogram.put("field", "timestamp");
+        dateHistogram.put("fixed_interval", fixedInterval(aggregation));
+        dateHistogram.put("order", Map.of("_key", "asc"));
+
+        if (timeRange != null && hasText(timeRange.from()) && hasText(timeRange.to())) {
+            dateHistogram.put("min_doc_count", 0);
+            dateHistogram.put("extended_bounds", Map.of(
+                    "min", timeRange.from(),
+                    "max", timeRange.to()));
+        }
+
         return Map.of(
                 "events_over_time",
-                Map.of(
-                        "date_histogram",
-                        Map.of(
-                                "field", "timestamp",
-                                "fixed_interval", fixedInterval(aggregation),
-                                "order", Map.of("_key", "asc"))));
+                Map.of("date_histogram", dateHistogram));
     }
 
     private int bucketLimit(AggregationPlan aggregation) {

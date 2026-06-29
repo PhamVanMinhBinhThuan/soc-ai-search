@@ -279,6 +279,10 @@ class SearchPlanCompilerTest {
         assertThat(dateHistogram).containsEntry("field", "timestamp");
         assertThat(dateHistogram).containsEntry("fixed_interval", expectedFixedInterval);
         assertThat(dateHistogram).containsEntry("order", Map.of("_key", "asc"));
+        assertThat(dateHistogram).containsEntry("min_doc_count", 0);
+        assertThat(dateHistogram).containsEntry("extended_bounds", Map.of(
+                "min", "now-24h",
+                "max", "now"));
     }
 
     private static void assertNoUnsupportedQueries(Map<String, Object> searchSpec) {
