@@ -15,7 +15,6 @@ export function SocDashboard() {
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
-  const [autoRefresh, setAutoRefresh] = useState(true)
 
   const fetchData = async (signal?: AbortSignal) => {
     setRefreshing(true)
@@ -118,43 +117,25 @@ export function SocDashboard() {
     return () => controller.abort()
   }, [])
 
-  useEffect(() => {
-    if (!autoRefresh) return
-    const interval = setInterval(() => {
-      void fetchData()
-    }, 10 * 60 * 1000) // 10 minutes
-
-    return () => clearInterval(interval)
-  }, [autoRefresh])
-
   return (
     <main className="flex h-full min-h-0 flex-col bg-zinc-950 text-zinc-100 overflow-y-auto">
       <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
         {/* Header */}
         <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <div className="flex size-9 items-center justify-center rounded-lg border border-cyan-500/30 bg-cyan-500/10">
+          <div className="flex items-start gap-3">
+            <div className="flex size-9 items-center justify-center rounded-lg border border-cyan-500/30 bg-cyan-500/10 mt-0.5">
               <LayoutDashboard className="size-5 text-cyan-300" />
             </div>
             <div className="flex flex-col items-start gap-1.5">
-              <h1 className="text-xl font-semibold tracking-tight text-zinc-100">
+              <h1 className="text-xl font-semibold tracking-tight text-zinc-100 leading-none mt-1">
                 SOC Overview
               </h1>
-              <span className="rounded border border-zinc-800 bg-zinc-950/60 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-zinc-500">
+              <span className="rounded border border-zinc-800 bg-zinc-950/60 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-zinc-500 mt-0.5">
                 Last 24h
               </span>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <label className="flex items-center gap-2 text-sm text-zinc-400">
-              <input 
-                type="checkbox" 
-                checked={autoRefresh} 
-                onChange={(e) => setAutoRefresh(e.target.checked)} 
-                className="rounded border-zinc-700 bg-zinc-900 text-cyan-500 focus:ring-cyan-500/30"
-              />
-              Auto-refresh 10m
-            </label>
             {lastUpdated && (
               <span className="text-xs text-zinc-500 hidden sm:inline">
                 Last updated: {lastUpdated.toLocaleTimeString()}
