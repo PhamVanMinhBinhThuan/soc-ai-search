@@ -380,7 +380,11 @@ function App() {
         page,
         size: response.size,
       }
-      const nextResponse = await runSearchPlan(paginatedPlan, controller.signal)
+      const nextResponse = await runSearchPlan(
+        paginatedPlan,
+        controller.signal,
+        response.original_question || submittedRequest?.question || question,
+      )
       if (controller.signal.aborted) {
         return
       }
@@ -593,7 +597,11 @@ function App() {
                       
                       try {
                         const { runSearchPlan } = await import('@/services/search-plan-api')
-                        const nextResponse = await runSearchPlan(editedPlan, controller.signal)
+                        const nextResponse = await runSearchPlan(
+                          editedPlan,
+                          controller.signal,
+                          response.original_question || submittedRequest?.question || question,
+                        )
                         if (controller.signal.aborted) {
                           return
                         }
@@ -632,8 +640,6 @@ function App() {
 
                   <AiSummaryCard
                     summary={response.summary}
-                    summarySource={response.summary_source}
-                    summaryLatencyMs={response.summary_latency_ms}
                     isMockMode={isMockMode}
                   />
 

@@ -14,16 +14,22 @@ import type {
 export async function runSearchPlan(
   searchPlan: SearchPlanDto,
   signal?: AbortSignal,
+  summaryQuestion?: string,
 ): Promise<NaturalLanguageSearchResponseDto> {
+  const normalizedSummaryQuestion = summaryQuestion?.trim() || 'Edited SearchPlan'
+
   if (isMockMode) {
     // For mock mode, just run a standard search with an explicit mock question
     return searchMockEvents(
-      { question: 'Show me failed login attempts from China in the last 24h', page: searchPlan.page, size: searchPlan.size },
+      { question: normalizedSummaryQuestion, page: searchPlan.page, size: searchPlan.size },
       signal,
     )
   }
 
-  const payload = await requestJson('/api/v1/search/plan?include_summary=true', {
+  const params = new URLSearchParams({ include_summary: 'true' })
+  params.set('summary_question', normalizedSummaryQuestion)
+
+  const payload = await requestJson(`/api/v1/search/plan?${params.toString()}`, {
     method: 'POST',
     signal,
     headers: {
@@ -43,7 +49,7 @@ export async function runSearchPlan(
   
   const normalizedPayload: NaturalLanguageSearchResponseDto = {
      query_id: `edited-${Date.now()}`,
-     original_question: 'Edited SearchPlan', 
+     original_question: normalizedSummaryQuestion, 
      summary: (responsePayload.summary as string) || 'Executed custom SearchPlan.',
      summary_source: responsePayload.summary_source === 'llm' ? 'llm' : 'fallback',
      mode: (responsePayload.mode as SearchMode) || searchPlan.mode,

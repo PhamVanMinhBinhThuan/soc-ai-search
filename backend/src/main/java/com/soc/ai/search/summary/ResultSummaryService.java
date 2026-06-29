@@ -43,7 +43,7 @@ public class ResultSummaryService {
             SearchPlanSearchResponse response) {
         var startedAt = System.nanoTime();
         if (response.total() == 0) {
-            return fallback(payloadBuilder.searchFallback(0, response.events()), startedAt);
+            return fallback(originalQuestion, payloadBuilder.searchFallback(0, response.events()), startedAt);
         }
 
         final SummaryPayload payload;
@@ -51,7 +51,7 @@ public class ResultSummaryService {
             payload = payloadBuilder.search(response.total(), summaryQueryService.load(plan));
         } catch (RuntimeException exception) {
             LOGGER.warn("Search summary query failed; using deterministic fallback: {}", exception.getMessage());
-            return fallback(payloadBuilder.searchFallback(response.total(), response.events()), startedAt);
+            return fallback(originalQuestion, payloadBuilder.searchFallback(response.total(), response.events()), startedAt);
         }
         return summarize(originalQuestion, payload, startedAt);
     }
@@ -62,7 +62,7 @@ public class ResultSummaryService {
         var startedAt = System.nanoTime();
         var payload = payloadBuilder.aggregation(response);
         if (response.aggregationResults() == null || response.aggregationResults().isEmpty()) {
-            return fallback(payload, startedAt);
+            return fallback(originalQuestion, payload, startedAt);
         }
         return summarize(originalQuestion, payload, startedAt);
     }
@@ -81,12 +81,12 @@ public class ResultSummaryService {
         } catch (RuntimeException exception) {
             LOGGER.warn("LLM summary failed; using deterministic fallback: {}", exception.getMessage());
         }
-        return fallback(payload, startedAt);
+        return fallback(originalQuestion, payload, startedAt);
     }
 
-    private SummaryResult fallback(SummaryPayload payload, long startedAt) {
+    private SummaryResult fallback(String originalQuestion, SummaryPayload payload, long startedAt) {
         return new SummaryResult(
-                fallbackGenerator.generate(payload),
+                fallbackGenerator.generate(payload, originalQuestion),
                 SummarySource.FALLBACK,
                 elapsedMs(startedAt));
     }

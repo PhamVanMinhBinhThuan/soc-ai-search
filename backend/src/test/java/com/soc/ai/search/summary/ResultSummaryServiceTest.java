@@ -63,6 +63,19 @@ class ResultSummaryServiceTest {
     }
 
     @Test
+    void vietnameseQuestionUsesVietnameseFallbackWhenSummaryQueryFails() {
+        when(queryService.load(any(SearchPlan.class))).thenThrow(new SummaryQueryException(
+                "summary query failed",
+                new RuntimeException()));
+
+        var result = service().summarizeSearch("Tim critical event trong 7 ngay qua \u0111i", plan(), searchResponse(5));
+
+        assertThat(result.source()).isEqualTo(SummarySource.FALLBACK);
+        assertThat(result.summary()).contains("Truy vấn đã xác thực khớp 5 sự kiện SOC");
+        verify(llmClient, never()).generateSummary(any());
+    }
+
+    @Test
     void aggregationUsesExistingResultsWithoutSecondElasticsearchQuery() {
         when(llmClient.generateSummary(any(LlmSummaryRequest.class))).thenReturn(new LlmResponse(
                 "The top IP aggregation matched ten events. It returned one bucket. The leading IP is shown.",

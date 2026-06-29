@@ -3,6 +3,8 @@ import { oneDark } from '@codemirror/theme-one-dark'
 import CodeMirror from '@uiw/react-codemirror'
 import {
   Check,
+  ChevronDown,
+  ChevronUp,
   Code2,
   Copy,
   Edit2,
@@ -124,11 +126,21 @@ function SearchPlanEditor({
           {error}
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={handleReset} disabled={isRunning}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleReset}
+            disabled={isRunning}
+          >
             <RotateCcw className="mr-2 size-4" />
             Reset to AI Plan
           </Button>
-          <Button variant="outline" size="sm" onClick={onCancel} disabled={isRunning}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onCancel}
+            disabled={isRunning}
+          >
             Cancel
           </Button>
           <Button
@@ -170,8 +182,8 @@ export function QueryTransparency({
     status: 'copied' | 'failed'
   } | null>(null)
   const [activeTab, setActiveTab] = useState('plan')
-
   const [prevSearchPlan, setPrevSearchPlan] = useState(searchPlan)
+  const ToggleIcon = expanded ? ChevronUp : ChevronDown
 
   // Reset editing state when search plan changes (render phase instead of effect)
   if (searchPlan !== prevSearchPlan) {
@@ -199,16 +211,14 @@ export function QueryTransparency({
         <h2 className="text-sm font-semibold">Query Transparency</h2>
         <Button
           variant="ghost"
-          size="sm"
-          className="ml-auto"
+          size="icon"
+          className="ml-auto size-7 text-muted-foreground hover:text-foreground"
           aria-expanded={expanded}
           aria-controls="query-transparency-content"
+          aria-label={expanded ? 'Collapse query transparency' : 'Expand query transparency'}
           onClick={() => setExpanded((current) => !current)}
         >
-          <span aria-hidden="true" className="mr-1.5 text-[10px]">
-            {expanded ? '▲' : '▼'}
-          </span>
-          {expanded ? 'Collapse' : 'Expand'}
+          <ToggleIcon className="size-4" />
         </Button>
       </div>
 
@@ -219,7 +229,7 @@ export function QueryTransparency({
           onValueChange={setActiveTab}
           className="px-2 py-2 sm:px-3 sm:py-3"
         >
-          <div className="flex items-center justify-between mb-2">
+          <div className="mb-2 flex items-center justify-between">
             <TabsList className="max-w-full overflow-x-auto">
               <TabsTrigger value="plan">
                 <FileJson2 />
@@ -230,33 +240,33 @@ export function QueryTransparency({
                 Compiled DSL
               </TabsTrigger>
             </TabsList>
-            
+
             {activeTab === 'plan' ? (
               <>
-                {canEditPlan && !isEditing && (
+                {canEditPlan && !isEditing ? (
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => setIsEditing(true)}
-                    className="ml-auto text-cyan-400 hover:text-cyan-300 border-cyan-400/30 hover:border-cyan-400/50 hover:bg-cyan-950/30"
+                    className="ml-auto border-cyan-400/30 text-cyan-400 hover:border-cyan-400/50 hover:bg-cyan-950/30 hover:text-cyan-300"
                   >
-                    <Edit2 className="size-4 mr-2" />
+                    <Edit2 className="mr-2 size-4" />
                     Edit SearchPlan
                   </Button>
-                )}
-                {!canEditPlan && (
-                   <span className="text-xs font-medium text-amber-500 bg-amber-500/10 px-2 py-1 rounded-md border border-amber-500/20 ml-auto hidden sm:inline-flex items-center">
-                     SearchPlan editing requires ANALYST or ADMIN.
-                   </span>
-                )}
+                ) : null}
+                {!canEditPlan ? (
+                  <span className="ml-auto hidden items-center rounded-md border border-amber-500/20 bg-amber-500/10 px-2 py-1 text-xs font-medium text-amber-500 sm:inline-flex">
+                    SearchPlan editing requires ANALYST or ADMIN.
+                  </span>
+                ) : null}
               </>
             ) : (
-              <span className="text-xs font-medium text-amber-500 bg-amber-500/10 px-2 py-1 rounded-md border border-amber-500/20 ml-auto hidden sm:inline-flex items-center">
+              <span className="ml-auto hidden items-center rounded-md border border-amber-500/20 bg-amber-500/10 px-2 py-1 text-xs font-medium text-amber-500 sm:inline-flex">
                 Read-only
               </span>
             )}
           </div>
-          
+
           <TabsContent value="plan" className="mt-0 outline-none">
             {isEditing ? (
               <SearchPlanEditor
@@ -277,7 +287,7 @@ export function QueryTransparency({
               />
             )}
           </TabsContent>
-          
+
           <TabsContent value="dsl" className="mt-0 outline-none">
             <JsonViewer
               value={generatedDsl}

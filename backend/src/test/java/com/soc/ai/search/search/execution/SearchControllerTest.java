@@ -1,6 +1,7 @@
 package com.soc.ai.search.search.execution;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -79,6 +80,7 @@ class SearchControllerTest {
 
         mockMvc.perform(post("/api/v1/search/plan")
                         .queryParam("include_summary", "true")
+                        .queryParam("summary_question", "Tìm event critical trong 7 ngày qua")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(validSearchPlanJson()))
                 .andExpect(status().isOk())
@@ -88,7 +90,7 @@ class SearchControllerTest {
                 .andExpect(jsonPath("$.summary").value("Edited summary sentence. Second sentence. Third sentence."))
                 .andExpect(jsonPath("$.summary_source").value("llm"));
 
-        verify(resultSummaryService).summarizeSearch(any(), any(), any());
+        verify(resultSummaryService).summarizeSearch(eq("Tìm event critical trong 7 ngày qua"), any(), any());
     }
 
     @Test
@@ -188,6 +190,7 @@ class SearchControllerTest {
 
         mockMvc.perform(post("/api/v1/search/plan")
                         .queryParam("include_summary", "true")
+                        .queryParam("summary_question", "Top 5 IP có nhiều event nhất tháng này")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(validAggregationPlanJson()))
                 .andExpect(status().isOk())
@@ -198,7 +201,7 @@ class SearchControllerTest {
                 .andExpect(jsonPath("$.summary").value("Aggregation summary sentence. Second sentence. Third sentence."))
                 .andExpect(jsonPath("$.summary_source").value("llm"));
 
-        verify(resultSummaryService).summarizeAggregation(any(), any());
+        verify(resultSummaryService).summarizeAggregation(eq("Top 5 IP có nhiều event nhất tháng này"), any());
     }
 
     private SearchPlanSearchResponse responseWithOneEvent() {

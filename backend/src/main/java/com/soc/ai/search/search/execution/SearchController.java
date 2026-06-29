@@ -42,14 +42,16 @@ public class SearchController {
             description = "Requires SOC_VIEWER. Technical endpoint for deterministic search or aggregation SearchPlan execution.")
     public SearchPlanExecutionResponse searchByPlan(
             @Valid @RequestBody SearchPlan searchPlan,
-            @RequestParam(name = "include_summary", defaultValue = "false") boolean includeSummary) {
+            @RequestParam(name = "include_summary", defaultValue = "false") boolean includeSummary,
+            @RequestParam(name = "summary_question", required = false) String summaryQuestion) {
         var response = searchPlanExecutor.execute(searchPlan);
+        var effectiveSummaryQuestion = effectiveSummaryQuestion(summaryQuestion);
         if (response instanceof SearchPlanSearchResponse searchResponse) {
             if (!includeSummary) {
                 return SearchPlanExecutionResponse.fromSearch(searchResponse);
             }
             var summary = resultSummaryService.summarizeSearch(
-                    "Edited SearchPlan",
+                    effectiveSummaryQuestion,
                     searchPlan,
                     searchResponse);
             return SearchPlanExecutionResponse.fromSearch(
@@ -67,7 +69,7 @@ public class SearchController {
                         searchPlan.size());
             }
             var summary = resultSummaryService.summarizeAggregation(
-                    "Edited SearchPlan",
+                    effectiveSummaryQuestion,
                     aggregationResponse);
             return SearchPlanExecutionResponse.fromAggregation(
                     aggregationResponse,
@@ -81,6 +83,13 @@ public class SearchController {
         throw new SearchExecutionException(
                 "Unsupported SearchPlan execution response type",
                 new IllegalStateException(response == null ? "null" : response.getClass().getName()));
+    }
+
+    private String effectiveSummaryQuestion(String summaryQuestion) {
+        if (summaryQuestion == null || summaryQuestion.isBlank()) {
+            return "Edited SearchPlan";
+        }
+        return summaryQuestion.strip();
     }
 
     @ExceptionHandler(SearchPlanValidationException.class)

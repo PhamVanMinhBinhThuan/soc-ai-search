@@ -1,14 +1,17 @@
 import {
   Activity,
+  ChevronDown,
+  ChevronUp,
   Database,
   Gauge,
-  ShieldAlert,
   ShieldCheck,
   Sparkles,
 } from 'lucide-react'
+import { useState } from 'react'
 
 import { Card } from '@/components/ui/card'
-import type { SearchMode, SummarySource } from '@/types/soc'
+import { Button } from '@/components/ui/button'
+import type { SearchMode } from '@/types/soc'
 
 const metricStyles = [
   {
@@ -114,51 +117,39 @@ export function MetricsSummaryCards({
 
 export function AiSummaryCard({
   summary,
-  summarySource,
-  summaryLatencyMs,
   isMockMode,
 }: {
   summary: string
-  summarySource: SummarySource
-  summaryLatencyMs: number
   isMockMode: boolean
 }) {
-  const isBruteForceRisk =
-    summary?.toLowerCase().includes('failed login') ||
-    summary?.toLowerCase().includes('brute force')
+  const [expanded, setExpanded] = useState(true)
   const summaryLabel = isMockMode
     ? 'Mock AI Summary'
-    : summarySource === 'llm'
-      ? 'AI Summary'
-      : 'Fallback Summary'
-  const summaryBadge = isMockMode
-    ? 'MOCK'
-    : summarySource === 'llm'
-      ? 'LLM'
-      : 'FALLBACK'
+    : 'AI Summary'
+  const ToggleIcon = expanded ? ChevronUp : ChevronDown
 
   return (
     <section className="space-y-3">
       <div className="ai-summary-glow relative overflow-hidden rounded-xl p-px">
         <div className="relative rounded-[11px] bg-card/95 px-4 py-3 backdrop-blur-sm">
-          <div className="mb-2 flex flex-wrap items-center gap-2 text-sm font-semibold">
+          <div className={expanded ? 'mb-2 flex flex-wrap items-center gap-2 text-sm font-semibold' : 'flex flex-wrap items-center gap-2 text-sm font-semibold'}>
             <Sparkles className="size-4 text-violet-300" />
             {summaryLabel}
             <span className="hidden flex-1 sm:block" />
-            {isBruteForceRisk ? (
-              <span className="risk-badge-pulse inline-flex items-center gap-1 rounded-full border border-rose-400/40 bg-rose-500/15 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-rose-200">
-                <ShieldAlert className="size-3" />
-                BRUTE FORCE RISK
-              </span>
-            ) : null}
-            <span className="rounded-full border border-violet-400/25 bg-violet-500/10 px-2 py-0.5 text-[10px] font-medium text-violet-200">
-              {summaryBadge}
-            </span>
-            <span className="font-mono text-[10px] font-normal text-muted-foreground">
-              {summaryLatencyMs}ms
-            </span>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-7 text-muted-foreground hover:text-foreground"
+              aria-expanded={expanded}
+              aria-label={expanded ? 'Collapse AI summary' : 'Expand AI summary'}
+              onClick={() => setExpanded((current) => !current)}
+            >
+              <ToggleIcon className="size-4" />
+            </Button>
           </div>
-          <p className="text-sm leading-6 text-foreground/85">{summary}</p>
+          {expanded ? (
+            <p className="text-sm leading-6 text-foreground/85">{summary}</p>
+          ) : null}
         </div>
       </div>
     </section>
