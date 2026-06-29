@@ -184,8 +184,8 @@ export const mockScenarios: MockScenario[] = [
       '312 failed login events matched the last 24 hours. The repeated source IP 203.0.113.45 appears across failed login, account lockout, and privilege escalation activity. Analysts should prioritize this source and review the affected privileged accounts.',
   },
   {
-    shortLabel: 'Critical alerts',
-    question: 'Tìm alert critical trong 7 ngày qua',
+    shortLabel: 'Critical events',
+    question: 'Show critical events in the last 7 days',
     mode: 'search',
     total: 337,
     llm_latency_ms: 96,
@@ -217,11 +217,11 @@ export const mockScenarios: MockScenario[] = [
     aggregation_results: [],
     events: criticalSearchEvents,
     summary:
-      '337 critical events were found in the last 7 days. The visible sample contains malware and privilege escalation activity that should be investigated first. Correlate the affected hosts and users before closing these alerts.',
+      '337 critical events were found in the last 7 days. The visible sample contains malware and privilege escalation activity that should be investigated first. Correlate the affected hosts and users before closing these events.',
   },
   {
     shortLabel: 'Failed login by user',
-    question: 'Đếm số lần login thất bại theo từng user trong 7 ngày qua',
+    question: 'Count failed login attempts by user in the last 7 days',
     mode: 'aggregation',
     total: 1240,
     llm_latency_ms: 124,
@@ -276,7 +276,7 @@ export const mockScenarios: MockScenario[] = [
   },
   {
     shortLabel: 'Top source IPs',
-    question: 'Top 10 IP có nhiều alert nhất tháng này',
+    question: 'Top 10 IP có nhiều event nhất tháng này',
     mode: 'aggregation',
     total: 2864,
     llm_latency_ms: 101,
@@ -384,7 +384,7 @@ export const mockScenarios: MockScenario[] = [
     },
     events: [],
     summary:
-      'Event volume peaked between 08:00 and 09:00 UTC. The hourly trend can help analysts correlate alert bursts with authentication and endpoint activity. Investigate the peak window alongside critical severity events.',
+      'Event volume peaked between 08:00 and 09:00 UTC. The hourly trend can help analysts correlate event bursts with authentication and endpoint activity. Investigate the peak window alongside critical severity events.',
   },
 ]
 
