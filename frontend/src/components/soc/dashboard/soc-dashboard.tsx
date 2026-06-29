@@ -58,7 +58,7 @@ export function SocDashboard() {
       size: 1,
       message_query: null,
       filters: { timestamp: { from: 'now-24h', to: 'now' } },
-      aggregation: { type: 'top_n', field: 'ip', top_n: 10 },
+      aggregation: { type: 'top_n', field: 'ip', top_n: 5 },
     }
 
     const [failedRes, critRes, timeRes, sevRes, topIpRes] = await Promise.allSettled([

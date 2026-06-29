@@ -276,7 +276,7 @@ export const mockScenarios: MockScenario[] = [
   },
   {
     shortLabel: 'Top source IPs',
-    question: 'Top 10 IP có nhiều event nhất tháng này',
+    question: 'Top 5 IP có nhiều event nhất tháng này',
     mode: 'aggregation',
     total: 2864,
     llm_latency_ms: 101,
@@ -289,7 +289,7 @@ export const mockScenarios: MockScenario[] = [
       aggregation: {
         type: 'top_n',
         field: 'ip',
-        top_n: 10,
+        top_n: 5,
       },
       message_query: null,
       page: 0,
@@ -306,7 +306,7 @@ export const mockScenarios: MockScenario[] = [
       size: 0,
       aggs: {
         top_values: {
-          terms: { field: 'ip', size: 10 },
+          terms: { field: 'ip', size: 5 },
         },
       },
     },
