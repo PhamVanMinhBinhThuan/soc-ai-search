@@ -61,6 +61,15 @@ import type {
 const DEFAULT_SEARCH_PAGE_SIZE = 10;
 const HISTORY_PAGE_SIZE = 5;
 
+function stripAuditQuestionPrefix(value: string) {
+  const marker = "Original question:";
+  const markerIndex = value.indexOf(marker);
+  if (markerIndex === -1) {
+    return value;
+  }
+  return value.slice(markerIndex + marker.length).trim();
+}
+
 const initialResponse = isMockMode ? initialMockResponse() : null;
 const initialRequest: NaturalLanguageSearchRequestDto | null = initialResponse
   ? {
@@ -354,6 +363,14 @@ function App() {
     });
   };
 
+  const currentOriginalQuestion = () =>
+    stripAuditQuestionPrefix(
+      response?.original_question || submittedRequest?.question || question,
+    );
+
+  const derivedAuditQuestion = (label: "Edited SearchPlan" | "Filtered Result") =>
+    `[${label}] Original question: ${currentOriginalQuestion()}`;
+
   const changePage = async (page: number) => {
     if (!response || response.mode !== "search") {
       return;
@@ -385,14 +402,19 @@ function App() {
       const nextResponse = await runSearchPlan(
         paginatedPlan,
         controller.signal,
-        response.original_question || submittedRequest?.question || question,
+        currentOriginalQuestion(),
+        false,
         false,
       );
       if (controller.signal.aborted) {
         return;
       }
 
-      setResponse(nextResponse);
+      setResponse({
+        ...nextResponse,
+        query_id: response.query_id,
+        original_question: response.original_question,
+      });
       setIsCurrentQueryPinned(false);
       setActiveTab(nextResponse.mode === "aggregation" ? "analytics" : "raw");
 
@@ -436,8 +458,9 @@ function App() {
       const nextResponse = await runSearchPlan(
         plan,
         controller.signal,
-        response.original_question || submittedRequest?.question || question,
+        derivedAuditQuestion("Filtered Result"),
         false,
+        true,
       );
       if (controller.signal.aborted) {
         return;
@@ -521,7 +544,7 @@ function App() {
             events: response.events,
             aggregationResults: response.aggregation_results,
           });
-          setExportMessage("Mock CSV downloaded from local demo data.");
+          setExportMessage(null);
         } else {
           setExportMessage(
             "Exporting historical query is not fully supported in pure mock mode.",
@@ -536,11 +559,7 @@ function App() {
           return;
         }
         downloadCsvBlob(exported.blob, exported.filename);
-        setExportMessage(
-          exported.truncated
-            ? "The CSV contains the first 10,000 rows. The backend marked this export as truncated."
-            : `Downloaded ${exported.filename}.`,
-        );
+        setExportMessage(null);
       }
       setExportStatus("success");
     } catch (error) {
@@ -674,9 +693,9 @@ function App() {
                           const nextResponse = await runSearchPlan(
                             editedPlan,
                             controller.signal,
-                            response.original_question ||
-                              submittedRequest?.question ||
-                              question,
+                            derivedAuditQuestion("Edited SearchPlan"),
+                            true,
+                            true,
                           );
                           if (controller.signal.aborted) {
                             return;

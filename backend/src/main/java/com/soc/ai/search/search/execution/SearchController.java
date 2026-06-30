@@ -52,6 +52,7 @@ public class SearchController {
     public SearchPlanExecutionResponse searchByPlan(
             @Valid @RequestBody SearchPlan searchPlan,
             @RequestParam(name = "include_summary", defaultValue = "false") boolean includeSummary,
+            @RequestParam(name = "audit", defaultValue = "true") boolean audit,
             @RequestParam(name = "summary_question", required = false) String summaryQuestion) {
         var effectiveSummaryQuestion = effectiveSummaryQuestion(summaryQuestion);
         var queryId = queryIdGenerator.generate();
@@ -61,8 +62,8 @@ public class SearchController {
             var response = searchPlanExecutor.execute(searchPlan);
             SearchPlanExecutionResponse executionResponse;
 
-        if (response instanceof SearchPlanSearchResponse searchResponse) {
-            if (!includeSummary) {
+            if (response instanceof SearchPlanSearchResponse searchResponse) {
+                if (!includeSummary) {
                     executionResponse = SearchPlanExecutionResponse.fromSearch(queryId, searchResponse);
                 } else {
                     var summary = resultSummaryService.summarizeSearch(
@@ -75,14 +76,14 @@ public class SearchController {
                             summary.latencyMs(),
                             summary.summary(),
                             summary.source());
-            }
+                }
             } else if (response instanceof AggregationSearchResponse aggregationResponse) {
-            if (!includeSummary) {
+                if (!includeSummary) {
                     executionResponse = SearchPlanExecutionResponse.fromAggregation(
                             queryId,
-                        aggregationResponse,
-                        searchPlan.page(),
-                        searchPlan.size());
+                            aggregationResponse,
+                            searchPlan.page(),
+                            searchPlan.size());
                 } else {
                     var summary = resultSummaryService.summarizeAggregation(
                             effectiveSummaryQuestion,
@@ -95,30 +96,34 @@ public class SearchController {
                             summary.latencyMs(),
                             summary.summary(),
                             summary.source());
-            }
+                }
             } else {
                 throw new SearchExecutionException(
                         "Unsupported SearchPlan execution response type",
                         new IllegalStateException(response == null ? "null" : response.getClass().getName()));
-        }
+            }
 
-            searchAuditService.saveSuccess(
-                    queryId,
-                    effectiveSummaryQuestion,
-                    searchPlan,
-                    executionResponse.generatedDsl(),
-                    executionResponse.total(),
-                    executionResponse.latencyMs(),
-                    executionResponse.summary());
+            if (audit) {
+                searchAuditService.saveSuccess(
+                        queryId,
+                        effectiveSummaryQuestion,
+                        searchPlan,
+                        executionResponse.generatedDsl(),
+                        executionResponse.total(),
+                        executionResponse.latencyMs(),
+                        executionResponse.summary());
+            }
             return executionResponse;
         } catch (RuntimeException exception) {
-            searchAuditService.saveFailure(
-                    queryId,
-                    effectiveSummaryQuestion,
-                    searchPlan,
-                    null,
-                    elapsedMs(startedAt),
-                    exception);
+            if (audit) {
+                searchAuditService.saveFailure(
+                        queryId,
+                        effectiveSummaryQuestion,
+                        searchPlan,
+                        null,
+                        elapsedMs(startedAt),
+                        exception);
+            }
             throw exception;
         }
     }

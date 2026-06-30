@@ -16,6 +16,7 @@ export async function runSearchPlan(
   signal?: AbortSignal,
   summaryQuestion?: string,
   includeSummary = true,
+  audit = true,
 ): Promise<NaturalLanguageSearchResponseDto> {
   const normalizedSummaryQuestion =
     summaryQuestion?.trim() || "Edited SearchPlan";
@@ -34,6 +35,7 @@ export async function runSearchPlan(
 
   const params = new URLSearchParams({
     include_summary: includeSummary ? "true" : "false",
+    audit: audit ? "true" : "false",
   });
   params.set("summary_question", normalizedSummaryQuestion);
 

@@ -93,6 +93,24 @@ class SearchControllerTest {
     }
 
     @Test
+    void searchPlanCanSkipAuditForPagination() throws Exception {
+        when(queryIdGenerator.generate()).thenReturn(QUERY_ID);
+        when(searchPlanExecutor.execute(any(SearchPlan.class))).thenReturn(responseWithOneEvent());
+
+        mockMvc.perform(post("/api/v1/search/plan")
+                        .queryParam("audit", "false")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validSearchPlanJson()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.query_id").value(QUERY_ID.toString()))
+                .andExpect(jsonPath("$.mode").value("search"));
+
+        verify(searchPlanExecutor).execute(any(SearchPlan.class));
+        verify(searchAuditService, never()).saveSuccess(any(), any(), any(), any(), anyLong(), anyLong(), any());
+        verify(searchAuditService, never()).saveFailure(any(), any(), any(), any(), anyLong(), any());
+    }
+
+    @Test
     void searchPlanIncludesSummaryWhenRequested() throws Exception {
         when(queryIdGenerator.generate()).thenReturn(QUERY_ID);
         when(searchPlanExecutor.execute(any(SearchPlan.class))).thenReturn(responseWithOneEvent());
