@@ -227,9 +227,6 @@ function RawEventsView({
       <div className="flex items-center gap-2 border-b border-border bg-secondary/25 px-4 py-3">
         <Table2 className="size-4 text-cyan-300" />
         <h3 className="text-sm font-semibold">Raw Events</h3>
-        <span className="rounded-full bg-secondary px-2 py-0.5 font-mono text-[11px] text-muted-foreground">
-          {total.toLocaleString("en-US")} results
-        </span>
         <div className="flex-1" />
         <span className="hidden items-center gap-1 text-xs text-muted-foreground sm:inline-flex">
           <Lightbulb className="size-3.5 text-amber-300" />
@@ -396,6 +393,8 @@ export function ResultTabs({
           <div className="flex flex-wrap items-center gap-2">
             <Table2 className="size-4 text-cyan-300" />
             <h2 className="text-sm font-semibold">Query Result</h2>
+          </div>
+          <div className="flex items-center gap-2">
             <Button
               variant="ghost"
               size="icon"
@@ -409,60 +408,65 @@ export function ResultTabs({
             >
               <ToggleIcon className="size-4" />
             </Button>
-            <span className="rounded-lg border border-border bg-background/35 px-3 py-1.5 text-xs text-muted-foreground">
-              Mode: <strong className="text-foreground">{mode}</strong>
-            </span>
-            <span className="rounded-lg border border-border bg-background/35 px-3 py-1.5 text-xs text-muted-foreground">
-              Total Events:{" "}
-              <strong className="text-foreground">
-                {total.toLocaleString("en-US")}
-              </strong>
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={exportDisabled}
-              onClick={onExport}
-              aria-label={
-                !canExportCsv
-                  ? "CSV export requires analyst role"
-                  : isMockMode
-                    ? "Export mock results as CSV"
-                    : "Export results as CSV"
-              }
-              aria-live="polite"
-              title={
-                !canExportCsv
-                  ? "Requires SOC_ANALYST or SOC_ADMIN role"
-                  : queryId
-                    ? `Export query ${queryId}`
-                    : "No query available"
-              }
-            >
-              {exportStatus === "loading" ? (
-                <LoaderCircle className="animate-spin" />
-              ) : exportStatus === "success" ? (
-                <Check className="text-emerald-300" />
-              ) : (
-                <Download />
-              )}
-              {exportStatus === "loading"
-                ? "Exporting..."
-                : exportStatus === "success"
-                  ? "Exported"
-                  : !canExportCsv
-                    ? "Export Locked"
-                    : isMockMode
-                      ? "Export Mock CSV"
-                      : "Export CSV"}
-            </Button>
           </div>
         </div>
 
         {expanded ? (
           <div id="query-result-content">
+            <div className="flex flex-wrap items-center justify-between gap-3 px-4 pt-4">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="rounded-lg border border-border bg-background/35 px-3 py-1.5 text-xs text-muted-foreground">
+                  Mode: <strong className="text-foreground">{mode}</strong>
+                </span>
+                <span className="rounded-lg border border-border bg-background/35 px-3 py-1.5 text-xs text-muted-foreground">
+                  Total Events:{" "}
+                  <strong className="text-foreground">
+                    {total.toLocaleString("en-US")}
+                  </strong>
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={exportDisabled}
+                  onClick={onExport}
+                  aria-label={
+                    !canExportCsv
+                      ? "CSV export requires analyst role"
+                      : isMockMode
+                        ? "Export mock results as CSV"
+                        : "Export results as CSV"
+                  }
+                  aria-live="polite"
+                  title={
+                    !canExportCsv
+                      ? "Requires SOC_ANALYST or SOC_ADMIN role"
+                      : queryId
+                        ? `Export query ${queryId}`
+                        : "No query available"
+                  }
+                >
+                  {exportStatus === "loading" ? (
+                    <LoaderCircle className="animate-spin" />
+                  ) : exportStatus === "success" ? (
+                    <Check className="text-emerald-300" />
+                  ) : (
+                    <Download />
+                  )}
+                  {exportStatus === "loading"
+                    ? "Exporting..."
+                    : exportStatus === "success"
+                      ? "Exported"
+                      : !canExportCsv
+                        ? "Export Locked"
+                        : isMockMode
+                          ? "Export Mock CSV"
+                          : "Export CSV"}
+                </Button>
+              </div>
+            </div>
+
             {exportMessage ? (
               <div className="px-4 pt-3" aria-live="polite">
                 <Alert

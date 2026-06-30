@@ -12,7 +12,7 @@ import {
 import { useSocAuth } from '@/auth/use-auth'
 import { EventDetailDrawer } from '@/components/soc/event-detail-drawer'
 import { HistorySheet } from '@/components/soc/history-sheet'
-import { AiSummaryCard, MetricsSummaryCards } from '@/components/soc/metrics-summary'
+import { AiSummaryCard } from '@/components/soc/metrics-summary'
 import { QueryTransparency } from '@/components/soc/query-transparency'
 import {
   ResultTabs,
@@ -667,12 +667,7 @@ function App() {
                     onSuggestionClick={submitQuestion}
                   />
 
-                  <MetricsSummaryCards
-                    mode={response.mode}
-                    total={response.total}
-                    llmLatencyMs={response.llm_latency_ms}
-                    searchLatencyMs={response.search_latency_ms}
-                  />
+
                 </>
               ) : null}
             </main>
