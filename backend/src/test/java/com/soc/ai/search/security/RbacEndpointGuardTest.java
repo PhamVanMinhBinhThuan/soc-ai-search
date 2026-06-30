@@ -24,6 +24,8 @@ import com.soc.ai.search.audit.AuditQueryController;
 import com.soc.ai.search.audit.AuditQueryService;
 import com.soc.ai.search.audit.AuditStatus;
 import com.soc.ai.search.audit.PagedResponse;
+import com.soc.ai.search.audit.QueryIdGenerator;
+import com.soc.ai.search.audit.SearchAuditService;
 import com.soc.ai.search.audit.SearchHistoryItem;
 import com.soc.ai.search.csv.CsvExportController;
 import com.soc.ai.search.csv.CsvExportService;
@@ -41,6 +43,7 @@ import com.soc.ai.search.search.execution.SearchPlanSearchResponse;
 import com.soc.ai.search.search.plan.SearchMode;
 import com.soc.ai.search.search.plan.SearchPlan;
 import com.soc.ai.search.summary.ResultSummaryService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -62,6 +65,8 @@ import org.springframework.test.web.servlet.request.RequestPostProcessor;
 @Import(SecurityConfig.class)
 @TestPropertySource(properties = "app.auth.enabled=true")
 class RbacEndpointGuardTest {
+
+    private static final UUID QUERY_ID = UUID.fromString("00000000-0000-4000-8000-000000000456");
 
     @Autowired
     private MockMvc mockMvc;
@@ -85,7 +90,18 @@ class RbacEndpointGuardTest {
     private ResultSummaryService resultSummaryService;
 
     @MockitoBean
+    private SearchAuditService searchAuditService;
+
+    @MockitoBean
+    private QueryIdGenerator queryIdGenerator;
+
+    @MockitoBean
     private JwtDecoder jwtDecoder;
+
+    @BeforeEach
+    void setUp() {
+        when(queryIdGenerator.generate()).thenReturn(QUERY_ID);
+    }
 
     @Test
     void unauthenticatedBusinessEndpointReturnsUnauthorized() throws Exception {
