@@ -7,6 +7,7 @@ import { ResultTabs } from "@/components/soc/result-tabs";
 import type {
   AggregationResultItemDto,
   ChartMetadataDto,
+  NaturalLanguageSearchResponseDto,
   SearchEventDto,
 } from "@/types/soc";
 
@@ -56,6 +57,71 @@ const chartMetadata: ChartMetadataDto = {
   chart_type: "BAR",
   x_axis_label: "User",
   y_axis_label: "Events",
+};
+
+const searchResponse: NaturalLanguageSearchResponseDto = {
+  query_id: "00000000-0000-4000-8000-000000000002",
+  original_question: "Show failed login events",
+  mode: "search",
+  search_plan: {
+    mode: "search",
+    filters: {
+      timestamp: { from: "now-24h", to: "now" },
+      severity: null,
+      event_type: null,
+      user: null,
+      host: null,
+      ip: null,
+      country_code: null,
+    },
+    aggregation: null,
+    message_query: null,
+    page: 0,
+    size: 10,
+  },
+  generated_dsl: {},
+  events: [],
+  aggregation_results: [],
+  chart_metadata: null,
+  total: 0,
+  page: 0,
+  size: 10,
+  total_pages: 0,
+  llm_latency_ms: 0,
+  search_latency_ms: 0,
+  summary_latency_ms: 0,
+  latency_ms: 0,
+  summary: "",
+  summary_source: "fallback",
+  aggregation_type: null,
+};
+
+const aggregationResponse: NaturalLanguageSearchResponseDto = {
+  ...searchResponse,
+  mode: "aggregation",
+  search_plan: {
+    mode: "aggregation",
+    filters: {
+      timestamp: { from: "now-24h", to: "now" },
+      severity: null,
+      event_type: null,
+      user: null,
+      host: null,
+      ip: null,
+      country_code: null,
+    },
+    aggregation: {
+      type: "top_n",
+      field: "ip",
+      top_n: 10,
+      interval: null,
+      order_by: "value",
+      order: "desc",
+    },
+    message_query: null,
+    page: 0,
+    size: 10,
+  },
 };
 
 describe("ResultTabs RBAC rendering", () => {
@@ -174,5 +240,121 @@ describe("ResultTabs polymorphic rendering", () => {
     expect(
       screen.getByText(/no raw events matched the validated SearchPlan/i),
     ).toBeInTheDocument();
+  });
+});
+
+describe("ResultTabs filter and sort controls", () => {
+  it("renders compact search filters with multi-select dropdowns and text inputs", () => {
+    render(
+      <ResultTabs
+        {...baseProps}
+        canExportCsv
+        response={searchResponse}
+        onApplyResultPlan={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText(/filter & sort results/i)).toBeInTheDocument();
+    expect(screen.queryByText(/filters are applied/i)).not.toBeInTheDocument();
+    expect(screen.getByText("Severity")).toBeInTheDocument();
+    expect(screen.getByText("Event Type")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /select severities/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /select event types/i }),
+    ).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("User")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Source IP")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Message contains")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("Sort: Newest first")).toBeInTheDocument();
+  });
+
+  it("applies selected search filters and sort through the callback", () => {
+    const onApplyResultPlan = vi.fn();
+
+    render(
+      <ResultTabs
+        {...baseProps}
+        canExportCsv
+        response={searchResponse}
+        onApplyResultPlan={onApplyResultPlan}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /select severities/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^critical$/i }));
+    fireEvent.change(screen.getByPlaceholderText("User"), {
+      target: { value: "admin" },
+    });
+    fireEvent.change(screen.getByDisplayValue("Sort: Newest first"), {
+      target: { value: "severity:desc" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /apply filters/i }));
+
+    expect(onApplyResultPlan).toHaveBeenCalledWith(
+      expect.objectContaining({
+        mode: "search",
+        page: 0,
+        filters: expect.objectContaining({
+          severity: ["critical"],
+          user: "admin",
+        }),
+        sort: [{ field: "severity", order: "desc" }],
+      }),
+    );
+  });
+
+  it("shows only bucket ordering for top_n aggregation controls", () => {
+    render(
+      <ResultTabs
+        {...baseProps}
+        mode="aggregation"
+        activeTab="analytics"
+        canExportCsv
+        aggregationResults={aggregationResults}
+        chartMetadata={chartMetadata}
+        response={aggregationResponse}
+        onApplyResultPlan={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText(/filter & sort results/i)).toBeInTheDocument();
+    expect(screen.getByText("Bucket")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("Highest first")).toBeInTheDocument();
+    expect(screen.queryByText("Severity")).not.toBeInTheDocument();
+    expect(screen.queryByText("Event Type")).not.toBeInTheDocument();
+    expect(screen.queryByPlaceholderText("User")).not.toBeInTheDocument();
+  });
+
+  it("keeps date histogram aggregations time ordered without bucket value sort", () => {
+    render(
+      <ResultTabs
+        {...baseProps}
+        mode="aggregation"
+        activeTab="analytics"
+        canExportCsv
+        aggregationResults={aggregationResults}
+        chartMetadata={{ ...chartMetadata, chart_type: "LINE" }}
+        response={{
+          ...aggregationResponse,
+          search_plan: {
+            ...aggregationResponse.search_plan,
+            aggregation: {
+              type: "date_histogram",
+              field: null,
+              top_n: null,
+              interval: "hour",
+              order_by: null,
+              order: null,
+            },
+          },
+        }}
+        onApplyResultPlan={vi.fn()}
+      />,
+    );
+
+    expect(screen.queryByText("Bucket")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /apply filters/i })).toBeDisabled();
   });
 });

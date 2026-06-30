@@ -9,6 +9,7 @@ import {
   FileSearch,
   Lightbulb,
   LoaderCircle,
+  SlidersHorizontal,
   Table2,
   TriangleAlert,
 } from "lucide-react";
@@ -68,7 +69,6 @@ const SEARCH_SORT_OPTIONS: {
   { label: "Highest severity first", field: "severity", order: "desc" },
   { label: "Lowest severity first", field: "severity", order: "asc" },
 ];
-const AGGREGATION_TOP_N_OPTIONS = [5, 10, 20, 50];
 
 const AggregationChart = lazy(() =>
   import("@/components/soc/aggregation-chart").then((module) => ({
@@ -372,6 +372,108 @@ function toggleArrayValue<T extends string>(values: T[], value: T) {
     : [...values, value];
 }
 
+function MultiSelectDropdown<T extends string>({
+  label,
+  placeholder,
+  options,
+  values,
+  accentClassName,
+  onChange,
+}: {
+  label: string;
+  placeholder: string;
+  options: readonly T[];
+  values: T[];
+  accentClassName: string;
+  onChange: (values: T[]) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const selectedLabel =
+    values.length === 0
+      ? placeholder
+      : values.length === 1
+        ? values[0]
+        : `${values.length} selected`;
+
+  return (
+    <div className="relative">
+      <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
+        {label}
+      </label>
+      <button
+        type="button"
+        className="flex w-full items-center justify-between rounded-xl border border-border bg-zinc-950/70 px-3 py-2.5 text-left text-sm text-foreground shadow-inner shadow-black/20 transition hover:border-zinc-700 focus:border-cyan-400/60 focus:outline-none"
+        aria-expanded={open}
+        onClick={() => setOpen((current) => !current)}
+      >
+        <span
+          className={
+            values.length === 0 ? "text-muted-foreground" : "text-foreground"
+          }
+        >
+          {selectedLabel}
+        </span>
+        <ChevronDown
+          className={
+            "size-4 text-muted-foreground transition " +
+            (open ? "rotate-180" : "")
+          }
+        />
+      </button>
+
+      {open ? (
+        <div className="absolute z-20 mt-2 max-h-64 w-full overflow-y-auto rounded-xl border border-border bg-zinc-950 p-2 shadow-2xl shadow-black/50">
+          <div className="mb-1 flex items-center justify-between px-1">
+            <span className="text-[11px] text-muted-foreground">
+              {values.length} selected
+            </span>
+            {values.length > 0 ? (
+              <button
+                type="button"
+                className="text-[11px] font-medium text-cyan-300 hover:text-cyan-100"
+                onClick={() => onChange([])}
+              >
+                Clear
+              </button>
+            ) : null}
+          </div>
+          <div className="space-y-1">
+            {options.map((option) => {
+              const selected = values.includes(option);
+
+              return (
+                <button
+                  key={option}
+                  type="button"
+                  className={
+                    "flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-xs transition " +
+                    (selected
+                      ? `${accentClassName} text-foreground`
+                      : "text-muted-foreground hover:bg-zinc-900 hover:text-foreground")
+                  }
+                  onClick={() => onChange(toggleArrayValue(values, option))}
+                >
+                  <span
+                    className={
+                      "grid size-4 place-items-center rounded border " +
+                      (selected
+                        ? "border-cyan-400 bg-cyan-400/15 text-cyan-200"
+                        : "border-zinc-700")
+                    }
+                  >
+                    {selected ? <Check className="size-3" /> : null}
+                  </span>
+                  <span className="font-mono">{option}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function ResultControls({
   mode,
   searchPlan,
@@ -406,9 +508,6 @@ function ResultControls({
   const [searchSort, setSearchSort] = useState(initialSearchSortValue);
   const [aggregationSort, setAggregationSort] = useState(
     `${aggregation?.order_by ?? "value"}:${aggregation?.order ?? "desc"}`,
-  );
-  const [topN, setTopN] = useState(
-    aggregation?.top_n ?? (aggregation?.type === "top_n" ? 10 : 20),
   );
 
   if (!onApply) {
@@ -466,10 +565,9 @@ function ResultControls({
     onApply({
       ...searchPlan,
       page: 0,
-      filters: buildCommonFilters(),
+      filters: searchPlan.filters ?? null,
       aggregation: {
         ...searchPlan.aggregation,
-        top_n: supportsBucketControls ? topN : searchPlan.aggregation.top_n,
         order_by: supportsBucketControls ? orderBy : null,
         order: supportsBucketControls ? order : null,
       },
@@ -478,101 +576,102 @@ function ResultControls({
   };
 
   return (
-    <div className="space-y-3 border-b border-border bg-background/20 px-4 py-3">
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-          Result Controls
-        </span>
-        <span className="text-xs text-muted-foreground">
-          Filters are applied by rerunning a validated SearchPlan.
-        </span>
-      </div>
-
-      <div className="grid gap-3 lg:grid-cols-[1.2fr_1fr]">
-        <div className="space-y-2">
-          <div className="flex flex-wrap gap-1.5">
-            {SEVERITY_OPTIONS.map((option) => (
-              <button
-                key={option}
-                type="button"
-                onClick={() =>
-                  setSeverity((current) => toggleArrayValue(current, option))
-                }
-                className={
-                  "rounded-full border px-2.5 py-1 text-xs font-medium transition " +
-                  (severity.includes(option)
-                    ? "border-cyan-500/40 bg-cyan-500/10 text-cyan-200"
-                    : "border-border bg-background/35 text-muted-foreground hover:text-foreground")
-                }
-              >
-                {option}
-              </button>
-            ))}
-          </div>
-          <div className="flex flex-wrap gap-1.5">
-            {EVENT_TYPE_OPTIONS.map((option) => (
-              <button
-                key={option}
-                type="button"
-                onClick={() =>
-                  setEventTypes((current) => toggleArrayValue(current, option))
-                }
-                className={
-                  "rounded-md border px-2.5 py-1 text-xs font-medium transition " +
-                  (eventTypes.includes(option)
-                    ? "border-violet-500/40 bg-violet-500/10 text-violet-200"
-                    : "border-border bg-background/35 text-muted-foreground hover:text-foreground")
-                }
-              >
-                {option}
-              </button>
-            ))}
+    <div className="border-b border-border bg-background/20 px-4 py-4">
+      <div className="rounded-2xl border border-zinc-800 bg-zinc-950/40 p-4 shadow-inner shadow-black/20">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <span className="grid size-8 place-items-center rounded-xl border border-cyan-400/20 bg-cyan-400/10 text-cyan-200">
+              <SlidersHorizontal className="size-4" />
+            </span>
+            <div>
+              <h3 className="text-sm font-semibold text-foreground">
+                Filter & Sort Results
+              </h3>
+              <p className="text-[11px] text-muted-foreground">
+                {mode === "search"
+                  ? "Refine the current result set."
+                  : "Adjust aggregation bucket ordering."}
+              </p>
+            </div>
           </div>
         </div>
 
-        <div className="grid gap-2 sm:grid-cols-2">
-          <input
-            value={user}
-            onChange={(event) => setUser(event.target.value)}
-            placeholder="User"
-            className="rounded-md border border-border bg-background/50 px-3 py-2 text-xs outline-none focus:border-cyan-400/50"
-          />
-          <input
-            value={host}
-            onChange={(event) => setHost(event.target.value)}
-            placeholder="Host"
-            className="rounded-md border border-border bg-background/50 px-3 py-2 text-xs outline-none focus:border-cyan-400/50"
-          />
-          <input
-            value={ip}
-            onChange={(event) => setIp(event.target.value)}
-            placeholder="Source IP"
-            className="rounded-md border border-border bg-background/50 px-3 py-2 text-xs outline-none focus:border-cyan-400/50"
-          />
-          <input
-            value={countryCode}
-            onChange={(event) => setCountryCode(event.target.value)}
-            placeholder="Country code, e.g. CN"
-            className="rounded-md border border-border bg-background/50 px-3 py-2 text-xs outline-none focus:border-cyan-400/50"
-          />
-          {mode === "search" ? (
-            <input
-              value={messageQuery}
-              onChange={(event) => setMessageQuery(event.target.value)}
-              placeholder="Message contains"
-              className="rounded-md border border-border bg-background/50 px-3 py-2 text-xs outline-none focus:border-cyan-400/50 sm:col-span-2"
-            />
-          ) : null}
-        </div>
-      </div>
+        {mode === "search" ? (
+          <div className="grid gap-3 xl:grid-cols-[1fr_1fr]">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <MultiSelectDropdown
+                label="Severity"
+                placeholder="Select severities"
+                options={SEVERITY_OPTIONS}
+                values={severity}
+                accentClassName="bg-cyan-500/10"
+                onChange={setSeverity}
+              />
+              <MultiSelectDropdown
+                label="Event Type"
+                placeholder="Select event types"
+                options={EVENT_TYPE_OPTIONS}
+                values={eventTypes}
+                accentClassName="bg-violet-500/10"
+                onChange={setEventTypes}
+              />
+            </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex flex-wrap gap-2">
+            <div className="grid gap-2 sm:grid-cols-2">
+              <input
+                value={user}
+                onChange={(event) => setUser(event.target.value)}
+                placeholder="User"
+                className="rounded-xl border border-border bg-zinc-950/70 px-3 py-2.5 text-sm outline-none transition placeholder:text-muted-foreground focus:border-cyan-400/50"
+              />
+              <input
+                value={host}
+                onChange={(event) => setHost(event.target.value)}
+                placeholder="Host"
+                className="rounded-xl border border-border bg-zinc-950/70 px-3 py-2.5 text-sm outline-none transition placeholder:text-muted-foreground focus:border-cyan-400/50"
+              />
+              <input
+                value={ip}
+                onChange={(event) => setIp(event.target.value)}
+                placeholder="Source IP"
+                className="rounded-xl border border-border bg-zinc-950/70 px-3 py-2.5 text-sm outline-none transition placeholder:text-muted-foreground focus:border-cyan-400/50"
+              />
+              <input
+                value={countryCode}
+                onChange={(event) => setCountryCode(event.target.value)}
+                placeholder="Country code, e.g. CN"
+                className="rounded-xl border border-border bg-zinc-950/70 px-3 py-2.5 text-sm outline-none transition placeholder:text-muted-foreground focus:border-cyan-400/50"
+              />
+              <input
+                value={messageQuery}
+                onChange={(event) => setMessageQuery(event.target.value)}
+                placeholder="Message contains"
+                className="rounded-xl border border-border bg-zinc-950/70 px-3 py-2.5 text-sm outline-none transition placeholder:text-muted-foreground focus:border-cyan-400/50 sm:col-span-2"
+              />
+            </div>
+          </div>
+        ) : searchPlan.aggregation?.type === "date_histogram" ? null : (
+          <div className="max-w-xs">
+            <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
+              Bucket
+            </label>
+            <select
+              value={aggregationSort}
+              onChange={(event) => setAggregationSort(event.target.value)}
+              className="w-full rounded-xl border border-border bg-zinc-950/70 px-3 py-2.5 text-sm text-foreground outline-none transition focus:border-cyan-400/50"
+            >
+              <option value="value:desc">Highest first</option>
+              <option value="value:asc">Lowest first</option>
+            </select>
+          </div>
+        )}
+
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
           {mode === "search" ? (
             <select
               value={searchSort}
               onChange={(event) => setSearchSort(event.target.value)}
-              className="rounded-md border border-border bg-background/70 px-3 py-2 text-xs text-foreground outline-none"
+              className="rounded-xl border border-border bg-zinc-950/70 px-3 py-2.5 text-sm text-foreground outline-none transition focus:border-cyan-400/50"
             >
               {SEARCH_SORT_OPTIONS.map((option) => (
                 <option
@@ -583,36 +682,11 @@ function ResultControls({
                 </option>
               ))}
             </select>
-          ) : null}
-          {mode === "aggregation" &&
-          (searchPlan.aggregation?.type === "group_by" ||
-            searchPlan.aggregation?.type === "top_n") ? (
-            <>
-              <select
-                value={aggregationSort}
-                onChange={(event) => setAggregationSort(event.target.value)}
-                className="rounded-md border border-border bg-background/70 px-3 py-2 text-xs text-foreground outline-none"
-              >
-                <option value="value:desc">Buckets: highest first</option>
-                <option value="value:asc">Buckets: lowest first</option>
-                <option value="key:asc">Buckets: key A-Z</option>
-                <option value="key:desc">Buckets: key Z-A</option>
-              </select>
-              <select
-                value={topN}
-                onChange={(event) => setTopN(Number(event.target.value))}
-                className="rounded-md border border-border bg-background/70 px-3 py-2 text-xs text-foreground outline-none"
-              >
-                {AGGREGATION_TOP_N_OPTIONS.map((option) => (
-                  <option key={option} value={option}>
-                    Top {option}
-                  </option>
-                ))}
-              </select>
-            </>
-          ) : null}
-        </div>
-        <div className="flex gap-2">
+          ) : (
+            <span />
+          )}
+
+          <div className="flex gap-2">
           <Button
             variant="ghost"
             size="sm"
@@ -633,12 +707,14 @@ function ResultControls({
           <Button
             variant="outline"
             size="sm"
+            disabled={mode === "aggregation" && searchPlan.aggregation?.type === "date_histogram"}
             onClick={
               mode === "search" ? applySearchControls : applyAggregationControls
             }
           >
             Apply Filters
           </Button>
+          </div>
         </div>
       </div>
     </div>
