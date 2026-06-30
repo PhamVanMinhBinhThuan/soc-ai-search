@@ -418,12 +418,14 @@ export function ResultTabs({
                 <span className="rounded-lg border border-border bg-background/35 px-3 py-1.5 text-xs text-muted-foreground">
                   Mode: <strong className="text-foreground">{mode}</strong>
                 </span>
-                <span className="rounded-lg border border-border bg-background/35 px-3 py-1.5 text-xs text-muted-foreground">
-                  Total Events:{" "}
-                  <strong className="text-foreground">
-                    {total.toLocaleString("en-US")}
-                  </strong>
-                </span>
+                {mode !== 'aggregation' ? (
+                  <span className="rounded-lg border border-border bg-background/35 px-3 py-1.5 text-xs text-muted-foreground">
+                    Total Events:{" "}
+                    <strong className="text-foreground">
+                      {total.toLocaleString("en-US")}
+                    </strong>
+                  </span>
+                ) : null}
               </div>
               <div className="flex items-center gap-2">
                 <Button

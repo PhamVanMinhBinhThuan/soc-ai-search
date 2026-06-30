@@ -4,17 +4,13 @@ import {
   LoaderCircle,
   RotateCcw,
   Search,
-} from 'lucide-react'
+} from "lucide-react";
 
-import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
-} from '@/components/ui/alert'
-import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
-import { Skeleton } from '@/components/ui/skeleton'
-import type { SearchMode, UiError } from '@/types/soc'
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import type { SearchMode, UiError } from "@/types/soc";
 
 export function SearchLoadingState() {
   return (
@@ -22,10 +18,7 @@ export function SearchLoadingState() {
       <span className="sr-only">Searching SOC events</span>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
         {Array.from({ length: 5 }, (_, index) => (
-          <Card
-            key={index}
-            className="flex-row items-center gap-3 p-3 py-3"
-          >
+          <Card key={index} className="flex-row items-center gap-3 p-3 py-3">
             <Skeleton className="size-9 shrink-0 rounded-lg" />
             <div className="flex-1 space-y-2">
               <Skeleton className="h-2.5 w-20" />
@@ -43,10 +36,10 @@ export function SearchLoadingState() {
         <Skeleton className="h-72 w-full rounded-xl" />
       </Card>
     </div>
-  )
+  );
 }
 
-export function SearchIdleState({ isMock }: { isMock: boolean }) {
+export function SearchIdleState() {
   return (
     <Card className="grid min-h-72 place-items-center border-dashed p-8 text-center">
       <div>
@@ -56,13 +49,10 @@ export function SearchIdleState({ isMock }: { isMock: boolean }) {
         <h2 className="font-semibold">Start a SOC investigation</h2>
         <p className="mt-2 max-w-md text-xs leading-5 text-muted-foreground">
           Enter a natural-language question or choose a Suggested Query.
-          {isMock
-            ? ' Mock mode only supports the listed suggestions.'
-            : ' The question will be converted into a validated SearchPlan.'}
         </p>
       </div>
     </Card>
-  )
+  );
 }
 
 export function SearchEmptyState({ mode }: { mode: SearchMode }) {
@@ -74,21 +64,21 @@ export function SearchEmptyState({ mode }: { mode: SearchMode }) {
         </span>
         <h2 className="font-semibold">No matching results</h2>
         <p className="mt-2 max-w-md text-xs leading-5 text-muted-foreground">
-          {mode === 'search'
-            ? 'The query completed successfully, but no SOC events matched the filters.'
-            : 'The query completed successfully, but Elasticsearch returned no aggregation buckets.'}
+          {mode === "search"
+            ? "The query completed successfully, but no SOC events matched the filters."
+            : "The query completed successfully, but Elasticsearch returned no aggregation buckets."}
         </p>
       </div>
     </Card>
-  )
+  );
 }
 
 export function SearchErrorState({
   error,
   onRetry,
 }: {
-  error: UiError
-  onRetry: () => void
+  error: UiError;
+  onRetry: () => void;
 }) {
   return (
     <Alert className="border-rose-400/30 bg-rose-500/8">
@@ -120,5 +110,5 @@ export function SearchErrorState({
         </Button>
       </div>
     </Alert>
-  )
+  );
 }
