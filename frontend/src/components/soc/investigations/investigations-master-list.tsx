@@ -104,7 +104,7 @@ export function InvestigationsMasterList({
                   <span className="sr-only">Pinned</span>
                 </th>
                 <th className="px-3 py-2.5 text-xs font-medium uppercase tracking-wide text-zinc-500">
-                  Time
+                  Timestamp
                 </th>
                 <th className="px-3 py-2.5 text-xs font-medium uppercase tracking-wide text-zinc-500">
                   Question
@@ -126,7 +126,8 @@ export function InvestigationsMasterList({
             <tbody>
               {pagedItems.map((item) => {
                 const date = new Date(item.created_at)
-                const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
                 
                 return (
                   <tr
@@ -154,7 +155,8 @@ export function InvestigationsMasterList({
                       </button>
                     </td>
                     <td className="whitespace-nowrap px-3 py-3 font-mono text-xs text-zinc-500">
-                      {timeStr}
+                      <span className="block text-zinc-400">{dateStr}</span>
+                      <span>{timeStr}</span>
                     </td>
                     <td className="px-3 py-3">
                       <span className="line-clamp-1 text-sm font-medium text-zinc-200">
@@ -184,7 +186,8 @@ export function InvestigationsMasterList({
             {pagedItems.map((item) => {
               const isActive = item.query_id === activeId
               const date = new Date(item.created_at)
-              const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+              const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+              const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
 
               return (
                 <li key={item.query_id}>
@@ -199,7 +202,8 @@ export function InvestigationsMasterList({
                   >
                     <div className="mb-1.5 flex items-center justify-between">
                       <span className="font-mono text-xs text-zinc-500">
-                        {timeStr}
+                        <span className="mr-1 text-zinc-400">{dateStr}</span>
+                        <span>{timeStr}</span>
                       </span>
                       <button
                         type="button"
@@ -237,32 +241,32 @@ export function InvestigationsMasterList({
             })}
           </ul>
         )}
-      </div>
 
-      {/* Pagination — only in expanded table view */}
-      {expanded && totalPages > 1 && (
-        <div className="flex shrink-0 items-center justify-between border-t border-zinc-800 px-4 py-2.5">
-          <span className="text-xs text-zinc-500">
-            Page {page + 1} of {totalPages} &middot; {total.toLocaleString()} total
-          </span>
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => onPageChange(Math.max(0, page - 1))}
-              disabled={page === 0}
-              className="flex size-7 items-center justify-center rounded-md border border-zinc-800 bg-zinc-900 text-zinc-400 transition hover:border-zinc-700 hover:text-zinc-100 disabled:pointer-events-none disabled:opacity-30"
-            >
-              <ChevronLeft className="size-4" />
-            </button>
-            <button
-              onClick={() => onPageChange(Math.min(totalPages - 1, page + 1))}
-              disabled={page >= totalPages - 1}
-              className="flex size-7 items-center justify-center rounded-md border border-zinc-800 bg-zinc-900 text-zinc-400 transition hover:border-zinc-700 hover:text-zinc-100 disabled:pointer-events-none disabled:opacity-30"
-            >
-              <ChevronRight className="size-4" />
-            </button>
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex shrink-0 items-center justify-between border-t border-zinc-800 px-4 py-2.5">
+            <span className="text-xs text-zinc-500">
+              Page {page + 1} of {totalPages} &middot; {total.toLocaleString()} total
+            </span>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => onPageChange(Math.max(0, page - 1))}
+                disabled={page === 0}
+                className="flex size-7 items-center justify-center rounded-md border border-zinc-800 bg-zinc-900 text-zinc-400 transition hover:border-zinc-700 hover:text-zinc-100 disabled:pointer-events-none disabled:opacity-30"
+              >
+                <ChevronLeft className="size-4" />
+              </button>
+              <button
+                onClick={() => onPageChange(Math.min(totalPages - 1, page + 1))}
+                disabled={page >= totalPages - 1}
+                className="flex size-7 items-center justify-center rounded-md border border-zinc-800 bg-zinc-900 text-zinc-400 transition hover:border-zinc-700 hover:text-zinc-100 disabled:pointer-events-none disabled:opacity-30"
+              >
+                <ChevronRight className="size-4" />
+              </button>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   )
 }

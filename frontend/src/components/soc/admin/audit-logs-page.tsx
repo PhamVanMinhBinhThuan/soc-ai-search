@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react"
-import { ArrowLeft, ChevronLeft, ChevronRight, Download, Search, ShieldAlert, ShieldCheck } from "lucide-react"
+import { ArrowLeft, ChevronLeft, ChevronRight, Download, Search, ShieldAlert, ShieldCheck, Lightbulb } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { downloadCsvBlob } from "@/services/csv-export-api"
@@ -131,46 +131,6 @@ export function AuditLogsPage({ onBack }: { onBack?: () => void }) {
             {exporting ? "Exporting..." : "Export Audit CSV"}
           </Button>
         </div>
-
-        <div className="mt-4 flex flex-col gap-3">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-500" />
-            <input
-              type="text"
-              placeholder="Search audit logs..."
-              value={searchQuery}
-              onChange={(e) => {
-                setPage(0)
-                setSearchQuery(e.target.value)
-              }}
-              className="h-10 w-full rounded-md border border-zinc-800 bg-zinc-900/50 pl-10 pr-4 text-sm text-zinc-100 placeholder:text-zinc-600 transition-all focus:border-cyan-500/50 focus:outline-none focus:ring-1 focus:ring-cyan-500/50"
-            />
-          </div>
-          <div className="flex items-center justify-between">
-            <div className="flex flex-wrap items-center gap-2">
-              {FILTERS.map(f => (
-                <button
-                  key={f}
-                  onClick={() => {
-                    setPage(0)
-                    setActiveFilter(f)
-                  }}
-                  className={cn(
-                    "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
-                    activeFilter === f
-                      ? "border-cyan-500/50 bg-cyan-500/10 text-cyan-300"
-                      : "border-zinc-800 bg-zinc-900 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200",
-                  )}
-                >
-                  {f}
-                </button>
-              ))}
-            </div>
-            <p className="hidden text-xs text-zinc-500 md:block">
-              Tip: Click on any row to view full details
-            </p>
-          </div>
-        </div>
       </header>
 
       <div className="relative flex min-h-0 flex-1 overflow-hidden">
@@ -180,6 +140,49 @@ export function AuditLogsPage({ onBack }: { onBack?: () => void }) {
             selectedId ? "hidden w-0 bg-zinc-950/50 md:flex md:w-[35%]" : "w-full",
           )}
         >
+          {/* SEARCH AND FILTERS */}
+          <div className="flex flex-col gap-3 border-b border-zinc-800 p-3">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-zinc-500" />
+              <input
+                type="text"
+                placeholder="Search audit logs..."
+                value={searchQuery}
+                onChange={(e) => {
+                  setPage(0)
+                  setSearchQuery(e.target.value)
+                }}
+                className="w-full rounded-md border border-zinc-800 bg-zinc-900/60 py-2 pl-8 pr-3 text-sm text-zinc-200 placeholder:text-zinc-500 outline-none transition focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/30"
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center gap-1.5">
+                {FILTERS.map(f => (
+                  <button
+                    key={f}
+                    onClick={() => {
+                      setPage(0)
+                      setActiveFilter(f)
+                    }}
+                    className={cn(
+                      "rounded-md border px-2.5 py-1 text-xs font-medium transition",
+                      activeFilter === f
+                        ? "border-cyan-500/40 bg-cyan-500/10 text-cyan-300"
+                        : "border-zinc-800 bg-zinc-900/40 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200",
+                    )}
+                  >
+                    {f}
+                  </button>
+                ))}
+              </div>
+              {!selectedId && items.length > 0 && (
+                <span className="hidden text-xs text-zinc-500 sm:inline-block">
+                  <Lightbulb className="mr-1 inline-block size-3.5 text-amber-400" />
+                  Tip: Click on any row to view full details
+                </span>
+              )}
+            </div>
+          </div>
           <div className="min-h-0 flex-1 overflow-y-auto">
             {loading && items.length === 0 ? (
               <div className="flex h-full items-center justify-center text-zinc-500">
@@ -227,15 +230,15 @@ export function AuditLogsPage({ onBack }: { onBack?: () => void }) {
                 })}
               </div>
             ) : (
-              <table className="w-full text-left text-sm">
-                <thead className="sticky top-0 z-10 border-b border-zinc-800 bg-zinc-900/90 text-xs font-semibold uppercase tracking-wider text-zinc-400 backdrop-blur-md">
-                  <tr>
-                    <th className="px-6 py-4">Timestamp</th>
-                    <th className="px-6 py-4">User</th>
-                    <th className="px-6 py-4">Question</th>
-                    <th className="px-6 py-4 text-right">Results</th>
-                    <th className="px-6 py-4">Mode</th>
-                    <th className="px-6 py-4">Status</th>
+              <table className="w-full border-collapse text-left text-sm">
+                <thead className="sticky top-0 z-10 bg-zinc-950/95 backdrop-blur">
+                  <tr className="border-b border-zinc-800">
+                    <th className="px-3 py-2.5 text-xs font-medium uppercase tracking-wide text-zinc-500">Timestamp</th>
+                    <th className="px-3 py-2.5 text-xs font-medium uppercase tracking-wide text-zinc-500">User</th>
+                    <th className="px-3 py-2.5 text-xs font-medium uppercase tracking-wide text-zinc-500">Question</th>
+                    <th className="px-3 py-2.5 text-right text-xs font-medium uppercase tracking-wide text-zinc-500">Results</th>
+                    <th className="px-3 py-2.5 text-xs font-medium uppercase tracking-wide text-zinc-500">Mode</th>
+                    <th className="px-3 py-2.5 text-xs font-medium uppercase tracking-wide text-zinc-500">Status</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-800/50">
@@ -253,25 +256,25 @@ export function AuditLogsPage({ onBack }: { onBack?: () => void }) {
                       <tr
                         key={item.query_id}
                         onClick={() => setSelectedId(isActive ? null : item.query_id)}
-                        className={cn("cursor-pointer transition-colors hover:bg-zinc-800/80", isActive && "bg-cyan-950/20")}
+                        className={cn("group cursor-pointer border-b border-zinc-800/70 transition hover:bg-zinc-900/60", isActive && "bg-cyan-950/20")}
                       >
-                        <td className="whitespace-nowrap px-6 py-4 font-mono text-xs text-zinc-400">
-                          <span className="block text-zinc-500">{dateStr}</span>
+                        <td className="whitespace-nowrap px-3 py-3 font-mono text-xs text-zinc-500">
+                          <span className="block text-zinc-400">{dateStr}</span>
                           <span>{timeStr}</span>
                         </td>
-                        <td className="px-6 py-4 text-sm text-zinc-300">{item.user_identity}</td>
-                        <td className="px-6 py-4">
+                        <td className="px-3 py-3 text-sm text-zinc-300">{item.user_identity}</td>
+                        <td className="px-3 py-3">
                           <span className="line-clamp-2 text-sm font-medium text-zinc-200">
                             {item.question}
                           </span>
                         </td>
-                        <td className="whitespace-nowrap px-6 py-4 text-right font-mono text-xs text-zinc-400">
+                        <td className="whitespace-nowrap px-3 py-3 text-right font-mono text-xs text-zinc-400">
                           {item.result_count?.toLocaleString() ?? "-"}
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-3 py-3">
                           <ModeBadge mode={item.mode} />
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-3 py-3">
                           <StatusBadge status={item.status} />
                         </td>
                       </tr>
@@ -282,33 +285,30 @@ export function AuditLogsPage({ onBack }: { onBack?: () => void }) {
             )}
           </div>
 
-          <div className="flex shrink-0 items-center justify-between border-t border-zinc-800 bg-zinc-950 p-4 text-sm text-zinc-400">
-            <div>
-              Page {page + 1} of {Math.max(1, totalPages)} · {total.toLocaleString()} total
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex shrink-0 items-center justify-between border-t border-zinc-800 px-4 py-2.5">
+              <span className="text-xs text-zinc-500">
+                Page {page + 1} of {Math.max(1, totalPages)} &middot; {total.toLocaleString()} total
+              </span>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setPage(page - 1)}
+                  disabled={page === 0 || loading}
+                  className="flex size-7 items-center justify-center rounded-md border border-zinc-800 bg-zinc-900 text-zinc-400 transition hover:border-zinc-700 hover:text-zinc-100 disabled:pointer-events-none disabled:opacity-30"
+                >
+                  <ChevronLeft className="size-4" />
+                </button>
+                <button
+                  onClick={() => setPage(page + 1)}
+                  disabled={page >= totalPages - 1 || loading}
+                  className="flex size-7 items-center justify-center rounded-md border border-zinc-800 bg-zinc-900 text-zinc-400 transition hover:border-zinc-700 hover:text-zinc-100 disabled:pointer-events-none disabled:opacity-30"
+                >
+                  <ChevronRight className="size-4" />
+                </button>
+              </div>
             </div>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="icon"
-                className="size-9 border-zinc-800 bg-transparent text-zinc-300 hover:bg-zinc-800 hover:text-zinc-50"
-                disabled={page === 0 || loading}
-                onClick={() => setPage(page - 1)}
-                aria-label="Previous page"
-              >
-                <ChevronLeft className="size-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                className="size-9 border-zinc-800 bg-transparent text-zinc-300 hover:bg-zinc-800 hover:text-zinc-50"
-                disabled={page >= totalPages - 1 || loading}
-                onClick={() => setPage(page + 1)}
-                aria-label="Next page"
-              >
-                <ChevronRight className="size-4" />
-              </Button>
-            </div>
-          </div>
+          )}
         </div>
 
         <div

@@ -114,9 +114,6 @@ export function InvestigationsPage({
           <h1 className="text-xl font-semibold tracking-tight text-zinc-100">
             Investigations
           </h1>
-          <p className="text-sm text-zinc-500">
-            Audit-backed query history and playbooks
-          </p>
         </div>
       </header>
 
