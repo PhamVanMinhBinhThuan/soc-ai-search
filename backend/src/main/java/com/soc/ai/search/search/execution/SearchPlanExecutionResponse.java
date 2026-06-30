@@ -2,6 +2,7 @@ package com.soc.ai.search.search.execution;
 
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
@@ -11,6 +12,7 @@ import com.soc.ai.search.summary.SummarySource;
 
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public record SearchPlanExecutionResponse(
+        UUID queryId,
         SearchMode mode,
         AggregationType aggregationType,
         Map<String, Object> generatedDsl,
@@ -28,16 +30,19 @@ public record SearchPlanExecutionResponse(
         List<SearchEvent> events) {
 
     public static SearchPlanExecutionResponse fromSearch(
+            UUID queryId,
             SearchPlanSearchResponse response) {
-        return fromSearch(response, 0, null, null);
+        return fromSearch(queryId, response, 0, null, null);
     }
 
     public static SearchPlanExecutionResponse fromSearch(
+            UUID queryId,
             SearchPlanSearchResponse response,
             long summaryLatencyMs,
             String summary,
             SummarySource summarySource) {
         return new SearchPlanExecutionResponse(
+                queryId,
                 response.mode(),
                 null,
                 response.generatedDsl(),
@@ -56,13 +61,15 @@ public record SearchPlanExecutionResponse(
     }
 
     public static SearchPlanExecutionResponse fromAggregation(
+            UUID queryId,
             AggregationSearchResponse response,
             int page,
             int size) {
-        return fromAggregation(response, page, size, 0, null, null);
+        return fromAggregation(queryId, response, page, size, 0, null, null);
     }
 
     public static SearchPlanExecutionResponse fromAggregation(
+            UUID queryId,
             AggregationSearchResponse response,
             int page,
             int size,
@@ -70,6 +77,7 @@ public record SearchPlanExecutionResponse(
             String summary,
             SummarySource summarySource) {
         return new SearchPlanExecutionResponse(
+                queryId,
                 response.mode(),
                 response.aggregationType(),
                 response.generatedDsl(),

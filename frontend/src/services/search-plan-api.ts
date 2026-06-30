@@ -61,7 +61,10 @@ export async function runSearchPlan(
   // to NaturalLanguageSearchResponseDto so the UI can reuse it.
 
   const normalizedPayload: NaturalLanguageSearchResponseDto = {
-    query_id: `edited-${Date.now()}`,
+    query_id:
+      typeof responsePayload.query_id === "string"
+        ? responsePayload.query_id
+        : `edited-${Date.now()}`,
     original_question: normalizedSummaryQuestion,
     summary:
       (responsePayload.summary as string) || "Executed custom SearchPlan.",

@@ -1,6 +1,7 @@
 package com.soc.ai.search.search.execution;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -12,7 +13,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
+import com.soc.ai.search.audit.QueryIdGenerator;
+import com.soc.ai.search.audit.SearchAuditService;
 import com.soc.ai.search.search.plan.AggregationType;
 import com.soc.ai.search.search.plan.SearchMode;
 import com.soc.ai.search.search.plan.SearchPlan;
@@ -32,6 +36,8 @@ import org.springframework.test.web.servlet.MockMvc;
 @Import(SecurityConfig.class)
 class SearchControllerTest {
 
+    private static final UUID QUERY_ID = UUID.fromString("00000000-0000-4000-8000-000000000123");
+
     @Autowired
     private MockMvc mockMvc;
 
@@ -41,9 +47,16 @@ class SearchControllerTest {
     @MockitoBean
     private ResultSummaryService resultSummaryService;
 
+    @MockitoBean
+    private SearchAuditService searchAuditService;
+
+    @MockitoBean
+    private QueryIdGenerator queryIdGenerator;
+
     @Test
     void searchPlanReturnsResponseWithoutSummaryByDefault() throws Exception {
         var response = responseWithOneEvent();
+        when(queryIdGenerator.generate()).thenReturn(QUERY_ID);
         when(searchPlanExecutor.execute(any(SearchPlan.class))).thenReturn(response);
 
         mockMvc.perform(post("/api/v1/search/plan")
@@ -51,6 +64,7 @@ class SearchControllerTest {
                         .content(validSearchPlanJson()))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.query_id").value(QUERY_ID.toString()))
                 .andExpect(jsonPath("$.mode").value("search"))
                 .andExpect(jsonPath("$.generated_dsl.query.bool.filter").isArray())
                 .andExpect(jsonPath("$.total").value(1))
@@ -68,10 +82,19 @@ class SearchControllerTest {
 
         verify(searchPlanExecutor).execute(any(SearchPlan.class));
         verify(resultSummaryService, never()).summarizeSearch(any(), any(), any());
+        verify(searchAuditService).saveSuccess(
+                eq(QUERY_ID),
+                eq("Edited SearchPlan"),
+                any(SearchPlan.class),
+                eq(response.generatedDsl()),
+                eq(1L),
+                eq(12L),
+                eq(null));
     }
 
     @Test
     void searchPlanIncludesSummaryWhenRequested() throws Exception {
+        when(queryIdGenerator.generate()).thenReturn(QUERY_ID);
         when(searchPlanExecutor.execute(any(SearchPlan.class))).thenReturn(responseWithOneEvent());
         when(resultSummaryService.summarizeSearch(any(), any(), any()))
                 .thenReturn(new SummaryResult("Edited summary sentence. Second sentence. Third sentence.",
@@ -95,6 +118,7 @@ class SearchControllerTest {
 
     @Test
     void searchPlanAcceptsMessageQuery() throws Exception {
+        when(queryIdGenerator.generate()).thenReturn(QUERY_ID);
         when(searchPlanExecutor.execute(any(SearchPlan.class))).thenReturn(responseWithOneEvent());
 
         mockMvc.perform(post("/api/v1/search/plan")
@@ -108,6 +132,7 @@ class SearchControllerTest {
 
     @Test
     void searchPlanReturnsOkForNoResults() throws Exception {
+        when(queryIdGenerator.generate()).thenReturn(QUERY_ID);
         when(searchPlanExecutor.execute(any(SearchPlan.class))).thenReturn(emptyResponse());
 
         mockMvc.perform(post("/api/v1/search/plan")
@@ -144,6 +169,7 @@ class SearchControllerTest {
 
     @Test
     void searchPlanReturnsControlledErrorWhenElasticsearchFails() throws Exception {
+        when(queryIdGenerator.generate()).thenReturn(QUERY_ID);
         when(searchPlanExecutor.execute(any(SearchPlan.class)))
                 .thenThrow(new SearchExecutionException("Failed to execute Elasticsearch search", new RuntimeException()));
 
@@ -152,16 +178,26 @@ class SearchControllerTest {
                         .content(validSearchPlanJson()))
                 .andExpect(status().isServiceUnavailable())
                 .andExpect(jsonPath("$.message").value("Search dependency is unavailable"));
+
+        verify(searchAuditService).saveFailure(
+                eq(QUERY_ID),
+                eq("Edited SearchPlan"),
+                any(SearchPlan.class),
+                eq(null),
+                anyLong(),
+                any(SearchExecutionException.class));
     }
 
     @Test
     void searchPlanReturnsAggregationResponseForAggregationMode() throws Exception {
+        when(queryIdGenerator.generate()).thenReturn(QUERY_ID);
         when(searchPlanExecutor.execute(any(SearchPlan.class))).thenReturn(aggregationResponse());
 
         mockMvc.perform(post("/api/v1/search/plan")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(validAggregationPlanJson()))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.query_id").value(QUERY_ID.toString()))
                 .andExpect(jsonPath("$.mode").value("aggregation"))
                 .andExpect(jsonPath("$.aggregation_type").value("count"))
                 .andExpect(jsonPath("$.generated_dsl.query.bool.filter").isArray())
@@ -182,6 +218,7 @@ class SearchControllerTest {
 
     @Test
     void aggregationSearchPlanIncludesSummaryWhenRequested() throws Exception {
+        when(queryIdGenerator.generate()).thenReturn(QUERY_ID);
         when(searchPlanExecutor.execute(any(SearchPlan.class))).thenReturn(aggregationResponse());
         when(resultSummaryService.summarizeAggregation(any(), any()))
                 .thenReturn(new SummaryResult("Aggregation summary sentence. Second sentence. Third sentence.",

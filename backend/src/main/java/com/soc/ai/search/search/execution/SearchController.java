@@ -1,7 +1,10 @@
 package com.soc.ai.search.search.execution;
 
 import java.util.List;
+import java.util.UUID;
 
+import com.soc.ai.search.audit.QueryIdGenerator;
+import com.soc.ai.search.audit.SearchAuditService;
 import com.soc.ai.search.search.plan.SearchPlan;
 import com.soc.ai.search.search.validation.SearchPlanValidationException;
 import com.soc.ai.search.summary.ResultSummaryService;
@@ -27,12 +30,18 @@ public class SearchController {
 
     private final SearchPlanExecutor searchPlanExecutor;
     private final ResultSummaryService resultSummaryService;
+    private final SearchAuditService searchAuditService;
+    private final QueryIdGenerator queryIdGenerator;
 
     public SearchController(
             SearchPlanExecutor searchPlanExecutor,
-            ResultSummaryService resultSummaryService) {
+            ResultSummaryService resultSummaryService,
+            SearchAuditService searchAuditService,
+            QueryIdGenerator queryIdGenerator) {
         this.searchPlanExecutor = searchPlanExecutor;
         this.resultSummaryService = resultSummaryService;
+        this.searchAuditService = searchAuditService;
+        this.queryIdGenerator = queryIdGenerator;
     }
 
     @PostMapping("/plan")
@@ -44,45 +53,78 @@ public class SearchController {
             @Valid @RequestBody SearchPlan searchPlan,
             @RequestParam(name = "include_summary", defaultValue = "false") boolean includeSummary,
             @RequestParam(name = "summary_question", required = false) String summaryQuestion) {
-        var response = searchPlanExecutor.execute(searchPlan);
         var effectiveSummaryQuestion = effectiveSummaryQuestion(summaryQuestion);
+        var queryId = queryIdGenerator.generate();
+        var startedAt = System.nanoTime();
+
+        try {
+            var response = searchPlanExecutor.execute(searchPlan);
+            SearchPlanExecutionResponse executionResponse;
+
         if (response instanceof SearchPlanSearchResponse searchResponse) {
             if (!includeSummary) {
-                return SearchPlanExecutionResponse.fromSearch(searchResponse);
+                    executionResponse = SearchPlanExecutionResponse.fromSearch(queryId, searchResponse);
+                } else {
+                    var summary = resultSummaryService.summarizeSearch(
+                            effectiveSummaryQuestion,
+                            searchPlan,
+                            searchResponse);
+                    executionResponse = SearchPlanExecutionResponse.fromSearch(
+                            queryId,
+                            searchResponse,
+                            summary.latencyMs(),
+                            summary.summary(),
+                            summary.source());
             }
-            var summary = resultSummaryService.summarizeSearch(
-                    effectiveSummaryQuestion,
-                    searchPlan,
-                    searchResponse);
-            return SearchPlanExecutionResponse.fromSearch(
-                    searchResponse,
-                    summary.latencyMs(),
-                    summary.summary(),
-                    summary.source());
-        }
-
-        if (response instanceof AggregationSearchResponse aggregationResponse) {
+            } else if (response instanceof AggregationSearchResponse aggregationResponse) {
             if (!includeSummary) {
-                return SearchPlanExecutionResponse.fromAggregation(
+                    executionResponse = SearchPlanExecutionResponse.fromAggregation(
+                            queryId,
                         aggregationResponse,
                         searchPlan.page(),
                         searchPlan.size());
+                } else {
+                    var summary = resultSummaryService.summarizeAggregation(
+                            effectiveSummaryQuestion,
+                            aggregationResponse);
+                    executionResponse = SearchPlanExecutionResponse.fromAggregation(
+                            queryId,
+                            aggregationResponse,
+                            searchPlan.page(),
+                            searchPlan.size(),
+                            summary.latencyMs(),
+                            summary.summary(),
+                            summary.source());
             }
-            var summary = resultSummaryService.summarizeAggregation(
-                    effectiveSummaryQuestion,
-                    aggregationResponse);
-            return SearchPlanExecutionResponse.fromAggregation(
-                    aggregationResponse,
-                    searchPlan.page(),
-                    searchPlan.size(),
-                    summary.latencyMs(),
-                    summary.summary(),
-                    summary.source());
+            } else {
+                throw new SearchExecutionException(
+                        "Unsupported SearchPlan execution response type",
+                        new IllegalStateException(response == null ? "null" : response.getClass().getName()));
         }
 
-        throw new SearchExecutionException(
-                "Unsupported SearchPlan execution response type",
-                new IllegalStateException(response == null ? "null" : response.getClass().getName()));
+            searchAuditService.saveSuccess(
+                    queryId,
+                    effectiveSummaryQuestion,
+                    searchPlan,
+                    executionResponse.generatedDsl(),
+                    executionResponse.total(),
+                    executionResponse.latencyMs(),
+                    executionResponse.summary());
+            return executionResponse;
+        } catch (RuntimeException exception) {
+            searchAuditService.saveFailure(
+                    queryId,
+                    effectiveSummaryQuestion,
+                    searchPlan,
+                    null,
+                    elapsedMs(startedAt),
+                    exception);
+            throw exception;
+        }
+    }
+
+    private long elapsedMs(long startedAt) {
+        return Math.max(0, (System.nanoTime() - startedAt) / 1_000_000);
     }
 
     private String effectiveSummaryQuestion(String summaryQuestion) {

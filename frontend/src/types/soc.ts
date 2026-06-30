@@ -116,6 +116,7 @@ export type NaturalLanguageSearchResponseDto = {
 };
 
 export type SearchPlanResponseDto = {
+  query_id?: string;
   mode: SearchMode;
   aggregation_type?: AggregationType | null;
   generated_dsl: Record<string, unknown>;
