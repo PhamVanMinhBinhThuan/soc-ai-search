@@ -2,7 +2,6 @@ import {
   BarChart3,
   Clock3,
   Database,
-  Gauge,
   History,
   LoaderCircle,
   Play,
@@ -22,7 +21,6 @@ import { Button } from '@/components/ui/button'
 import {
   Sheet,
   SheetContent,
-  SheetDescription,
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet'
@@ -36,10 +34,10 @@ import type {
 } from '@/types/soc'
 
 function formatCreatedAt(value: string) {
-  return new Intl.DateTimeFormat('en-GB', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  }).format(new Date(value))
+  const date = new Date(value)
+  const dateStr = date.toLocaleDateString("en-US", { month: "short", day: "numeric" })
+  const timeStr = date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })
+  return `${dateStr} ${timeStr}`
 }
 
 function modeBadgeClass(mode: SearchHistoryItemDto['mode']) {
@@ -93,14 +91,11 @@ function HistoryItem({
   item: SearchHistoryItemDto
   onRunAgain: (item: SearchHistoryItemDto) => void
 }) {
-  const success = item.status === 'SUCCESS'
   const modeLabel = item.mode?.toUpperCase() ?? 'UNKNOWN MODE'
   const resultLabel =
     item.result_count === null
       ? 'No result count'
       : `${item.result_count.toLocaleString('en-US')} results`
-  const latencyLabel =
-    item.latency_ms === null ? 'latency n/a' : `${item.latency_ms}ms`
 
   const runAgain = () => onRunAgain(item)
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
@@ -120,28 +115,12 @@ function HistoryItem({
       tabIndex={0}
       onClick={runAgain}
       onKeyDown={handleKeyDown}
-      className="group w-full cursor-pointer rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4 text-left shadow-[0_18px_60px_-42px_rgba(34,211,238,0.45)] transition-all duration-200 hover:border-zinc-700 hover:bg-zinc-800/80 hover:shadow-[0_24px_70px_-42px_rgba(34,211,238,0.65)] focus-visible:ring-2 focus-visible:ring-cyan-400/55 focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
+      className="group w-full cursor-pointer rounded-xl border border-zinc-800/70 bg-zinc-900/30 p-4 text-left transition-all hover:bg-zinc-900/70 hover:border-zinc-700 focus-visible:ring-2 focus-visible:ring-cyan-400/55 focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
       aria-label={`Run query again: ${item.question}`}
     >
       <div className="flex min-w-0 items-start gap-4">
-        <span
-          aria-hidden="true"
-          className={cn(
-            'mt-0.5 flex size-10 shrink-0 items-center justify-center rounded-xl ring-1 transition-colors duration-200',
-            success
-              ? 'bg-emerald-500/10 text-emerald-300 ring-emerald-500/20 group-hover:bg-emerald-500/15'
-              : 'bg-rose-500/10 text-rose-300 ring-rose-500/20 group-hover:bg-rose-500/15',
-          )}
-        >
-          {success ? (
-            <History className="size-5" />
-          ) : (
-            <TriangleAlert className="size-5" />
-          )}
-        </span>
-
         <div className="min-w-0 flex-1">
-          <p className="line-clamp-2 text-sm font-semibold leading-5 text-zinc-100 transition-colors group-hover:text-white">
+          <p className="line-clamp-2 text-sm font-medium text-zinc-200 transition-colors group-hover:text-white">
             {item.question}
           </p>
 
@@ -167,7 +146,7 @@ function HistoryItem({
           </div>
 
           <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-zinc-500">
-            <span className="inline-flex min-w-0 items-center gap-1.5">
+            <span className="inline-flex min-w-0 items-center gap-1.5 font-mono">
               <Clock3 className="size-3" />
               {formatCreatedAt(item.created_at)}
             </span>
@@ -181,13 +160,6 @@ function HistoryItem({
                 <Database className="size-3" />
               )}
               {resultLabel}
-            </span>
-            <span className="text-zinc-700" aria-hidden="true">
-              -
-            </span>
-            <span className="inline-flex items-center gap-1.5 font-mono">
-              <Gauge className="size-3" />
-              {latencyLabel}
             </span>
           </div>
         </div>
@@ -237,15 +209,9 @@ export function HistorySheet({
               <History className="size-5" />
             </span>
             <span>
-              <span className="block">Recent Queries</span>
-              <span className="mt-0.5 block text-[11px] font-normal tracking-normal text-zinc-500">
-                Quick access to recent history
-              </span>
+              <span className="block text-xl font-semibold">Recent Queries</span>
             </span>
           </SheetTitle>
-          <SheetDescription className="text-zinc-500">
-            Select an investigation to rerun it with the current page size.
-          </SheetDescription>
         </SheetHeader>
 
         <div

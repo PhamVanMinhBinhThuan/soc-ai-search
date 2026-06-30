@@ -603,7 +603,7 @@ function App() {
           element={
             canUseAuditLogs ? (
               <div className="flex-1 w-full relative min-w-0 flex flex-col h-svh">
-                <AuditLogsPage onBack={() => navigate("/search")} />
+                <AuditLogsPage />
               </div>
             ) : (
               <div className="flex-1 w-full relative min-w-0 flex flex-col h-svh items-center justify-center bg-zinc-950 text-rose-500">
@@ -639,7 +639,6 @@ function App() {
                 }}
                 onExport={(queryId) => void handleExport(queryId)}
                 canExport={canUseExport}
-                onBack={() => navigate("/search")}
               />
             </div>
           }
