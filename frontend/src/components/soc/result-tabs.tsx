@@ -5,24 +5,20 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronUp,
-  DatabaseZap,
   Download,
   FileSearch,
+  Lightbulb,
   LoaderCircle,
   Table2,
   TriangleAlert,
-} from 'lucide-react'
-import { lazy, Suspense, useState, useMemo } from 'react'
+} from "lucide-react";
+import { lazy, Suspense, useState, useMemo } from "react";
 
-import { CountryCode } from '@/components/soc/country-code'
-import { SeverityBadge } from '@/components/soc/severity-badge'
-import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
-} from '@/components/ui/alert'
-import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
+import { CountryCode } from "@/components/soc/country-code";
+import { SeverityBadge } from "@/components/soc/severity-badge";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -30,13 +26,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@/components/ui/tabs'
+} from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type {
   AggregationResultItemDto,
   ChartMetadataDto,
@@ -44,26 +35,26 @@ import type {
   SearchEventDto,
   SearchMode,
   NaturalLanguageSearchResponseDto,
-} from '@/types/soc'
-import { getSuggestions } from '@/lib/investigation-suggestions'
+} from "@/types/soc";
+import { getSuggestions } from "@/lib/investigation-suggestions";
 
-type ResultTab = 'analytics' | 'raw'
-const SUMMARY_TABLE_PAGE_SIZE = 10
+type ResultTab = "analytics" | "raw";
+const SUMMARY_TABLE_PAGE_SIZE = 10;
 
 const AggregationChart = lazy(() =>
-  import('@/components/soc/aggregation-chart').then((module) => ({
+  import("@/components/soc/aggregation-chart").then((module) => ({
     default: module.AggregationChart,
   })),
-)
+);
 
 function EmptyModeState({
   icon: Icon,
   title,
   description,
 }: {
-  icon: typeof BarChart3
-  title: string
-  description: string
+  icon: typeof BarChart3;
+  title: string;
+  description: string;
 }) {
   return (
     <div className="grid min-h-80 place-items-center rounded-xl border border-dashed border-border bg-background/25 p-8 text-center">
@@ -77,17 +68,17 @@ function EmptyModeState({
         </p>
       </div>
     </div>
-  )
+  );
 }
 
 function AnalyticsView({
   aggregationResults,
   chartMetadata,
 }: {
-  aggregationResults: AggregationResultItemDto[]
-  chartMetadata: ChartMetadataDto | null
+  aggregationResults: AggregationResultItemDto[];
+  chartMetadata: ChartMetadataDto | null;
 }) {
-  const [summaryPage, setSummaryPage] = useState(0)
+  const [summaryPage, setSummaryPage] = useState(0);
 
   if (aggregationResults.length === 0) {
     return (
@@ -96,24 +87,23 @@ function AnalyticsView({
         title="No aggregation buckets"
         description="The aggregation completed without returning any matching buckets."
       />
-    )
+    );
   }
 
   const totalSummaryPages = Math.ceil(
     aggregationResults.length / SUMMARY_TABLE_PAGE_SIZE,
-  )
+  );
   const currentSummaryPage = Math.min(
     summaryPage,
     Math.max(totalSummaryPages - 1, 0),
-  )
-  const firstSummaryIndex =
-    currentSummaryPage * SUMMARY_TABLE_PAGE_SIZE
+  );
+  const firstSummaryIndex = currentSummaryPage * SUMMARY_TABLE_PAGE_SIZE;
   const visibleAggregationResults = aggregationResults.slice(
     firstSummaryIndex,
     firstSummaryIndex + SUMMARY_TABLE_PAGE_SIZE,
-  )
-  const firstSummaryRow = firstSummaryIndex + 1
-  const lastSummaryRow = firstSummaryIndex + visibleAggregationResults.length
+  );
+  const firstSummaryRow = firstSummaryIndex + 1;
+  const lastSummaryRow = firstSummaryIndex + visibleAggregationResults.length;
 
   return (
     <div className="space-y-4">
@@ -139,9 +129,9 @@ function AnalyticsView({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>{chartMetadata?.x_axis_label ?? 'Key'}</TableHead>
+              <TableHead>{chartMetadata?.x_axis_label ?? "Key"}</TableHead>
               <TableHead className="text-right">
-                {chartMetadata?.y_axis_label ?? 'Value'}
+                {chartMetadata?.y_axis_label ?? "Value"}
               </TableHead>
             </TableRow>
           </TableHeader>
@@ -150,7 +140,7 @@ function AnalyticsView({
               <TableRow key={item.key}>
                 <TableCell className="font-mono text-xs">{item.key}</TableCell>
                 <TableCell className="text-right font-mono text-xs font-semibold text-cyan-300">
-                  {item.value.toLocaleString('en-US')}
+                  {item.value.toLocaleString("en-US")}
                 </TableCell>
               </TableRow>
             ))}
@@ -159,17 +149,17 @@ function AnalyticsView({
         {totalSummaryPages > 1 ? (
           <div className="flex items-center justify-between border-t border-border px-4 py-3">
             <span className="text-xs text-muted-foreground">
-              Showing{' '}
+              Showing{" "}
               <span className="font-mono text-foreground">
                 {firstSummaryRow}
               </span>
-              {' - '}
+              {" - "}
               <span className="font-mono text-foreground">
                 {lastSummaryRow}
               </span>
-              {' of '}
+              {" of "}
               <span className="font-mono text-foreground">
-                {aggregationResults.length.toLocaleString('en-US')}
+                {aggregationResults.length.toLocaleString("en-US")}
               </span>
             </span>
             <div className="flex items-center gap-2">
@@ -199,7 +189,7 @@ function AnalyticsView({
         ) : null}
       </div>
     </div>
-  )
+  );
 }
 
 function RawEventsView({
@@ -211,13 +201,13 @@ function RawEventsView({
   onPageChange,
   onSelectEvent,
 }: {
-  events: SearchEventDto[]
-  total: number
-  page: number
-  size: number
-  totalPages: number
-  onPageChange: (page: number) => void
-  onSelectEvent: (eventId: string) => void
+  events: SearchEventDto[];
+  total: number;
+  page: number;
+  size: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+  onSelectEvent: (eventId: string) => void;
 }) {
   if (events.length === 0) {
     return (
@@ -226,11 +216,11 @@ function RawEventsView({
         title="No matching events"
         description="The search completed successfully, but no raw events matched the validated SearchPlan."
       />
-    )
+    );
   }
 
-  const firstResult = page * size + 1
-  const lastResult = Math.min(page * size + events.length, total)
+  const firstResult = page * size + 1;
+  const lastResult = Math.min(page * size + events.length, total);
 
   return (
     <div className="overflow-hidden rounded-xl border border-border">
@@ -238,11 +228,12 @@ function RawEventsView({
         <Table2 className="size-4 text-cyan-300" />
         <h3 className="text-sm font-semibold">Raw Events</h3>
         <span className="rounded-full bg-secondary px-2 py-0.5 font-mono text-[11px] text-muted-foreground">
-          {total.toLocaleString('en-US')} results
+          {total.toLocaleString("en-US")} results
         </span>
         <div className="flex-1" />
-        <span className="hidden text-xs text-muted-foreground sm:inline-block">
-          💡 Tip: Click on any row to view full details
+        <span className="hidden items-center gap-1 text-xs text-muted-foreground sm:inline-flex">
+          <Lightbulb className="size-3.5 text-amber-300" />
+          Tip: Click on any row to view full details
         </span>
       </div>
       <Table>
@@ -257,7 +248,9 @@ function RawEventsView({
             <TableHead>IP</TableHead>
             <TableHead>Country</TableHead>
             <TableHead className="min-w-64">Message</TableHead>
-            <TableHead className="w-8 px-2"><span className="sr-only">Action</span></TableHead>
+            <TableHead className="w-8 px-2">
+              <span className="sr-only">Action</span>
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -269,17 +262,14 @@ function RawEventsView({
               className="group cursor-pointer focus-visible:bg-secondary/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-cyan-400/50"
               onClick={() => onSelectEvent(event.event_id)}
               onKeyDown={(eventKey) => {
-                if (
-                  eventKey.key === 'Enter' ||
-                  eventKey.key === ' '
-                ) {
-                  eventKey.preventDefault()
-                  onSelectEvent(event.event_id)
+                if (eventKey.key === "Enter" || eventKey.key === " ") {
+                  eventKey.preventDefault();
+                  onSelectEvent(event.event_id);
                 }
               }}
             >
               <TableCell className="font-mono text-xs text-muted-foreground">
-                {event.timestamp?.replace('T', ' ')?.replace('Z', '') || 'N/A'}
+                {event.timestamp?.replace("T", " ")?.replace("Z", "") || "N/A"}
               </TableCell>
               <TableCell>
                 <SeverityBadge severity={event.severity} />
@@ -313,12 +303,13 @@ function RawEventsView({
 
       <div className="flex items-center justify-between border-t border-border px-4 py-3">
         <span className="text-xs text-muted-foreground">
-          Showing <span className="font-mono text-foreground">{firstResult}</span>
-          {' - '}
+          Showing{" "}
+          <span className="font-mono text-foreground">{firstResult}</span>
+          {" - "}
           <span className="font-mono text-foreground">{lastResult}</span>
-          {' of '}
+          {" of "}
           <span className="font-mono text-foreground">
-            {total.toLocaleString('en-US')}
+            {total.toLocaleString("en-US")}
           </span>
         </span>
         <div className="flex items-center gap-2">
@@ -346,7 +337,7 @@ function RawEventsView({
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 export function ResultTabs({
@@ -372,187 +363,200 @@ export function ResultTabs({
   onExport,
   onSuggestionClick,
 }: {
-  mode: SearchMode
-  activeTab: ResultTab
-  events: SearchEventDto[]
-  aggregationResults: AggregationResultItemDto[]
-  chartMetadata: ChartMetadataDto | null
-  total: number
-  page: number
-  size: number
-  totalPages: number
-  isMockMode: boolean
-  queryId: string | null
-  exportStatus: ExportStatus
-  exportMessage: string | null
-  canExportCsv: boolean
-  exportDisabled: boolean
-  response: NaturalLanguageSearchResponseDto | null
-  onTabChange: (tab: ResultTab) => void
-  onPageChange: (page: number) => void
-  onSelectEvent: (eventId: string) => void
-  onExport: () => void
-  onSuggestionClick?: (question: string) => void
+  mode: SearchMode;
+  activeTab: ResultTab;
+  events: SearchEventDto[];
+  aggregationResults: AggregationResultItemDto[];
+  chartMetadata: ChartMetadataDto | null;
+  total: number;
+  page: number;
+  size: number;
+  totalPages: number;
+  isMockMode: boolean;
+  queryId: string | null;
+  exportStatus: ExportStatus;
+  exportMessage: string | null;
+  canExportCsv: boolean;
+  exportDisabled: boolean;
+  response: NaturalLanguageSearchResponseDto | null;
+  onTabChange: (tab: ResultTab) => void;
+  onPageChange: (page: number) => void;
+  onSelectEvent: (eventId: string) => void;
+  onExport: () => void;
+  onSuggestionClick?: (question: string) => void;
 }) {
-  const [expanded, setExpanded] = useState(true)
-  const ToggleIcon = expanded ? ChevronUp : ChevronDown
-  const suggestions = useMemo(() => getSuggestions(response), [response])
+  const [expanded, setExpanded] = useState(true);
+  const ToggleIcon = expanded ? ChevronUp : ChevronDown;
+  const suggestions = useMemo(() => getSuggestions(response), [response]);
 
   return (
     <div className="space-y-4">
       <Card className="gap-0 overflow-hidden border border-border bg-card py-0">
-      <div className="flex flex-wrap items-center gap-2 border-b border-border px-4 py-3">
-        <div className="flex items-center gap-2 ml-auto">
-          <span className="rounded-lg border border-border bg-background/35 px-3 py-1.5 text-xs text-muted-foreground">
-            Total Events: <strong className="text-foreground">{total.toLocaleString('en-US')}</strong>
-          </span>
-          <span className="rounded-lg border border-border bg-background/35 px-3 py-1.5 text-xs text-muted-foreground">
-            Mode: <strong className="text-foreground">{mode}</strong>
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={exportDisabled}
-            onClick={onExport}
-            aria-label={
-              !canExportCsv
-                ? 'CSV export requires analyst role'
-                : isMockMode
-                  ? 'Export mock results as CSV'
-                  : 'Export results as CSV'
-            }
-            aria-live="polite"
-            title={
-              !canExportCsv
-                ? 'Requires SOC_ANALYST or SOC_ADMIN role'
-                : queryId
-                  ? `Export query ${queryId}`
-                  : 'No query available'
-            }
-          >
-            {exportStatus === 'loading' ? (
-              <LoaderCircle className="animate-spin" />
-            ) : exportStatus === 'success' ? (
-              <Check className="text-emerald-300" />
-            ) : (
-              <Download />
-            )}
-            {exportStatus === 'loading'
-              ? 'Exporting...'
-              : exportStatus === 'success'
-                ? 'Exported'
-                : !canExportCsv
-                  ? 'Export Locked'
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <Table2 className="size-4 text-cyan-300" />
+            <h2 className="text-sm font-semibold">Query Result</h2>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-7 text-muted-foreground hover:text-foreground"
+              aria-expanded={expanded}
+              aria-controls="query-result-content"
+              aria-label={
+                expanded ? "Collapse query result" : "Expand query result"
+              }
+              onClick={() => setExpanded((current) => !current)}
+            >
+              <ToggleIcon className="size-4" />
+            </Button>
+            <span className="rounded-lg border border-border bg-background/35 px-3 py-1.5 text-xs text-muted-foreground">
+              Mode: <strong className="text-foreground">{mode}</strong>
+            </span>
+            <span className="rounded-lg border border-border bg-background/35 px-3 py-1.5 text-xs text-muted-foreground">
+              Total Events:{" "}
+              <strong className="text-foreground">
+                {total.toLocaleString("en-US")}
+              </strong>
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={exportDisabled}
+              onClick={onExport}
+              aria-label={
+                !canExportCsv
+                  ? "CSV export requires analyst role"
                   : isMockMode
-                    ? 'Export Mock CSV'
-                    : 'Export CSV'}
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="size-7 text-muted-foreground hover:text-foreground"
-            aria-expanded={expanded}
-            aria-label={expanded ? 'Collapse results' : 'Expand results'}
-            onClick={() => setExpanded((current) => !current)}
-          >
-            <ToggleIcon className="size-4" />
-          </Button>
+                    ? "Export mock results as CSV"
+                    : "Export results as CSV"
+              }
+              aria-live="polite"
+              title={
+                !canExportCsv
+                  ? "Requires SOC_ANALYST or SOC_ADMIN role"
+                  : queryId
+                    ? `Export query ${queryId}`
+                    : "No query available"
+              }
+            >
+              {exportStatus === "loading" ? (
+                <LoaderCircle className="animate-spin" />
+              ) : exportStatus === "success" ? (
+                <Check className="text-emerald-300" />
+              ) : (
+                <Download />
+              )}
+              {exportStatus === "loading"
+                ? "Exporting..."
+                : exportStatus === "success"
+                  ? "Exported"
+                  : !canExportCsv
+                    ? "Export Locked"
+                    : isMockMode
+                      ? "Export Mock CSV"
+                      : "Export CSV"}
+            </Button>
+          </div>
         </div>
-      </div>
 
-      {expanded ? (
-        <>
+        {expanded ? (
+          <div id="query-result-content">
+            {exportMessage ? (
+              <div className="px-4 pt-3" aria-live="polite">
+                <Alert
+                  className={
+                    exportStatus === "error"
+                      ? "border-rose-400/30 bg-rose-500/5"
+                      : "border-emerald-400/25 bg-emerald-500/5"
+                  }
+                >
+                  {exportStatus === "error" ? (
+                    <TriangleAlert className="mr-2 inline size-4 text-rose-300" />
+                  ) : (
+                    <Check className="mr-2 inline size-4 text-emerald-300" />
+                  )}
+                  <AlertTitle className="inline">
+                    {exportStatus === "error"
+                      ? "CSV export failed"
+                      : "CSV export ready"}
+                  </AlertTitle>
+                  <AlertDescription>{exportMessage}</AlertDescription>
+                </Alert>
+              </div>
+            ) : null}
 
+            <Tabs
+              value={activeTab}
+              onValueChange={(value) => onTabChange(value as ResultTab)}
+              className="p-3 sm:p-4"
+            >
+              {mode === "aggregation" ? (
+                <TabsList className="max-w-full overflow-x-auto">
+                  <TabsTrigger value="analytics">
+                    <BarChart3 />
+                    Analytics View
+                  </TabsTrigger>
+                </TabsList>
+              ) : null}
 
-      {exportMessage ? (
-        <div className="px-4 pt-3" aria-live="polite">
-          <Alert
-            className={
-              exportStatus === 'error'
-                ? 'border-rose-400/30 bg-rose-500/5'
-                : 'border-emerald-400/25 bg-emerald-500/5'
-            }
-          >
-            {exportStatus === 'error' ? (
-              <TriangleAlert className="mr-2 inline size-4 text-rose-300" />
-            ) : (
-              <Check className="mr-2 inline size-4 text-emerald-300" />
-            )}
-            <AlertTitle className="inline">
-              {exportStatus === 'error'
-                ? 'CSV export failed'
-                : 'CSV export ready'}
-            </AlertTitle>
-            <AlertDescription>{exportMessage}</AlertDescription>
-          </Alert>
+              <TabsContent value="analytics">
+                <AnalyticsView
+                  aggregationResults={aggregationResults}
+                  chartMetadata={chartMetadata}
+                />
+              </TabsContent>
+              <TabsContent value="raw">
+                <RawEventsView
+                  events={events}
+                  total={total}
+                  page={page}
+                  size={size}
+                  totalPages={totalPages}
+                  onPageChange={onPageChange}
+                  onSelectEvent={onSelectEvent}
+                />
+              </TabsContent>
+            </Tabs>
+          </div>
+        ) : null}
+      </Card>
+
+      {suggestions.length > 0 && (
+        <div className="space-y-3 pt-2">
+          <h3 className="text-sm font-semibold text-zinc-300 px-1">
+            Suggested next steps
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {suggestions.map((suggestion) => {
+              const Icon = suggestion.icon;
+              return (
+                <button
+                  key={suggestion.id}
+                  onClick={() => onSuggestionClick?.(suggestion.question)}
+                  className="group flex flex-col items-start gap-2 rounded-xl border border-zinc-800 bg-zinc-900/40 p-4 text-left transition-all hover:border-cyan-500/30 hover:bg-zinc-800/60"
+                >
+                  <div className="flex items-center gap-2 text-xs font-medium text-cyan-400">
+                    <Icon className="size-4" />
+                    {suggestion.category}
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-zinc-200 group-hover:text-cyan-50">
+                      {suggestion.title}
+                    </p>
+                    <p className="text-xs text-zinc-500 mt-1 line-clamp-2">
+                      {suggestion.question}
+                    </p>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
         </div>
-      ) : null}
-
-      <Tabs
-        value={activeTab}
-        onValueChange={(value) => onTabChange(value as ResultTab)}
-        className="p-3 sm:p-4"
-      >
-        <TabsList className="max-w-full overflow-x-auto">
-          <TabsTrigger value="analytics" disabled={mode !== 'aggregation'}>
-            <BarChart3 />
-            Analytics View
-          </TabsTrigger>
-          <TabsTrigger value="raw" disabled={mode !== 'search'} title="Raw Events">
-            <DatabaseZap />
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="analytics">
-          <AnalyticsView
-            aggregationResults={aggregationResults}
-            chartMetadata={chartMetadata}
-          />
-        </TabsContent>
-        <TabsContent value="raw">
-          <RawEventsView
-            events={events}
-            total={total}
-            page={page}
-            size={size}
-            totalPages={totalPages}
-            onPageChange={onPageChange}
-            onSelectEvent={onSelectEvent}
-          />
-        </TabsContent>
-        </Tabs>
-        </>
-      ) : null}
-    </Card>
-
-    {suggestions.length > 0 && (
-      <div className="space-y-3 pt-2">
-        <h3 className="text-sm font-semibold text-zinc-300 px-1">Suggested next steps</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {suggestions.map((suggestion) => {
-            const Icon = suggestion.icon
-            return (
-              <button
-                key={suggestion.id}
-                onClick={() => onSuggestionClick?.(suggestion.question)}
-                className="group flex flex-col items-start gap-2 rounded-xl border border-zinc-800 bg-zinc-900/40 p-4 text-left transition-all hover:border-cyan-500/30 hover:bg-zinc-800/60"
-              >
-                <div className="flex items-center gap-2 text-xs font-medium text-cyan-400">
-                  <Icon className="size-4" />
-                  {suggestion.category}
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-zinc-200 group-hover:text-cyan-50">{suggestion.title}</p>
-                  <p className="text-xs text-zinc-500 mt-1 line-clamp-2">{suggestion.question}</p>
-                </div>
-              </button>
-            )
-          })}
-        </div>
-      </div>
-    )}
+      )}
     </div>
-  )
+  );
 }
 
-export type { ResultTab }
+export type { ResultTab };
