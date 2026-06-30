@@ -1,4 +1,7 @@
 import {
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   History,
   LayoutDashboard,
   ListFilter,
@@ -144,9 +147,7 @@ export function SocSidebar({
                   expanded ? 'opacity-100' : 'pointer-events-none opacity-0',
                 )}
               >
-                <span aria-hidden="true" className="text-[10px] leading-none">
-                  {'◀'}
-                </span>
+                <ChevronLeft className="size-3.5" />
               </button>
             </TooltipTrigger>
             <TooltipContent side="right">Collapse sidebar</TooltipContent>
@@ -225,15 +226,15 @@ export function SocSidebar({
                     {investigationsNav.label}
                   </span>
                   {expanded && (
-                    <span className="ml-auto text-xs opacity-60">
-                      {investigationsOpen ? '▼' : '▶'}
+                    <span className="ml-auto flex items-center justify-center opacity-60">
+                      {investigationsOpen ? <ChevronDown className="size-3.5" /> : <ChevronRight className="size-3.5" />}
                     </span>
                   )}
                 </button>
               </CollapsedTooltip>
 
               {expanded && investigationsOpen && (
-                <div className="ml-9 mt-1 flex flex-col gap-1 border-l border-border/50 pl-2">
+                <div className="ml-8 mt-1 flex flex-col gap-1">
                   <button
                     type="button"
                     onClick={() => onPageChange?.('investigations')}
@@ -259,11 +260,9 @@ export function SocSidebar({
               )}
             </div>
           ) : null}
-        </nav>
 
-        <div className="mt-auto flex flex-col gap-1.5 px-3">
           {adminVisible ? (
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col">
               <CollapsedTooltip collapsed={collapsed} label="Admin Tools">
                 <button
                   type="button"
@@ -277,11 +276,11 @@ export function SocSidebar({
                     }
                   }}
                   className={cn(
-                    'relative flex h-10 w-full shrink-0 items-center rounded-xl border border-amber-400/15 transition-colors',
+                    'relative flex h-10 w-full shrink-0 items-center rounded-xl transition-colors',
                     expanded ? 'justify-start px-3' : 'justify-center',
                     activePage === 'audit-logs'
-                      ? 'bg-amber-400/20 text-amber-300 ring-1 ring-amber-400/30'
-                      : 'bg-amber-400/8 text-amber-200 hover:bg-amber-400/15 hover:text-amber-100',
+                      ? 'bg-cyan-400/10 text-cyan-300 ring-1 ring-cyan-400/25'
+                      : 'text-muted-foreground hover:bg-secondary hover:text-foreground',
                   )}
                 >
                   <ShieldCheck className="size-5 shrink-0" />
@@ -296,15 +295,15 @@ export function SocSidebar({
                     Admin Tools
                   </span>
                   {expanded && (
-                    <span className="ml-auto text-xs opacity-60">
-                      {adminOpen ? '▼' : '▶'}
+                    <span className="ml-auto flex items-center justify-center opacity-60">
+                      {adminOpen ? <ChevronDown className="size-3.5" /> : <ChevronRight className="size-3.5" />}
                     </span>
                   )}
                 </button>
               </CollapsedTooltip>
 
               {expanded && adminOpen && (
-                <div className="ml-9 mt-1 flex flex-col gap-1 border-l border-amber-400/20 pl-2">
+                <div className="ml-8 mt-1 flex flex-col gap-1">
                   <button
                     type="button"
                     onClick={() => {
@@ -313,7 +312,7 @@ export function SocSidebar({
                     className={cn(
                       'flex h-8 w-full items-center gap-2 rounded-lg px-3 text-sm transition-colors text-left',
                       activePage === 'audit-logs'
-                        ? 'bg-amber-400/20 text-amber-300'
+                        ? 'bg-cyan-400/10 text-cyan-300'
                         : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
                     )}
                   >
@@ -339,8 +338,9 @@ export function SocSidebar({
               )}
             </div>
           ) : null}
+        </nav>
 
-
+        <div className="mt-auto flex flex-col gap-1.5 px-3">
           {authEnabled && onLogout ? (
             <CollapsedTooltip collapsed={collapsed} label="Logout">
               <button
