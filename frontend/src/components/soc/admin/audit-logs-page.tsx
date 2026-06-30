@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react"
-import { ArrowLeft, ChevronLeft, ChevronRight, Download, Search, ShieldAlert, ShieldCheck, Lightbulb } from "lucide-react"
+import { ChevronLeft, ChevronRight, Download, Search, ShieldAlert, ShieldCheck, Lightbulb } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { downloadCsvBlob } from "@/services/csv-export-api"
@@ -11,7 +11,7 @@ import { InvestigationDetailPanel } from "../investigations/investigation-detail
 const FILTERS = ["All", "Success", "Failed", "Search", "Aggregation"] as const
 const PAGE_SIZE = 5
 
-export function AuditLogsPage({ onBack }: { onBack?: () => void }) {
+export function AuditLogsPage() {
   const [items, setItems] = useState<AuditLogItem[]>([])
   const [page, setPage] = useState(0)
   const [totalPages, setTotalPages] = useState(0)
@@ -103,22 +103,9 @@ export function AuditLogsPage({ onBack }: { onBack?: () => void }) {
     <div className="flex h-full min-h-0 w-full flex-col bg-zinc-950 text-zinc-50">
       <header className="flex shrink-0 flex-col border-b border-zinc-800 bg-zinc-900/50 p-4">
         <div className="flex items-center gap-3">
-          {onBack && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onBack}
-              className="text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100"
-            >
-              <ArrowLeft className="size-4" />
-            </Button>
-          )}
           <ShieldCheck className="size-5 text-amber-400" />
           <div>
-            <h1 className="text-sm font-semibold text-zinc-100">System Audit Logs</h1>
-            <p className="text-xs text-zinc-500">
-              {loading ? "Loading..." : `${total.toLocaleString()} total queries`}
-            </p>
+            <h1 className="text-xl font-semibold text-zinc-100">System Audit Logs</h1>
           </div>
           <Button
             variant="outline"
@@ -283,8 +270,6 @@ export function AuditLogsPage({ onBack }: { onBack?: () => void }) {
                 </tbody>
               </table>
             )}
-          </div>
-
           {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex shrink-0 items-center justify-between border-t border-zinc-800 px-4 py-2.5">
@@ -309,6 +294,7 @@ export function AuditLogsPage({ onBack }: { onBack?: () => void }) {
               </div>
             </div>
           )}
+          </div>
         </div>
 
         <div

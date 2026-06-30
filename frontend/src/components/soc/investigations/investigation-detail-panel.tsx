@@ -82,10 +82,10 @@ export function InvestigationDetailPanel({
 
   const codeObj = tab === "plan" ? item.search_plan : item.generated_dsl
   const code = codeObj ? JSON.stringify(codeObj, null, 2) : "/* Not available */"
-  const timeStr = new Date(item.created_at).toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-  })
+  const date = new Date(item.created_at)
+  const dateStr = date.toLocaleDateString("en-US", { month: "short", day: "numeric" })
+  const timeStr = date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })
+  const fullTimeStr = `${dateStr} ${timeStr}`
   const summary = item.summary?.trim()
 
   async function copyCode() {
@@ -106,7 +106,7 @@ export function InvestigationDetailPanel({
             {item.question}
           </h2>
           <p className="mt-1 font-mono text-xs text-zinc-500">
-            {showQueryId ? `${item.query_id} · ${timeStr}` : timeStr}
+            {showQueryId ? `${item.query_id} · ${fullTimeStr}` : fullTimeStr}
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
