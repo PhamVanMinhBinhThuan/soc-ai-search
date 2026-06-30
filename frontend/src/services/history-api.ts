@@ -1,9 +1,11 @@
-import { ApiError, isRecord, requestJson } from '@/services/api-client'
+import { ApiError, apiUrl, authHeaders, errorPayload, isRecord, requestJson } from '@/services/api-client'
 import { getMockSearchHistory, getMockSearchHistoryDetail, mockTogglePinHistory } from '@/services/mock-search-api'
 import { isMockMode } from '@/services/search-api'
 import type {
   AuditStatus,
+  AuditLogFiltersDto,
   SearchHistoryDetailDto,
+  SearchHistoryFiltersDto,
   SearchHistoryItemDto,
   SearchHistoryPageDto,
   SearchMode,
@@ -14,7 +16,8 @@ const uuidPattern =
 
 export async function getAuditLogs(
   page: number = 0,
-  size: number = 50,
+  size: number = 5,
+  filters?: AuditLogFiltersDto,
   signal?: AbortSignal,
 ): Promise<{
   items: import('@/types/soc').AuditLogItem[]
@@ -32,6 +35,7 @@ export async function getAuditLogs(
     page: page.toString(),
     size: size.toString(),
   })
+  appendAuditFilters(query, filters)
 
   const payload = await requestJson(`/api/v1/audit-logs?${query}`, { signal })
 
@@ -130,7 +134,7 @@ function assertSearchHistoryPage(
 export async function getSearchHistory(
   page: number,
   size: number,
-  filters?: { pinned?: boolean; status?: AuditStatus | 'all'; mode?: SearchMode | 'all' },
+  filters?: SearchHistoryFiltersDto,
   signal?: AbortSignal,
 ) {
   if (isMockMode) {
@@ -143,8 +147,7 @@ export async function getSearchHistory(
   })
   
   if (filters?.pinned) search.set('pinned', 'true')
-  if (filters?.status && filters.status !== 'all') search.set('status', filters.status)
-  if (filters?.mode && filters.mode !== 'all') search.set('mode', filters.mode)
+  appendCommonFilters(search, filters)
 
   const response = await requestJson(
     `/api/v1/search/history?${search.toString()}`,
@@ -153,6 +156,80 @@ export async function getSearchHistory(
 
   assertSearchHistoryPage(response)
   return response
+}
+
+export async function exportAuditLogs(
+  filters?: AuditLogFiltersDto,
+  signal?: AbortSignal,
+) {
+  const search = new URLSearchParams()
+  appendAuditFilters(search, filters)
+  const suffix = search.toString() ? `?${search.toString()}` : ''
+
+  let response: Response
+  try {
+    response = await fetch(apiUrl(`/api/v1/audit-logs/export${suffix}`), {
+      method: 'GET',
+      headers: {
+        Accept: 'text/csv',
+        ...authHeaders(),
+      },
+      signal,
+    })
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw error
+    }
+
+    throw new ApiError({
+      status: 0,
+      message: 'Unable to connect to the SOC AI Search backend',
+      errors: ['Check that the backend and Docker services are running'],
+      cause: error,
+    })
+  }
+
+  if (!response.ok) {
+    const contentType = response.headers.get('content-type') ?? ''
+    const payload = contentType.includes('application/json')
+      ? await response.json()
+      : null
+    const apiError = errorPayload(payload)
+    throw new ApiError({
+      status: response.status,
+      message: apiError.message,
+      errors: apiError.errors,
+    })
+  }
+
+  return {
+    blob: await response.blob(),
+    filename: filenameFromDisposition(response.headers.get('content-disposition')) ?? 'soc-audit-logs.csv',
+    truncated: response.headers.get('X-Export-Truncated') === 'true',
+  }
+}
+
+function appendAuditFilters(search: URLSearchParams, filters?: AuditLogFiltersDto) {
+  appendCommonFilters(search, filters)
+  if (filters?.identity?.trim()) search.set('identity', filters.identity.trim())
+}
+
+function appendCommonFilters(
+  search: URLSearchParams,
+  filters?: Pick<SearchHistoryFiltersDto, 'q' | 'status' | 'mode' | 'from' | 'to' | 'sort'>,
+) {
+  if (filters?.q?.trim()) search.set('q', filters.q.trim())
+  if (filters?.status && filters.status !== 'all') search.set('status', filters.status)
+  if (filters?.mode && filters.mode !== 'all') search.set('mode', filters.mode)
+  if (filters?.from) search.set('from', filters.from)
+  if (filters?.to) search.set('to', filters.to)
+  if (filters?.sort) search.set('sort', filters.sort)
+}
+
+function filenameFromDisposition(value: string | null) {
+  if (!value) return null
+  const match = /filename="?([^";]+)"?/i.exec(value)
+  return match?.[1] ?? null
 }
 
 export async function getSearchHistoryDetail(

@@ -1,12 +1,17 @@
 package com.soc.ai.search.audit;
 
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.List;
 
 import com.soc.ai.search.search.execution.SearchErrorResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -15,10 +20,14 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 @RestController
 @Tag(name = "Search History and Audit", description = "Recent query history and application audit log APIs")
 public class AuditQueryController {
+
+    private static final MediaType CSV_MEDIA_TYPE =
+            new MediaType("text", "csv", StandardCharsets.UTF_8);
 
     private final AuditQueryService queryService;
 
@@ -36,8 +45,12 @@ public class AuditQueryController {
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(required = false) Boolean pinned,
             @RequestParam(required = false) AuditStatus status,
-            @RequestParam(required = false) com.soc.ai.search.search.plan.SearchMode mode) {
-        return queryService.history(page, size, pinned, status, mode);
+            @RequestParam(required = false) com.soc.ai.search.search.plan.SearchMode mode,
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false) Instant from,
+            @RequestParam(required = false) Instant to,
+            @RequestParam(required = false) String sort) {
+        return queryService.history(page, size, new AuditLogFilters(q, status, mode, pinned, null, from, to, sort));
     }
 
     @GetMapping("/api/v1/search/history/{queryId}")
@@ -61,8 +74,41 @@ public class AuditQueryController {
     @Operation(summary = "Get paginated application audit logs", description = "Requires SOC_ADMIN.")
     public PagedResponse<AuditLogItem> auditLogs(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "50") int size) {
-        return queryService.auditLogs(page, size);
+            @RequestParam(defaultValue = "50") int size,
+            @RequestParam(required = false) AuditStatus status,
+            @RequestParam(required = false) com.soc.ai.search.search.plan.SearchMode mode,
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false) String identity,
+            @RequestParam(required = false) Instant from,
+            @RequestParam(required = false) Instant to,
+            @RequestParam(required = false) String sort) {
+        return queryService.auditLogs(page, size, new AuditLogFilters(q, status, mode, null, identity, from, to, sort));
+    }
+
+    @GetMapping(value = "/api/v1/audit-logs/export", produces = "text/csv")
+    @PreAuthorize("@rbacPermissionService.authDisabled() or hasRole('SOC_ADMIN')")
+    @Operation(summary = "Export filtered application audit logs as CSV", description = "Requires SOC_ADMIN.")
+    public ResponseEntity<StreamingResponseBody> exportAuditLogs(
+            @RequestParam(required = false) AuditStatus status,
+            @RequestParam(required = false) com.soc.ai.search.search.plan.SearchMode mode,
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false) String identity,
+            @RequestParam(required = false) Instant from,
+            @RequestParam(required = false) Instant to,
+            @RequestParam(required = false) String sort) {
+        var filters = new AuditLogFilters(q, status, mode, null, identity, from, to, sort);
+        var prepared = queryService.prepareAuditExport(filters);
+
+        return ResponseEntity.ok()
+                .contentType(CSV_MEDIA_TYPE)
+                .header(
+                        HttpHeaders.CONTENT_DISPOSITION,
+                        ContentDisposition.attachment()
+                                .filename("soc-audit-logs.csv")
+                                .build()
+                                .toString())
+                .header("X-Export-Truncated", Boolean.toString(prepared.truncated()))
+                .body(prepared.body());
     }
 
     @ExceptionHandler(IllegalArgumentException.class)

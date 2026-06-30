@@ -31,11 +31,8 @@ class AuditQueryServiceTest {
     void historyUsesStableSortAndMapsQueryId() {
         when(currentUserService.currentIdentity()).thenReturn("demo-analyst");
         var log = queryLog(UUID.fromString("11111111-1111-1111-1111-111111111111"));
-        when(repository.findWithFilters(
-                org.mockito.ArgumentMatchers.eq("demo-analyst"),
-                org.mockito.ArgumentMatchers.isNull(),
-                org.mockito.ArgumentMatchers.isNull(),
-                org.mockito.ArgumentMatchers.isNull(),
+        when(repository.findAll(
+                org.mockito.ArgumentMatchers.any(org.springframework.data.jpa.domain.Specification.class),
                 org.mockito.ArgumentMatchers.any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(log)));
 
@@ -45,11 +42,8 @@ class AuditQueryServiceTest {
                 .extracting(SearchHistoryItem::queryId)
                 .isEqualTo(log.getId());
         var pageable = ArgumentCaptor.forClass(Pageable.class);
-        verify(repository).findWithFilters(
-                org.mockito.ArgumentMatchers.eq("demo-analyst"),
-                org.mockito.ArgumentMatchers.isNull(),
-                org.mockito.ArgumentMatchers.isNull(),
-                org.mockito.ArgumentMatchers.isNull(),
+        verify(repository).findAll(
+                org.mockito.ArgumentMatchers.any(org.springframework.data.jpa.domain.Specification.class),
                 pageable.capture());
         assertThat(pageable.getValue().getSort().toString())
                 .isEqualTo("createdAt: DESC,id: DESC");
@@ -58,11 +52,8 @@ class AuditQueryServiceTest {
     @Test
     void emptyHistoryHasZeroTotalPages() {
         when(currentUserService.currentIdentity()).thenReturn("demo-analyst");
-        when(repository.findWithFilters(
-                org.mockito.ArgumentMatchers.eq("demo-analyst"),
-                org.mockito.ArgumentMatchers.isNull(),
-                org.mockito.ArgumentMatchers.isNull(),
-                org.mockito.ArgumentMatchers.isNull(),
+        when(repository.findAll(
+                org.mockito.ArgumentMatchers.any(org.springframework.data.jpa.domain.Specification.class),
                 org.mockito.ArgumentMatchers.any(Pageable.class)))
                 .thenReturn(new PageImpl<>(
                         List.of(),
@@ -78,13 +69,17 @@ class AuditQueryServiceTest {
 
     @Test
     void auditLogsUseSameStableSort() {
-        when(repository.findAll(org.mockito.ArgumentMatchers.any(Pageable.class)))
+        when(repository.findAll(
+                org.mockito.ArgumentMatchers.any(org.springframework.data.jpa.domain.Specification.class),
+                org.mockito.ArgumentMatchers.any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(queryLog(UUID.randomUUID()))));
 
         service.auditLogs(0, 50);
 
         var pageable = ArgumentCaptor.forClass(Pageable.class);
-        verify(repository).findAll(pageable.capture());
+        verify(repository).findAll(
+                org.mockito.ArgumentMatchers.any(org.springframework.data.jpa.domain.Specification.class),
+                pageable.capture());
         assertThat(pageable.getValue().getSort().toString())
                 .isEqualTo("createdAt: DESC,id: DESC");
     }

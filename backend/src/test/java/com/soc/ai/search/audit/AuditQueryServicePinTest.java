@@ -118,13 +118,17 @@ class AuditQueryServicePinTest {
     void historyFilterPassesToRepository() {
         when(currentUserService.currentIdentity()).thenReturn("analyst.demo");
         Page<SearchQueryLog> page = new PageImpl<>(List.of(log), PageRequest.of(0, 10), 1);
-        when(repository.findWithFilters(eq("analyst.demo"), eq(true), eq(AuditStatus.SUCCESS), eq(SearchMode.SEARCH), any(PageRequest.class)))
+        when(repository.findAll(
+                any(org.springframework.data.jpa.domain.Specification.class),
+                any(PageRequest.class)))
                 .thenReturn(page);
 
         var response = service.history(0, 10, true, AuditStatus.SUCCESS, SearchMode.SEARCH);
 
         assertThat(response.items()).hasSize(1);
         assertThat(response.total()).isEqualTo(1);
-        verify(repository).findWithFilters(eq("analyst.demo"), eq(true), eq(AuditStatus.SUCCESS), eq(SearchMode.SEARCH), any(PageRequest.class));
+        verify(repository).findAll(
+                any(org.springframework.data.jpa.domain.Specification.class),
+                any(PageRequest.class));
     }
 }

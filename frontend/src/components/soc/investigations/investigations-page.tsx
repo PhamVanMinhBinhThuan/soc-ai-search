@@ -1,10 +1,12 @@
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useState } from "react"
 import { ShieldAlert, ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { InvestigationsMasterList, type FilterKey } from "./investigations-master-list"
 import { InvestigationDetailPanel } from "./investigation-detail-panel"
 import { getSearchHistory, getSearchHistoryDetail, togglePinHistory } from "@/services/history-api"
 import type { SearchHistoryItemDto, SearchHistoryDetailDto } from "@/types/soc"
+
+const PAGE_SIZE = 5
 
 export function InvestigationsPage({
   onRunAgain,
@@ -19,35 +21,42 @@ export function InvestigationsPage({
 }) {
   const [query, setQuery] = useState("")
   const [filter, setFilter] = useState<FilterKey>("all")
+  const [page, setPage] = useState(0)
+  const [total, setTotal] = useState(0)
+  const [totalPages, setTotalPages] = useState(0)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   
   const [items, setItems] = useState<SearchHistoryItemDto[]>([])
   const [selectedItemDetail, setSelectedItemDetail] = useState<SearchHistoryDetailDto | null>(null)
   const [loading, setLoading] = useState(false)
 
-  // Fetch initial history
   useEffect(() => {
     const abortController = new AbortController()
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setLoading(true)
+    const timer = window.setTimeout(() => {
+      setLoading(true)
     
-    // We could pass filter to backend here, but for now we fetch recent 100
-    // and filter client-side as the mock did, unless the user changes filters heavily.
-    getSearchHistory(0, 100, {}, abortController.signal)
-      .then(res => {
-        setItems(res.items)
-      })
-      .catch(err => {
-        if (err.name !== 'AbortError') {
-          console.error("Failed to fetch history", err)
-        }
-      })
-      .finally(() => {
-        setLoading(false)
-      })
+      getSearchHistory(page, PAGE_SIZE, filtersForRequest(filter, query), abortController.signal)
+        .then(res => {
+          setItems(res.items)
+          setPage(res.page)
+          setTotal(res.total)
+          setTotalPages(res.total_pages)
+        })
+        .catch(err => {
+          if (err.name !== 'AbortError') {
+            console.error("Failed to fetch history", err)
+          }
+        })
+        .finally(() => {
+          setLoading(false)
+        })
+    }, query.trim() ? 250 : 0)
 
-    return () => abortController.abort()
-  }, [])
+    return () => {
+      window.clearTimeout(timer)
+      abortController.abort()
+    }
+  }, [filter, page, query])
 
   // Fetch details when an item is selected
   useEffect(() => {
@@ -82,25 +91,6 @@ export function InvestigationsPage({
       console.error('Failed to toggle pin', err)
     }
   }
-
-  const filtered = useMemo(() => {
-    return items.filter((item) => {
-      const matchesQuery = item.question
-        .toLowerCase()
-        .includes(query.toLowerCase().trim())
-      
-      const matchesFilter =
-        filter === "all"
-          ? true
-          : filter === "pinned"
-            ? item.pinned
-            : filter === "SUCCESS" || filter === "FAILED"
-              ? item.status === filter
-              : item.mode === filter
-
-      return matchesQuery && matchesFilter
-    })
-  }, [items, query, filter])
 
   return (
     <main className="flex h-full min-h-0 flex-col bg-zinc-950 text-zinc-200">
@@ -148,13 +138,23 @@ export function InvestigationsPage({
           }
         >
           <InvestigationsMasterList
-            items={filtered}
+            items={items}
             activeId={selectedId}
             onSelect={setSelectedId}
             query={query}
-            onQueryChange={setQuery}
+            onQueryChange={(value) => {
+              setPage(0)
+              setQuery(value)
+            }}
             filter={filter}
-            onFilterChange={setFilter}
+            onFilterChange={(value) => {
+              setPage(0)
+              setFilter(value)
+            }}
+            page={page}
+            total={total}
+            totalPages={totalPages}
+            onPageChange={setPage}
             expanded={!selectedId}
             onTogglePin={handlePinToggle}
           />
@@ -173,7 +173,6 @@ export function InvestigationsPage({
             <InvestigationDetailPanel
               item={selectedItemDetail}
               onClose={() => setSelectedId(null)}
-              onPinToggle={(pinned) => handlePinToggle(selectedItemDetail.query_id, pinned)}
               onRunAgain={() => onRunAgain?.(selectedItemDetail)}
               onExport={() => onExport?.(selectedItemDetail.query_id)}
               canExport={canExport}
@@ -183,4 +182,13 @@ export function InvestigationsPage({
       </div>
     </main>
   )
+}
+
+function filtersForRequest(filter: FilterKey, query: string) {
+  return {
+    q: query.trim() || undefined,
+    pinned: filter === "pinned" ? true : undefined,
+    status: filter === "SUCCESS" || filter === "FAILED" ? filter : "all",
+    mode: filter === "search" || filter === "aggregation" ? filter : "all",
+  } as const
 }

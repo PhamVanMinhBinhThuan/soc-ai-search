@@ -6,6 +6,28 @@ export type SummarySource = "llm" | "fallback";
 
 export type AuditStatus = "SUCCESS" | "FAILED";
 
+export type AuditLogSort = "created_at,desc" | "created_at,asc";
+
+export type SearchHistoryFiltersDto = {
+  q?: string;
+  pinned?: boolean;
+  status?: AuditStatus | "all";
+  mode?: SearchMode | "all";
+  from?: string;
+  to?: string;
+  sort?: AuditLogSort;
+};
+
+export type AuditLogFiltersDto = {
+  q?: string;
+  status?: AuditStatus | "all";
+  mode?: SearchMode | "all";
+  identity?: string;
+  from?: string;
+  to?: string;
+  sort?: AuditLogSort;
+};
+
 export type AggregationType = "count" | "group_by" | "top_n" | "date_histogram";
 
 export type SortOrder = "asc" | "desc";

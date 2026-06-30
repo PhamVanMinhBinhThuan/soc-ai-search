@@ -30,7 +30,7 @@ class AuditQueryControllerTest {
 
     @Test
     void returnsPaginatedHistory() throws Exception {
-        when(queryService.history(0, 20, null, null, null)).thenReturn(new PagedResponse<>(
+        when(queryService.history(org.mockito.ArgumentMatchers.eq(0), org.mockito.ArgumentMatchers.eq(20), org.mockito.ArgumentMatchers.any(com.soc.ai.search.audit.AuditLogFilters.class))).thenReturn(new PagedResponse<>(
                 List.of(new SearchHistoryItem(
                         UUID.fromString("11111111-1111-1111-1111-111111111111"),
                         "failed login china",
@@ -57,7 +57,7 @@ class AuditQueryControllerTest {
 
     @Test
     void returnsPaginatedAuditLogs() throws Exception {
-        when(queryService.auditLogs(0, 50)).thenReturn(new PagedResponse<>(
+        when(queryService.auditLogs(org.mockito.ArgumentMatchers.eq(0), org.mockito.ArgumentMatchers.eq(50), org.mockito.ArgumentMatchers.any(com.soc.ai.search.audit.AuditLogFilters.class))).thenReturn(new PagedResponse<>(
                 List.of(),
                 0,
                 50,
@@ -73,7 +73,7 @@ class AuditQueryControllerTest {
 
     @Test
     void returnsBadRequestForInvalidPagination() throws Exception {
-        when(queryService.history(-1, 20, null, null, null))
+        when(queryService.history(org.mockito.ArgumentMatchers.eq(-1), org.mockito.ArgumentMatchers.eq(20), org.mockito.ArgumentMatchers.any(com.soc.ai.search.audit.AuditLogFilters.class)))
                 .thenThrow(new IllegalArgumentException("page must be greater than or equal to 0"));
 
         mockMvc.perform(get("/api/v1/search/history").param("page", "-1"))
@@ -83,7 +83,7 @@ class AuditQueryControllerTest {
 
     @Test
     void returnsControlledErrorWhenPostgresLookupFails() throws Exception {
-        when(queryService.auditLogs(0, 50))
+        when(queryService.auditLogs(org.mockito.ArgumentMatchers.eq(0), org.mockito.ArgumentMatchers.eq(50), org.mockito.ArgumentMatchers.any(com.soc.ai.search.audit.AuditLogFilters.class)))
                 .thenThrow(new AuditPersistenceException("Audit log lookup failed", new RuntimeException()));
 
         mockMvc.perform(get("/api/v1/audit-logs"))

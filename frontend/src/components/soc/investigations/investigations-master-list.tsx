@@ -1,10 +1,7 @@
-import { useState } from "react"
 import { ChevronLeft, ChevronRight, Search, Star } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { SearchHistoryItemDto } from "@/types/soc"
 import { ModeBadge, StatusBadge } from "./investigation-badges"
-
-const PAGE_SIZE = 10
 
 export type FilterKey = "all" | "pinned" | "SUCCESS" | "FAILED" | "search" | "aggregation"
 
@@ -25,6 +22,10 @@ export function InvestigationsMasterList({
   onQueryChange,
   filter,
   onFilterChange,
+  page,
+  total,
+  totalPages,
+  onPageChange,
   expanded = false,
   onTogglePin,
 }: {
@@ -35,22 +36,19 @@ export function InvestigationsMasterList({
   onQueryChange: (value: string) => void
   filter: FilterKey
   onFilterChange: (value: FilterKey) => void
+  page: number
+  total: number
+  totalPages: number
+  onPageChange: (page: number) => void
   expanded?: boolean
   onTogglePin?: (queryId: string, pinned: boolean) => void
 }) {
-  const [page, setPage] = useState(0)
-  const totalPages = Math.ceil(items.length / PAGE_SIZE)
-  const pagedItems = expanded
-    ? items.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
-    : items
+  const pagedItems = items
 
-  // Reset to page 0 when filter/query changes
   const handleFilterChange = (value: FilterKey) => {
-    setPage(0)
     onFilterChange(value)
   }
   const handleQueryChange = (value: string) => {
-    setPage(0)
     onQueryChange(value)
   }
   return (
@@ -112,9 +110,6 @@ export function InvestigationsMasterList({
                   Question
                 </th>
                 <th className="px-3 py-2.5 text-right text-xs font-medium uppercase tracking-wide text-zinc-500">
-                  Latency
-                </th>
-                <th className="px-3 py-2.5 text-right text-xs font-medium uppercase tracking-wide text-zinc-500">
                   Results
                 </th>
                 <th className="px-3 py-2.5 text-xs font-medium uppercase tracking-wide text-zinc-500">
@@ -165,9 +160,6 @@ export function InvestigationsMasterList({
                       <span className="line-clamp-1 text-sm font-medium text-zinc-200">
                         {item.question}
                       </span>
-                    </td>
-                    <td className="whitespace-nowrap px-3 py-3 text-right font-mono text-xs text-zinc-400">
-                      {item.latency_ms ?? '-'}ms
                     </td>
                     <td className="whitespace-nowrap px-3 py-3 text-right font-mono text-xs text-zinc-400">
                       {item.result_count?.toLocaleString() ?? '-'}
@@ -251,18 +243,18 @@ export function InvestigationsMasterList({
       {expanded && totalPages > 1 && (
         <div className="flex shrink-0 items-center justify-between border-t border-zinc-800 px-4 py-2.5">
           <span className="text-xs text-zinc-500">
-            Page {page + 1} of {totalPages} &middot; {items.length} total
+            Page {page + 1} of {totalPages} &middot; {total.toLocaleString()} total
           </span>
           <div className="flex items-center gap-1">
             <button
-              onClick={() => setPage((p) => Math.max(0, p - 1))}
+              onClick={() => onPageChange(Math.max(0, page - 1))}
               disabled={page === 0}
               className="flex size-7 items-center justify-center rounded-md border border-zinc-800 bg-zinc-900 text-zinc-400 transition hover:border-zinc-700 hover:text-zinc-100 disabled:pointer-events-none disabled:opacity-30"
             >
               <ChevronLeft className="size-4" />
             </button>
             <button
-              onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+              onClick={() => onPageChange(Math.min(totalPages - 1, page + 1))}
               disabled={page >= totalPages - 1}
               className="flex size-7 items-center justify-center rounded-md border border-zinc-800 bg-zinc-900 text-zinc-400 transition hover:border-zinc-700 hover:text-zinc-100 disabled:pointer-events-none disabled:opacity-30"
             >
