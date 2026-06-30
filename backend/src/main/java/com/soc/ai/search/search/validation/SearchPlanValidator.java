@@ -36,6 +36,16 @@ public class SearchPlanValidator {
             "ip",
             "country_code");
 
+    private static final Set<String> SEARCH_SORT_FIELD_ALLOWLIST = Set.of(
+            "timestamp",
+            "severity",
+            "source",
+            "event_type",
+            "user",
+            "host",
+            "ip",
+            "country_code");
+
     private final Validator beanValidator;
 
     public SearchPlanValidator(Validator beanValidator) {
@@ -53,6 +63,7 @@ public class SearchPlanValidator {
         validateMode(plan, errors);
         validateFilters(plan.filters(), errors);
         rejectDangerousValue("message_query", plan.messageQuery(), errors);
+        validateSort(plan, errors);
         validateAggregation(plan, errors);
 
         if (!errors.isEmpty()) {
@@ -125,6 +136,7 @@ public class SearchPlanValidator {
         if (aggregation.interval() != null) {
             errors.add("aggregation.interval: must be null for count aggregation");
         }
+        validateNoAggregationOrder(aggregation, errors);
     }
 
     private void validateGroupByAggregation(AggregationPlan aggregation, List<String> errors) {
@@ -133,6 +145,7 @@ public class SearchPlanValidator {
         if (aggregation.interval() != null) {
             errors.add("aggregation.interval: must be null for group_by aggregation");
         }
+        validateOptionalAggregationOrder(aggregation, errors);
     }
 
     private void validateTopNAggregation(AggregationPlan aggregation, List<String> errors) {
@@ -145,6 +158,7 @@ public class SearchPlanValidator {
         if (aggregation.interval() != null) {
             errors.add("aggregation.interval: must be null for top_n aggregation");
         }
+        validateOptionalAggregationOrder(aggregation, errors);
     }
 
     private void validateDateHistogramAggregation(AggregationPlan aggregation, List<String> errors) {
@@ -156,6 +170,28 @@ public class SearchPlanValidator {
         }
         if (aggregation.interval() == null) {
             errors.add("aggregation.interval: must not be null for date_histogram aggregation");
+        }
+        validateNoAggregationOrder(aggregation, errors);
+    }
+
+    private void validateNoAggregationOrder(AggregationPlan aggregation, List<String> errors) {
+        if (aggregation.orderBy() != null) {
+            errors.add("aggregation.order_by: is only supported for group_by and top_n aggregation");
+        }
+        if (aggregation.order() != null) {
+            errors.add("aggregation.order: is only supported for group_by and top_n aggregation");
+        }
+    }
+
+    private void validateOptionalAggregationOrder(AggregationPlan aggregation, List<String> errors) {
+        if (aggregation.orderBy() == null && aggregation.order() == null) {
+            return;
+        }
+        if (aggregation.orderBy() == null) {
+            errors.add("aggregation.order_by: must not be null when aggregation.order is provided");
+        }
+        if (aggregation.order() == null) {
+            errors.add("aggregation.order: must not be null when aggregation.order_by is provided");
         }
     }
 
@@ -190,6 +226,30 @@ public class SearchPlanValidator {
         rejectDangerousValues("filters.event_type", filters.eventType(), errors);
         rejectDangerousValue("filters.user", filters.user(), errors);
         rejectDangerousValue("filters.host", filters.host(), errors);
+        rejectDangerousValue("filters.ip", filters.ip(), errors);
+    }
+
+    private void validateSort(SearchPlan plan, List<String> errors) {
+        if (plan.sort() == null || plan.sort().isEmpty()) {
+            return;
+        }
+
+        if (plan.mode() == SearchMode.AGGREGATION) {
+            errors.add("sort: is only supported when mode is search");
+            return;
+        }
+
+        for (var sort : plan.sort()) {
+            if (sort == null) {
+                errors.add("sort: must not contain null items");
+                continue;
+            }
+
+            rejectDangerousValue("sort.field", sort.field(), errors);
+            if (sort.field() != null && !SEARCH_SORT_FIELD_ALLOWLIST.contains(sort.field())) {
+                errors.add("sort.field: must be one of " + String.join(", ", SEARCH_SORT_FIELD_ALLOWLIST));
+            }
+        }
     }
 
     private void validateTimeRange(TimeRange timeRange, List<String> errors) {

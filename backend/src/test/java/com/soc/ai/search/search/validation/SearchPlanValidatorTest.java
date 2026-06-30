@@ -15,8 +15,11 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import com.soc.ai.search.search.plan.AggregationPlan;
+import com.soc.ai.search.search.plan.AggregationOrderBy;
 import com.soc.ai.search.search.plan.SearchFilters;
 import com.soc.ai.search.search.plan.SearchPlan;
+import com.soc.ai.search.search.plan.SortOrder;
+import com.soc.ai.search.search.plan.SortPlan;
 import com.soc.ai.search.search.plan.TimeRange;
 import jakarta.validation.Validation;
 import org.junit.jupiter.api.Test;
@@ -87,6 +90,14 @@ class SearchPlanValidatorTest {
                                 null),
                         0,
                         20)),
+                Arguments.of("safe search sort", new SearchPlan(
+                        SEARCH,
+                        validFilters(),
+                        null,
+                        null,
+                        List.of(new SortPlan("timestamp", SortOrder.ASC)),
+                        0,
+                        20)),
                 Arguments.of("count failed_login 7 days", aggregationPlan(
                         new SearchFilters(
                                 new TimeRange("now-7d", "now"),
@@ -98,6 +109,7 @@ class SearchPlanValidatorTest {
                                 null),
                         new AggregationPlan(COUNT, null, null, null))),
                 Arguments.of("group_by user", aggregationPlan(validFilters(), new AggregationPlan(GROUP_BY, "user", null, null))),
+                Arguments.of("group_by user order by key asc", aggregationPlan(validFilters(), new AggregationPlan(GROUP_BY, "user", null, null, AggregationOrderBy.KEY, SortOrder.ASC))),
                 Arguments.of("top_n ip", aggregationPlan(validFilters(), new AggregationPlan(TOP_N, "ip", 10, null))),
                 Arguments.of("date_histogram hour", aggregationPlan(validFilters(), new AggregationPlan(DATE_HISTOGRAM, null, null, HOUR))));
     }
@@ -126,6 +138,15 @@ class SearchPlanValidatorTest {
                 Arguments.of("message query too long", withMessageQuery("a".repeat(201)), "messageQuery"),
                 Arguments.of("message query wildcard", withMessageQuery("malware*"), "wildcard"),
                 Arguments.of("message query script syntax", withMessageQuery("painless script"), "script"),
+                Arguments.of("sort unsafe field message", withSort("message", SortOrder.ASC), "sort.field"),
+                Arguments.of("sort not supported for aggregation", new SearchPlan(
+                        AGGREGATION,
+                        validFilters(),
+                        new AggregationPlan(TOP_N, "ip", 10, null),
+                        null,
+                        List.of(new SortPlan("timestamp", SortOrder.ASC)),
+                        0,
+                        20), "sort"),
                 Arguments.of("aggregation null in aggregation mode",
                         new SearchPlan(AGGREGATION, validFilters(), null, null, 0, 20),
                         "aggregation"),
@@ -142,6 +163,7 @@ class SearchPlanValidatorTest {
                 Arguments.of("count with field", aggregationPlan(validFilters(), new AggregationPlan(COUNT, "user", null, null)), "aggregation.field"),
                 Arguments.of("count with top_n", aggregationPlan(validFilters(), new AggregationPlan(COUNT, null, 10, null)), "aggregation.top_n"),
                 Arguments.of("count with interval", aggregationPlan(validFilters(), new AggregationPlan(COUNT, null, null, HOUR)), "aggregation.interval"),
+                Arguments.of("count with bucket order", aggregationPlan(validFilters(), new AggregationPlan(COUNT, null, null, null, AggregationOrderBy.VALUE, SortOrder.DESC)), "aggregation.order_by"),
                 Arguments.of("date_histogram with field", aggregationPlan(validFilters(), new AggregationPlan(DATE_HISTOGRAM, "user", null, HOUR)), "aggregation.field"),
                 Arguments.of("date_histogram with top_n", aggregationPlan(validFilters(), new AggregationPlan(DATE_HISTOGRAM, null, 10, HOUR)), "aggregation.top_n"),
                 Arguments.of("top_n > 100", aggregationPlan(validFilters(), new AggregationPlan(TOP_N, "ip", 101, null)), "aggregation.top_n"),
@@ -292,6 +314,17 @@ class SearchPlanValidatorTest {
                 SEARCH,
                 validFilters(),
                 messageQuery,
+                0,
+                20);
+    }
+
+    private static SearchPlan withSort(String field, SortOrder order) {
+        return new SearchPlan(
+                SEARCH,
+                validFilters(),
+                null,
+                null,
+                List.of(new SortPlan(field, order)),
                 0,
                 20);
     }

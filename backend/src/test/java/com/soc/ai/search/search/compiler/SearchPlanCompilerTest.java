@@ -15,8 +15,11 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 import com.soc.ai.search.search.plan.AggregationPlan;
+import com.soc.ai.search.search.plan.AggregationOrderBy;
 import com.soc.ai.search.search.plan.SearchFilters;
 import com.soc.ai.search.search.plan.SearchPlan;
+import com.soc.ai.search.search.plan.SortOrder;
+import com.soc.ai.search.search.plan.SortPlan;
 import com.soc.ai.search.search.plan.TimeRange;
 import com.soc.ai.search.search.validation.SearchPlanValidator;
 import jakarta.validation.Validation;
@@ -137,7 +140,11 @@ class SearchPlanCompilerTest {
                 Arguments.of(
                         "search spec always sorts timestamp desc",
                         validSearchPlan(),
-                        (DslAssertion) SearchPlanCompilerTest::assertTimestampDescSort));
+                        (DslAssertion) SearchPlanCompilerTest::assertTimestampDescSort),
+                Arguments.of(
+                        "search spec uses requested safe sort",
+                        new SearchPlan(SEARCH, validFilters(), null, null, List.of(new SortPlan("severity", SortOrder.ASC)), 0, 20),
+                        (DslAssertion) searchSpec -> assertSort(searchSpec, "severity", "asc")));
     }
 
     private static Stream<Arguments> compiledAggregationCases() {
@@ -179,6 +186,10 @@ class SearchPlanCompilerTest {
                         "top_n ip top 100 uses terms aggregation",
                         aggregationPlan(validFilters(), new AggregationPlan(TOP_N, "ip", 100, null)),
                         (DslAssertion) searchSpec -> assertTermsAggregation(searchSpec, "top_values", "ip", 100)),
+                Arguments.of(
+                        "top_n ip can order buckets by key asc",
+                        aggregationPlan(validFilters(), new AggregationPlan(TOP_N, "ip", 10, null, AggregationOrderBy.KEY, SortOrder.ASC)),
+                        (DslAssertion) searchSpec -> assertTermsAggregationOrder(searchSpec, "top_values", "_key", "asc")),
                 Arguments.of(
                         "date_histogram hour uses fixed interval",
                         aggregationPlan(validFilters(), new AggregationPlan(DATE_HISTOGRAM, null, null, HOUR)),
@@ -252,8 +263,12 @@ class SearchPlanCompilerTest {
     }
 
     private static void assertTimestampDescSort(Map<String, Object> searchSpec) {
+        assertSort(searchSpec, "timestamp", "desc");
+    }
+
+    private static void assertSort(Map<String, Object> searchSpec, String field, String order) {
         assertThat(searchSpec.get("sort"))
-                .isEqualTo(List.of(Map.of("timestamp", Map.of("order", "desc"))));
+                .isEqualTo(List.of(Map.of(field, Map.of("order", order))));
     }
 
     @SuppressWarnings("unchecked")
@@ -268,6 +283,19 @@ class SearchPlanCompilerTest {
 
         assertThat(terms).containsEntry("field", expectedField);
         assertThat(terms).containsEntry("size", expectedSize);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static void assertTermsAggregationOrder(
+            Map<String, Object> searchSpec,
+            String aggregationName,
+            String expectedOrderBy,
+            String expectedOrder) {
+        var aggs = (Map<String, Object>) searchSpec.get("aggs");
+        var aggregation = (Map<String, Object>) aggs.get(aggregationName);
+        var terms = (Map<String, Object>) aggregation.get("terms");
+
+        assertThat(terms).containsEntry("order", Map.of(expectedOrderBy, expectedOrder));
     }
 
     @SuppressWarnings("unchecked")

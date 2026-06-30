@@ -12,7 +12,7 @@ import {
   Table2,
   TriangleAlert,
 } from "lucide-react";
-import { lazy, Suspense, useState, useMemo } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 
 import { CountryCode } from "@/components/soc/country-code";
 import { SeverityBadge } from "@/components/soc/severity-badge";
@@ -35,11 +35,40 @@ import type {
   SearchEventDto,
   SearchMode,
   NaturalLanguageSearchResponseDto,
+  SearchPlanDto,
+  SearchSortField,
+  Severity,
+  SortOrder,
 } from "@/types/soc";
 import { getSuggestions } from "@/lib/investigation-suggestions";
 
 type ResultTab = "analytics" | "raw";
 const SUMMARY_TABLE_PAGE_SIZE = 10;
+const SEVERITY_OPTIONS: Severity[] = ["critical", "high", "medium", "low"];
+const EVENT_TYPE_OPTIONS = [
+  "failed_login",
+  "account_lockout",
+  "firewall_block",
+  "malware_detected",
+  "privilege_escalation",
+  "suspicious_outbound",
+  "large_transfer",
+  "successful_login",
+  "dns_query",
+  "process_start",
+  "file_access",
+];
+const SEARCH_SORT_OPTIONS: {
+  label: string;
+  field: SearchSortField;
+  order: SortOrder;
+}[] = [
+  { label: "Newest first", field: "timestamp", order: "desc" },
+  { label: "Oldest first", field: "timestamp", order: "asc" },
+  { label: "Highest severity first", field: "severity", order: "desc" },
+  { label: "Lowest severity first", field: "severity", order: "asc" },
+];
+const AGGREGATION_TOP_N_OPTIONS = [5, 10, 20, 50];
 
 const AggregationChart = lazy(() =>
   import("@/components/soc/aggregation-chart").then((module) => ({
@@ -337,6 +366,307 @@ function RawEventsView({
   );
 }
 
+function toggleArrayValue<T extends string>(values: T[], value: T) {
+  return values.includes(value)
+    ? values.filter((item) => item !== value)
+    : [...values, value];
+}
+
+function ResultControls({
+  mode,
+  searchPlan,
+  onApply,
+}: {
+  mode: SearchMode;
+  searchPlan: SearchPlanDto;
+  onApply?: (plan: SearchPlanDto) => void;
+}) {
+  const currentFilters = searchPlan.filters ?? {};
+  const currentSearchSort = searchPlan.sort?.[0];
+  const initialSearchSortValue = currentSearchSort
+    ? `${currentSearchSort.field}:${currentSearchSort.order}`
+    : "timestamp:desc";
+  const aggregation = searchPlan.aggregation;
+
+  const [severity, setSeverity] = useState<Severity[]>(
+    currentFilters.severity ?? [],
+  );
+  const [eventTypes, setEventTypes] = useState<string[]>(
+    currentFilters.event_type ?? [],
+  );
+  const [user, setUser] = useState(currentFilters.user ?? "");
+  const [host, setHost] = useState(currentFilters.host ?? "");
+  const [ip, setIp] = useState(currentFilters.ip ?? "");
+  const [countryCode, setCountryCode] = useState(
+    currentFilters.country_code?.join(", ") ?? "",
+  );
+  const [messageQuery, setMessageQuery] = useState(
+    searchPlan.message_query ?? "",
+  );
+  const [searchSort, setSearchSort] = useState(initialSearchSortValue);
+  const [aggregationSort, setAggregationSort] = useState(
+    `${aggregation?.order_by ?? "value"}:${aggregation?.order ?? "desc"}`,
+  );
+  const [topN, setTopN] = useState(
+    aggregation?.top_n ?? (aggregation?.type === "top_n" ? 10 : 20),
+  );
+
+  useEffect(() => {
+    const nextFilters = searchPlan.filters ?? {};
+    const nextSort = searchPlan.sort?.[0];
+    setSeverity(nextFilters.severity ?? []);
+    setEventTypes(nextFilters.event_type ?? []);
+    setUser(nextFilters.user ?? "");
+    setHost(nextFilters.host ?? "");
+    setIp(nextFilters.ip ?? "");
+    setCountryCode(nextFilters.country_code?.join(", ") ?? "");
+    setMessageQuery(searchPlan.message_query ?? "");
+    setSearchSort(
+      nextSort ? `${nextSort.field}:${nextSort.order}` : "timestamp:desc",
+    );
+    setAggregationSort(
+      `${searchPlan.aggregation?.order_by ?? "value"}:${searchPlan.aggregation?.order ?? "desc"}`,
+    );
+    setTopN(
+      searchPlan.aggregation?.top_n ??
+        (searchPlan.aggregation?.type === "top_n" ? 10 : 20),
+    );
+  }, [searchPlan]);
+
+  if (!onApply) {
+    return null;
+  }
+
+  const buildCommonFilters = () => ({
+    ...(searchPlan.filters ?? {}),
+    severity: severity.length > 0 ? severity : null,
+    event_type: eventTypes.length > 0 ? eventTypes : null,
+    user: user.trim() || null,
+    host: host.trim() || null,
+    ip: ip.trim() || null,
+    country_code:
+      countryCode
+        .split(",")
+        .map((value) => value.trim().toUpperCase())
+        .filter(Boolean).length > 0
+        ? countryCode
+            .split(",")
+            .map((value) => value.trim().toUpperCase())
+            .filter(Boolean)
+        : null,
+  });
+
+  const applySearchControls = () => {
+    const [field, order] = searchSort.split(":") as [
+      SearchSortField,
+      SortOrder,
+    ];
+
+    onApply({
+      ...searchPlan,
+      mode: "search",
+      page: 0,
+      filters: buildCommonFilters(),
+      message_query: messageQuery.trim() || null,
+      sort: [{ field, order }],
+    });
+  };
+
+  const applyAggregationControls = () => {
+    if (!searchPlan.aggregation) {
+      return;
+    }
+
+    const [orderBy, order] = aggregationSort.split(":") as [
+      "value" | "key",
+      SortOrder,
+    ];
+    const supportsBucketControls =
+      searchPlan.aggregation.type === "group_by" ||
+      searchPlan.aggregation.type === "top_n";
+
+    onApply({
+      ...searchPlan,
+      page: 0,
+      filters: buildCommonFilters(),
+      aggregation: {
+        ...searchPlan.aggregation,
+        top_n: supportsBucketControls ? topN : searchPlan.aggregation.top_n,
+        order_by: supportsBucketControls ? orderBy : null,
+        order: supportsBucketControls ? order : null,
+      },
+      sort: null,
+    });
+  };
+
+  return (
+    <div className="space-y-3 border-b border-border bg-background/20 px-4 py-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+          Result Controls
+        </span>
+        <span className="text-xs text-muted-foreground">
+          Filters are applied by rerunning a validated SearchPlan.
+        </span>
+      </div>
+
+      <div className="grid gap-3 lg:grid-cols-[1.2fr_1fr]">
+        <div className="space-y-2">
+          <div className="flex flex-wrap gap-1.5">
+            {SEVERITY_OPTIONS.map((option) => (
+              <button
+                key={option}
+                type="button"
+                onClick={() =>
+                  setSeverity((current) => toggleArrayValue(current, option))
+                }
+                className={
+                  "rounded-full border px-2.5 py-1 text-xs font-medium transition " +
+                  (severity.includes(option)
+                    ? "border-cyan-500/40 bg-cyan-500/10 text-cyan-200"
+                    : "border-border bg-background/35 text-muted-foreground hover:text-foreground")
+                }
+              >
+                {option}
+              </button>
+            ))}
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {EVENT_TYPE_OPTIONS.map((option) => (
+              <button
+                key={option}
+                type="button"
+                onClick={() =>
+                  setEventTypes((current) => toggleArrayValue(current, option))
+                }
+                className={
+                  "rounded-md border px-2.5 py-1 text-xs font-medium transition " +
+                  (eventTypes.includes(option)
+                    ? "border-violet-500/40 bg-violet-500/10 text-violet-200"
+                    : "border-border bg-background/35 text-muted-foreground hover:text-foreground")
+                }
+              >
+                {option}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="grid gap-2 sm:grid-cols-2">
+          <input
+            value={user}
+            onChange={(event) => setUser(event.target.value)}
+            placeholder="User"
+            className="rounded-md border border-border bg-background/50 px-3 py-2 text-xs outline-none focus:border-cyan-400/50"
+          />
+          <input
+            value={host}
+            onChange={(event) => setHost(event.target.value)}
+            placeholder="Host"
+            className="rounded-md border border-border bg-background/50 px-3 py-2 text-xs outline-none focus:border-cyan-400/50"
+          />
+          <input
+            value={ip}
+            onChange={(event) => setIp(event.target.value)}
+            placeholder="Source IP"
+            className="rounded-md border border-border bg-background/50 px-3 py-2 text-xs outline-none focus:border-cyan-400/50"
+          />
+          <input
+            value={countryCode}
+            onChange={(event) => setCountryCode(event.target.value)}
+            placeholder="Country code, e.g. CN"
+            className="rounded-md border border-border bg-background/50 px-3 py-2 text-xs outline-none focus:border-cyan-400/50"
+          />
+          {mode === "search" ? (
+            <input
+              value={messageQuery}
+              onChange={(event) => setMessageQuery(event.target.value)}
+              placeholder="Message contains"
+              className="rounded-md border border-border bg-background/50 px-3 py-2 text-xs outline-none focus:border-cyan-400/50 sm:col-span-2"
+            />
+          ) : null}
+        </div>
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap gap-2">
+          {mode === "search" ? (
+            <select
+              value={searchSort}
+              onChange={(event) => setSearchSort(event.target.value)}
+              className="rounded-md border border-border bg-background/70 px-3 py-2 text-xs text-foreground outline-none"
+            >
+              {SEARCH_SORT_OPTIONS.map((option) => (
+                <option
+                  key={`${option.field}:${option.order}`}
+                  value={`${option.field}:${option.order}`}
+                >
+                  Sort: {option.label}
+                </option>
+              ))}
+            </select>
+          ) : null}
+          {mode === "aggregation" &&
+          (searchPlan.aggregation?.type === "group_by" ||
+            searchPlan.aggregation?.type === "top_n") ? (
+            <>
+              <select
+                value={aggregationSort}
+                onChange={(event) => setAggregationSort(event.target.value)}
+                className="rounded-md border border-border bg-background/70 px-3 py-2 text-xs text-foreground outline-none"
+              >
+                <option value="value:desc">Buckets: highest first</option>
+                <option value="value:asc">Buckets: lowest first</option>
+                <option value="key:asc">Buckets: key A-Z</option>
+                <option value="key:desc">Buckets: key Z-A</option>
+              </select>
+              <select
+                value={topN}
+                onChange={(event) => setTopN(Number(event.target.value))}
+                className="rounded-md border border-border bg-background/70 px-3 py-2 text-xs text-foreground outline-none"
+              >
+                {AGGREGATION_TOP_N_OPTIONS.map((option) => (
+                  <option key={option} value={option}>
+                    Top {option}
+                  </option>
+                ))}
+              </select>
+            </>
+          ) : null}
+        </div>
+        <div className="flex gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setSeverity([]);
+              setEventTypes([]);
+              setUser("");
+              setHost("");
+              setIp("");
+              setCountryCode("");
+              setMessageQuery("");
+              setSearchSort("timestamp:desc");
+              setAggregationSort("value:desc");
+            }}
+          >
+            Clear
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={
+              mode === "search" ? applySearchControls : applyAggregationControls
+            }
+          >
+            Apply Filters
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function ResultTabs({
   mode,
   activeTab,
@@ -358,6 +688,7 @@ export function ResultTabs({
   onPageChange,
   onSelectEvent,
   onExport,
+  onApplyResultPlan,
   onSuggestionClick,
 }: {
   mode: SearchMode;
@@ -380,6 +711,7 @@ export function ResultTabs({
   onPageChange: (page: number) => void;
   onSelectEvent: (eventId: string) => void;
   onExport: () => void;
+  onApplyResultPlan?: (plan: SearchPlanDto) => void;
   onSuggestionClick?: (question: string) => void;
 }) {
   const [expanded, setExpanded] = useState(true);
@@ -418,7 +750,7 @@ export function ResultTabs({
                 <span className="rounded-lg border border-border bg-background/35 px-3 py-1.5 text-xs text-muted-foreground">
                   Mode: <strong className="text-foreground">{mode}</strong>
                 </span>
-                {mode !== 'aggregation' ? (
+                {mode !== "aggregation" ? (
                   <span className="rounded-lg border border-border bg-background/35 px-3 py-1.5 text-xs text-muted-foreground">
                     Total Events:{" "}
                     <strong className="text-foreground">
@@ -491,6 +823,14 @@ export function ResultTabs({
                   <AlertDescription>{exportMessage}</AlertDescription>
                 </Alert>
               </div>
+            ) : null}
+
+            {response ? (
+              <ResultControls
+                mode={mode}
+                searchPlan={response.search_plan}
+                onApply={onApplyResultPlan}
+              />
             ) : null}
 
             <Tabs

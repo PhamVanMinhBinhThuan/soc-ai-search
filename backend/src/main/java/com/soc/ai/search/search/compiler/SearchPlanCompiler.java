@@ -6,9 +6,12 @@ import java.util.List;
 import java.util.Map;
 
 import com.soc.ai.search.search.plan.AggregationPlan;
+import com.soc.ai.search.search.plan.AggregationOrderBy;
 import com.soc.ai.search.search.plan.SearchFilters;
 import com.soc.ai.search.search.plan.SearchMode;
 import com.soc.ai.search.search.plan.SearchPlan;
+import com.soc.ai.search.search.plan.SortOrder;
+import com.soc.ai.search.search.plan.SortPlan;
 import com.soc.ai.search.search.plan.TimeRange;
 import com.soc.ai.search.search.validation.SearchPlanValidator;
 import org.springframework.stereotype.Service;
@@ -48,7 +51,7 @@ public class SearchPlanCompiler {
         searchSpec.put("query", Map.of("bool", boolQuery));
         searchSpec.put("from", validatedPlan.page() * validatedPlan.size());
         searchSpec.put("size", validatedPlan.size());
-        searchSpec.put("sort", List.of(Map.of("timestamp", Map.of("order", "desc"))));
+        searchSpec.put("sort", sort(validatedPlan));
 
         return new CompiledSearchQuery(searchSpec);
     }
@@ -76,20 +79,43 @@ public class SearchPlanCompiler {
         AggregationPlan aggregation = validatedPlan.aggregation();
         return switch (aggregation.type()) {
             case COUNT -> Map.of();
-            case GROUP_BY -> termsAggregation("count_by_field", aggregation.field(), bucketLimit(aggregation));
-            case TOP_N -> termsAggregation("top_values", aggregation.field(), aggregation.topN());
+            case GROUP_BY -> termsAggregation("count_by_field", aggregation.field(), bucketLimit(aggregation), aggregation);
+            case TOP_N -> termsAggregation("top_values", aggregation.field(), aggregation.topN(), aggregation);
             case DATE_HISTOGRAM -> dateHistogramAggregation(validatedPlan);
         };
     }
 
-    private Map<String, Object> termsAggregation(String aggregationName, String field, int size) {
+    private Map<String, Object> termsAggregation(String aggregationName, String field, int size, AggregationPlan aggregation) {
+        var terms = new LinkedHashMap<String, Object>();
+        terms.put("field", field);
+        terms.put("size", size);
+        terms.put("order", aggregationOrder(aggregation));
+
         return Map.of(
                 aggregationName,
-                Map.of(
-                        "terms",
-                        Map.of(
-                                "field", field,
-                                "size", size)));
+                Map.of("terms", terms));
+    }
+
+    private Map<String, Object> aggregationOrder(AggregationPlan aggregation) {
+        var orderBy = aggregation.orderBy() == null ? AggregationOrderBy.VALUE : aggregation.orderBy();
+        var order = aggregation.order() == null ? SortOrder.DESC : aggregation.order();
+
+        var elasticOrderBy = orderBy == AggregationOrderBy.KEY ? "_key" : "_count";
+        return Map.of(elasticOrderBy, order.name().toLowerCase());
+    }
+
+    private List<Map<String, Object>> sort(SearchPlan validatedPlan) {
+        if (validatedPlan.sort() == null || validatedPlan.sort().isEmpty()) {
+            return List.of(Map.of("timestamp", Map.of("order", "desc")));
+        }
+
+        return validatedPlan.sort().stream()
+                .map(this::sortClause)
+                .toList();
+    }
+
+    private Map<String, Object> sortClause(SortPlan sort) {
+        return Map.of(sort.field(), Map.of("order", sort.order().name().toLowerCase()));
     }
 
     private Map<String, Object> dateHistogramAggregation(SearchPlan validatedPlan) {

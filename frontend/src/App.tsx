@@ -54,6 +54,7 @@ import type {
   RequestStatus,
   SearchHistoryItemDto,
   SearchHistoryPageDto,
+  SearchPlanDto,
   UiError,
 } from "@/types/soc";
 
@@ -92,6 +93,9 @@ function App() {
     useState<NaturalLanguageSearchRequestDto | null>(initialRequest);
   const [response, setResponse] =
     useState<NaturalLanguageSearchResponseDto | null>(initialResponse);
+  const [summaryVisible, setSummaryVisible] = useState(
+    Boolean(initialResponse),
+  );
   const [originalAiSearchPlan, setOriginalAiSearchPlan] = useState(
     initialResponse?.search_plan,
   );
@@ -227,6 +231,7 @@ function App() {
 
     if (!normalizedRequest.question) {
       setResponse(null);
+      setSummaryVisible(false);
       setSubmittedRequest(normalizedRequest);
       setSearchError({
         status: 400,
@@ -246,6 +251,7 @@ function App() {
     setQuestion(normalizedRequest.question);
     setSubmittedRequest(normalizedRequest);
     setResponse(null);
+    setSummaryVisible(false);
     setOriginalAiSearchPlan(undefined);
     setSearchError(null);
     setExportStatus("idle");
@@ -262,6 +268,7 @@ function App() {
       }
 
       setResponse(nextResponse);
+      setSummaryVisible(true);
       setOriginalAiSearchPlan(nextResponse.search_plan);
       setIsCurrentQueryPinned(false);
       setActiveTab(nextResponse.mode === "aggregation" ? "analytics" : "raw");
@@ -275,6 +282,7 @@ function App() {
         return;
       }
       setResponse(null);
+      setSummaryVisible(false);
       setOriginalAiSearchPlan(undefined);
       setSearchError(toUiError(error));
       setRequestStatus("error");
@@ -378,6 +386,7 @@ function App() {
         paginatedPlan,
         controller.signal,
         response.original_question || submittedRequest?.question || question,
+        false,
       );
       if (controller.signal.aborted) {
         return;
@@ -401,6 +410,65 @@ function App() {
     } finally {
       if (searchAbortRef.current === controller) {
         searchAbortRef.current = null;
+      }
+    }
+  };
+
+  const runRefinedSearchPlan = async (plan: SearchPlanDto) => {
+    if (!response) {
+      return;
+    }
+
+    searchAbortRef.current?.abort();
+    exportAbortRef.current?.abort();
+    exportAbortRef.current = null;
+    const controller = new AbortController();
+    searchAbortRef.current = controller;
+
+    closeDetail();
+    setSearchError(null);
+    setExportStatus("idle");
+    setExportMessage(null);
+    setRequestStatus("loading");
+
+    try {
+      const { runSearchPlan } = await import("@/services/search-plan-api");
+      const nextResponse = await runSearchPlan(
+        plan,
+        controller.signal,
+        response.original_question || submittedRequest?.question || question,
+        false,
+      );
+      if (controller.signal.aborted) {
+        return;
+      }
+
+      setResponse(nextResponse);
+      setSummaryVisible(false);
+      setIsCurrentQueryPinned(false);
+      setActiveTab(nextResponse.mode === "aggregation" ? "analytics" : "raw");
+
+      const isEmpty =
+        nextResponse.mode === "search"
+          ? nextResponse.events.length === 0
+          : nextResponse.aggregation_results.length === 0;
+      setRequestStatus(isEmpty ? "empty" : "success");
+    } catch (error) {
+      if (isAbortError(error)) {
+        return;
+      }
+      setSearchError(toUiError(error));
+      setRequestStatus("error");
+    } finally {
+      if (searchAbortRef.current === controller) {
+        searchAbortRef.current = null;
+      }
+      if (
+        !controller.signal.aborted &&
+        historyOpenRef.current &&
+        canUseHistory
+      ) {
+        void loadHistory(historyPageRef.current);
       }
     }
   };
@@ -614,6 +682,7 @@ function App() {
                             return;
                           }
                           setResponse(nextResponse);
+                          setSummaryVisible(true);
                           setIsCurrentQueryPinned(false);
                           setSearchError(null);
                           setExportStatus("idle");
@@ -648,10 +717,12 @@ function App() {
                       }}
                     />
 
-                    <AiSummaryCard
-                      summary={response.summary}
-                      isMockMode={isMockMode}
-                    />
+                    {summaryVisible ? (
+                      <AiSummaryCard
+                        summary={response.summary}
+                        isMockMode={isMockMode}
+                      />
+                    ) : null}
 
                     <ResultTabs
                       mode={response.mode}
@@ -679,6 +750,9 @@ function App() {
                       onPageChange={changePage}
                       onSelectEvent={openEventDetail}
                       onExport={() => void handleExport(response.query_id)}
+                      onApplyResultPlan={(plan) =>
+                        void runRefinedSearchPlan(plan)
+                      }
                       onSuggestionClick={submitQuestion}
                     />
                   </>

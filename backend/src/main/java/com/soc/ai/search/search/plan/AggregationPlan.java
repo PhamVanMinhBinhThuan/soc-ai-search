@@ -9,5 +9,11 @@ public record AggregationPlan(
         @NotNull AggregationType type,
         String field,
         Integer topN,
-        HistogramInterval interval) {
+        HistogramInterval interval,
+        AggregationOrderBy orderBy,
+        SortOrder order) {
+
+    public AggregationPlan(AggregationType type, String field, Integer topN, HistogramInterval interval) {
+        this(type, field, topN, interval, null, null);
+    }
 }
