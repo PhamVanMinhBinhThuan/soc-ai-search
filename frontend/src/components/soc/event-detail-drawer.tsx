@@ -79,6 +79,7 @@ function formatEventTimestamp(value: string) {
     hour: '2-digit',
     minute: '2-digit',
     hour12: true,
+    timeZone: 'Asia/Ho_Chi_Minh',
   }).format(date).replace(/\b(am|pm)\b/i, (period) => period.toUpperCase())
 }
 
