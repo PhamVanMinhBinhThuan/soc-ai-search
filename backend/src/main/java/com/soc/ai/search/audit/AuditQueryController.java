@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.util.List;
 
 import com.soc.ai.search.search.execution.SearchErrorResponse;
+import com.soc.ai.search.search.plan.SearchMode;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ContentDisposition;
@@ -45,12 +46,12 @@ public class AuditQueryController {
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(required = false) Boolean pinned,
             @RequestParam(required = false) AuditStatus status,
-            @RequestParam(required = false) com.soc.ai.search.search.plan.SearchMode mode,
+            @RequestParam(required = false) String mode,
             @RequestParam(required = false) String q,
             @RequestParam(required = false) Instant from,
             @RequestParam(required = false) Instant to,
             @RequestParam(required = false) String sort) {
-        return queryService.history(page, size, new AuditLogFilters(q, status, mode, pinned, null, from, to, sort));
+        return queryService.history(page, size, new AuditLogFilters(q, status, parseMode(mode), pinned, null, from, to, sort));
     }
 
     @GetMapping("/api/v1/search/history/{queryId}")
@@ -76,13 +77,13 @@ public class AuditQueryController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "50") int size,
             @RequestParam(required = false) AuditStatus status,
-            @RequestParam(required = false) com.soc.ai.search.search.plan.SearchMode mode,
+            @RequestParam(required = false) String mode,
             @RequestParam(required = false) String q,
             @RequestParam(required = false) String identity,
             @RequestParam(required = false) Instant from,
             @RequestParam(required = false) Instant to,
             @RequestParam(required = false) String sort) {
-        return queryService.auditLogs(page, size, new AuditLogFilters(q, status, mode, null, identity, from, to, sort));
+        return queryService.auditLogs(page, size, new AuditLogFilters(q, status, parseMode(mode), null, identity, from, to, sort));
     }
 
     @GetMapping(value = "/api/v1/audit-logs/export", produces = "text/csv")
@@ -90,13 +91,13 @@ public class AuditQueryController {
     @Operation(summary = "Export filtered application audit logs as CSV", description = "Requires SOC_ADMIN.")
     public ResponseEntity<StreamingResponseBody> exportAuditLogs(
             @RequestParam(required = false) AuditStatus status,
-            @RequestParam(required = false) com.soc.ai.search.search.plan.SearchMode mode,
+            @RequestParam(required = false) String mode,
             @RequestParam(required = false) String q,
             @RequestParam(required = false) String identity,
             @RequestParam(required = false) Instant from,
             @RequestParam(required = false) Instant to,
             @RequestParam(required = false) String sort) {
-        var filters = new AuditLogFilters(q, status, mode, null, identity, from, to, sort);
+        var filters = new AuditLogFilters(q, status, parseMode(mode), null, identity, from, to, sort);
         var prepared = queryService.prepareAuditExport(filters);
 
         return ResponseEntity.ok()
@@ -125,5 +126,12 @@ public class AuditQueryController {
                 .body(new SearchErrorResponse(
                         "Audit dependency is unavailable",
                         List.of("PostgreSQL audit query failed")));
+    }
+
+    private SearchMode parseMode(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return SearchMode.fromJson(value);
     }
 }

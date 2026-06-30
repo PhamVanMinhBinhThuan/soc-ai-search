@@ -12,6 +12,7 @@ import java.util.UUID;
 import com.soc.ai.search.search.plan.SearchMode;
 import com.soc.ai.search.security.SecurityConfig;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
@@ -69,6 +70,38 @@ class AuditQueryControllerTest {
                 .andExpect(jsonPath("$.items").isEmpty())
                 .andExpect(jsonPath("$.total").value(0))
                 .andExpect(jsonPath("$.total_pages").value(0));
+    }
+
+    @Test
+    void parsesLowercaseHistoryModeFilter() throws Exception {
+        var filtersCaptor = ArgumentCaptor.forClass(AuditLogFilters.class);
+        when(queryService.history(
+                org.mockito.ArgumentMatchers.eq(0),
+                org.mockito.ArgumentMatchers.eq(20),
+                filtersCaptor.capture()))
+                .thenReturn(new PagedResponse<>(List.of(), 0, 20, 0, 0));
+
+        mockMvc.perform(get("/api/v1/search/history").param("mode", "search"))
+                .andExpect(status().isOk());
+
+        org.assertj.core.api.Assertions.assertThat(filtersCaptor.getValue().mode())
+                .isEqualTo(SearchMode.SEARCH);
+    }
+
+    @Test
+    void parsesLowercaseAuditModeFilter() throws Exception {
+        var filtersCaptor = ArgumentCaptor.forClass(AuditLogFilters.class);
+        when(queryService.auditLogs(
+                org.mockito.ArgumentMatchers.eq(0),
+                org.mockito.ArgumentMatchers.eq(50),
+                filtersCaptor.capture()))
+                .thenReturn(new PagedResponse<>(List.of(), 0, 50, 0, 0));
+
+        mockMvc.perform(get("/api/v1/audit-logs").param("mode", "aggregation"))
+                .andExpect(status().isOk());
+
+        org.assertj.core.api.Assertions.assertThat(filtersCaptor.getValue().mode())
+                .isEqualTo(SearchMode.AGGREGATION);
     }
 
     @Test
