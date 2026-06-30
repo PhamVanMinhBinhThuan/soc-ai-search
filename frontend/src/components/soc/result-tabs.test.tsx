@@ -267,7 +267,30 @@ describe("ResultTabs filter and sort controls", () => {
     expect(screen.getByPlaceholderText("User")).toBeInTheDocument();
     expect(screen.getByPlaceholderText("Source IP")).toBeInTheDocument();
     expect(screen.getByPlaceholderText("Message contains")).toBeInTheDocument();
-    expect(screen.getByDisplayValue("Sort: Newest first")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("Newest first")).toBeInTheDocument();
+    expect(screen.queryByText(/refine the current result set/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/adjust aggregation bucket ordering/i)).not.toBeInTheDocument();
+  });
+
+  it("collapses and expands search filter controls", () => {
+    render(
+      <ResultTabs
+        {...baseProps}
+        canExportCsv
+        response={searchResponse}
+        onApplyResultPlan={vi.fn()}
+      />,
+    );
+
+    const toggle = screen.getByRole("button", {
+      name: /filter & sort results/i,
+    });
+
+    expect(screen.getByPlaceholderText("User")).toBeInTheDocument();
+    fireEvent.click(toggle);
+    expect(screen.queryByPlaceholderText("User")).not.toBeInTheDocument();
+    fireEvent.click(toggle);
+    expect(screen.getByPlaceholderText("User")).toBeInTheDocument();
   });
 
   it("applies selected search filters and sort through the callback", () => {
@@ -287,7 +310,7 @@ describe("ResultTabs filter and sort controls", () => {
     fireEvent.change(screen.getByPlaceholderText("User"), {
       target: { value: "admin" },
     });
-    fireEvent.change(screen.getByDisplayValue("Sort: Newest first"), {
+    fireEvent.change(screen.getByDisplayValue("Newest first"), {
       target: { value: "severity:desc" },
     });
     fireEvent.click(screen.getByRole("button", { name: /apply filters/i }));
@@ -354,7 +377,10 @@ describe("ResultTabs filter and sort controls", () => {
       />,
     );
 
+    expect(screen.queryByText(/filter & sort results/i)).not.toBeInTheDocument();
     expect(screen.queryByText("Bucket")).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /apply filters/i })).toBeDisabled();
+    expect(
+      screen.queryByRole("button", { name: /apply filters/i }),
+    ).not.toBeInTheDocument();
   });
 });

@@ -509,8 +509,13 @@ function ResultControls({
   const [aggregationSort, setAggregationSort] = useState(
     `${aggregation?.order_by ?? "value"}:${aggregation?.order ?? "desc"}`,
   );
+  const [controlsExpanded, setControlsExpanded] = useState(true);
 
   if (!onApply) {
+    return null;
+  }
+
+  if (mode === "aggregation" && searchPlan.aggregation?.type === "date_histogram") {
     return null;
   }
 
@@ -575,147 +580,148 @@ function ResultControls({
     });
   };
 
+  const ControlsToggleIcon = controlsExpanded ? ChevronUp : ChevronDown;
+
   return (
     <div className="border-b border-border bg-background/20 px-4 py-4">
-      <div className="rounded-2xl border border-zinc-800 bg-zinc-950/40 p-4 shadow-inner shadow-black/20">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+      <div className="rounded-2xl border border-zinc-800 bg-zinc-950/40 shadow-inner shadow-black/20">
+        <button
+          type="button"
+          className="flex w-full items-center justify-between gap-3 px-4 py-4 text-left"
+          aria-expanded={controlsExpanded}
+          aria-controls="filter-sort-results-content"
+          onClick={() => setControlsExpanded((current) => !current)}
+        >
           <div className="flex items-center gap-2">
             <span className="grid size-8 place-items-center rounded-xl border border-cyan-400/20 bg-cyan-400/10 text-cyan-200">
               <SlidersHorizontal className="size-4" />
             </span>
-            <div>
-              <h3 className="text-sm font-semibold text-foreground">
-                Filter & Sort Results
-              </h3>
-              <p className="text-[11px] text-muted-foreground">
-                {mode === "search"
-                  ? "Refine the current result set."
-                  : "Adjust aggregation bucket ordering."}
-              </p>
-            </div>
+            <h3 className="text-sm font-semibold text-foreground">
+              Filter & Sort Results
+            </h3>
           </div>
-        </div>
+          <ControlsToggleIcon className="size-4 text-muted-foreground" />
+        </button>
 
-        {mode === "search" ? (
-          <div className="grid gap-3 xl:grid-cols-[1fr_1fr]">
-            <div className="grid gap-3 sm:grid-cols-2">
-              <MultiSelectDropdown
-                label="Severity"
-                placeholder="Select severities"
-                options={SEVERITY_OPTIONS}
-                values={severity}
-                accentClassName="bg-cyan-500/10"
-                onChange={setSeverity}
-              />
-              <MultiSelectDropdown
-                label="Event Type"
-                placeholder="Select event types"
-                options={EVENT_TYPE_OPTIONS}
-                values={eventTypes}
-                accentClassName="bg-violet-500/10"
-                onChange={setEventTypes}
-              />
-            </div>
+        {controlsExpanded ? (
+          <div id="filter-sort-results-content" className="px-4 pb-4">
+            {mode === "search" ? (
+              <div className="grid gap-3 lg:grid-cols-3">
+                <MultiSelectDropdown
+                  label="Severity"
+                  placeholder="Select severities"
+                  options={SEVERITY_OPTIONS}
+                  values={severity}
+                  accentClassName="bg-cyan-500/10"
+                  onChange={setSeverity}
+                />
+                <MultiSelectDropdown
+                  label="Event Type"
+                  placeholder="Select event types"
+                  options={EVENT_TYPE_OPTIONS}
+                  values={eventTypes}
+                  accentClassName="bg-violet-500/10"
+                  onChange={setEventTypes}
+                />
+                <div>
+                  <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
+                    Sort
+                  </label>
+                  <select
+                    value={searchSort}
+                    onChange={(event) => setSearchSort(event.target.value)}
+                    className="w-full rounded-xl border border-border bg-zinc-950/70 px-3 py-2.5 text-sm text-foreground outline-none transition focus:border-cyan-400/50"
+                  >
+                    {SEARCH_SORT_OPTIONS.map((option) => (
+                      <option
+                        key={`${option.field}:${option.order}`}
+                        value={`${option.field}:${option.order}`}
+                      >
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-            <div className="grid gap-2 sm:grid-cols-2">
-              <input
-                value={user}
-                onChange={(event) => setUser(event.target.value)}
-                placeholder="User"
-                className="rounded-xl border border-border bg-zinc-950/70 px-3 py-2.5 text-sm outline-none transition placeholder:text-muted-foreground focus:border-cyan-400/50"
-              />
-              <input
-                value={host}
-                onChange={(event) => setHost(event.target.value)}
-                placeholder="Host"
-                className="rounded-xl border border-border bg-zinc-950/70 px-3 py-2.5 text-sm outline-none transition placeholder:text-muted-foreground focus:border-cyan-400/50"
-              />
-              <input
-                value={ip}
-                onChange={(event) => setIp(event.target.value)}
-                placeholder="Source IP"
-                className="rounded-xl border border-border bg-zinc-950/70 px-3 py-2.5 text-sm outline-none transition placeholder:text-muted-foreground focus:border-cyan-400/50"
-              />
-              <input
-                value={countryCode}
-                onChange={(event) => setCountryCode(event.target.value)}
-                placeholder="Country code, e.g. CN"
-                className="rounded-xl border border-border bg-zinc-950/70 px-3 py-2.5 text-sm outline-none transition placeholder:text-muted-foreground focus:border-cyan-400/50"
-              />
-              <input
-                value={messageQuery}
-                onChange={(event) => setMessageQuery(event.target.value)}
-                placeholder="Message contains"
-                className="rounded-xl border border-border bg-zinc-950/70 px-3 py-2.5 text-sm outline-none transition placeholder:text-muted-foreground focus:border-cyan-400/50 sm:col-span-2"
-              />
-            </div>
-          </div>
-        ) : searchPlan.aggregation?.type === "date_histogram" ? null : (
-          <div className="max-w-xs">
-            <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
-              Bucket
-            </label>
-            <select
-              value={aggregationSort}
-              onChange={(event) => setAggregationSort(event.target.value)}
-              className="w-full rounded-xl border border-border bg-zinc-950/70 px-3 py-2.5 text-sm text-foreground outline-none transition focus:border-cyan-400/50"
-            >
-              <option value="value:desc">Highest first</option>
-              <option value="value:asc">Lowest first</option>
-            </select>
-          </div>
-        )}
-
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-          {mode === "search" ? (
-            <select
-              value={searchSort}
-              onChange={(event) => setSearchSort(event.target.value)}
-              className="rounded-xl border border-border bg-zinc-950/70 px-3 py-2.5 text-sm text-foreground outline-none transition focus:border-cyan-400/50"
-            >
-              {SEARCH_SORT_OPTIONS.map((option) => (
-                <option
-                  key={`${option.field}:${option.order}`}
-                  value={`${option.field}:${option.order}`}
+                <input
+                  value={user}
+                  onChange={(event) => setUser(event.target.value)}
+                  placeholder="User"
+                  className="rounded-xl border border-border bg-zinc-950/70 px-3 py-2.5 text-sm outline-none transition placeholder:text-muted-foreground focus:border-cyan-400/50"
+                />
+                <input
+                  value={host}
+                  onChange={(event) => setHost(event.target.value)}
+                  placeholder="Host"
+                  className="rounded-xl border border-border bg-zinc-950/70 px-3 py-2.5 text-sm outline-none transition placeholder:text-muted-foreground focus:border-cyan-400/50"
+                />
+                <input
+                  value={ip}
+                  onChange={(event) => setIp(event.target.value)}
+                  placeholder="Source IP"
+                  className="rounded-xl border border-border bg-zinc-950/70 px-3 py-2.5 text-sm outline-none transition placeholder:text-muted-foreground focus:border-cyan-400/50"
+                />
+                <input
+                  value={countryCode}
+                  onChange={(event) => setCountryCode(event.target.value)}
+                  placeholder="Country code, e.g. CN"
+                  className="rounded-xl border border-border bg-zinc-950/70 px-3 py-2.5 text-sm outline-none transition placeholder:text-muted-foreground focus:border-cyan-400/50"
+                />
+                <input
+                  value={messageQuery}
+                  onChange={(event) => setMessageQuery(event.target.value)}
+                  placeholder="Message contains"
+                  className="rounded-xl border border-border bg-zinc-950/70 px-3 py-2.5 text-sm outline-none transition placeholder:text-muted-foreground focus:border-cyan-400/50 lg:col-span-2"
+                />
+              </div>
+            ) : (
+              <div className="max-w-xs">
+                <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
+                  Bucket
+                </label>
+                <select
+                  value={aggregationSort}
+                  onChange={(event) => setAggregationSort(event.target.value)}
+                  className="w-full rounded-xl border border-border bg-zinc-950/70 px-3 py-2.5 text-sm text-foreground outline-none transition focus:border-cyan-400/50"
                 >
-                  Sort: {option.label}
-                </option>
-              ))}
-            </select>
-          ) : (
-            <span />
-          )}
+                  <option value="value:desc">Highest first</option>
+                  <option value="value:asc">Lowest first</option>
+                </select>
+              </div>
+            )}
 
-          <div className="flex gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              setSeverity([]);
-              setEventTypes([]);
-              setUser("");
-              setHost("");
-              setIp("");
-              setCountryCode("");
-              setMessageQuery("");
-              setSearchSort("timestamp:desc");
-              setAggregationSort("value:desc");
-            }}
-          >
-            Clear
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={mode === "aggregation" && searchPlan.aggregation?.type === "date_histogram"}
-            onClick={
-              mode === "search" ? applySearchControls : applyAggregationControls
-            }
-          >
-            Apply Filters
-          </Button>
+            <div className="mt-4 flex justify-end gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setSeverity([]);
+                  setEventTypes([]);
+                  setUser("");
+                  setHost("");
+                  setIp("");
+                  setCountryCode("");
+                  setMessageQuery("");
+                  setSearchSort("timestamp:desc");
+                  setAggregationSort("value:desc");
+                }}
+              >
+                Clear
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={
+                  mode === "search"
+                    ? applySearchControls
+                    : applyAggregationControls
+                }
+              >
+                Apply Filters
+              </Button>
+            </div>
           </div>
-        </div>
+        ) : null}
       </div>
     </div>
   );
