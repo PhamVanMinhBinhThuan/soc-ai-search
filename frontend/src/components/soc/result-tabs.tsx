@@ -12,7 +12,7 @@ import {
   Table2,
   TriangleAlert,
 } from "lucide-react";
-import { lazy, Suspense, useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useMemo, useState } from "react";
 
 import { CountryCode } from "@/components/soc/country-code";
 import { SeverityBadge } from "@/components/soc/severity-badge";
@@ -411,28 +411,6 @@ function ResultControls({
     aggregation?.top_n ?? (aggregation?.type === "top_n" ? 10 : 20),
   );
 
-  useEffect(() => {
-    const nextFilters = searchPlan.filters ?? {};
-    const nextSort = searchPlan.sort?.[0];
-    setSeverity(nextFilters.severity ?? []);
-    setEventTypes(nextFilters.event_type ?? []);
-    setUser(nextFilters.user ?? "");
-    setHost(nextFilters.host ?? "");
-    setIp(nextFilters.ip ?? "");
-    setCountryCode(nextFilters.country_code?.join(", ") ?? "");
-    setMessageQuery(searchPlan.message_query ?? "");
-    setSearchSort(
-      nextSort ? `${nextSort.field}:${nextSort.order}` : "timestamp:desc",
-    );
-    setAggregationSort(
-      `${searchPlan.aggregation?.order_by ?? "value"}:${searchPlan.aggregation?.order ?? "desc"}`,
-    );
-    setTopN(
-      searchPlan.aggregation?.top_n ??
-        (searchPlan.aggregation?.type === "top_n" ? 10 : 20),
-    );
-  }, [searchPlan]);
-
   if (!onApply) {
     return null;
   }
@@ -827,6 +805,7 @@ export function ResultTabs({
 
             {response ? (
               <ResultControls
+                key={JSON.stringify(response.search_plan)}
                 mode={mode}
                 searchPlan={response.search_plan}
                 onApply={onApplyResultPlan}
