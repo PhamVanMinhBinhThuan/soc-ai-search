@@ -142,9 +142,9 @@ class SearchPlanCompilerTest {
                         validSearchPlan(),
                         (DslAssertion) SearchPlanCompilerTest::assertTimestampDescSort),
                 Arguments.of(
-                        "search spec uses requested safe sort",
+                        "search spec uses severity rank sort",
                         new SearchPlan(SEARCH, validFilters(), null, null, List.of(new SortPlan("severity", SortOrder.ASC)), 0, 20),
-                        (DslAssertion) searchSpec -> assertSort(searchSpec, "severity", "asc")));
+                        (DslAssertion) searchSpec -> assertSeverityRankSort(searchSpec, "asc")));
     }
 
     private static Stream<Arguments> compiledAggregationCases() {
@@ -269,6 +269,21 @@ class SearchPlanCompilerTest {
     private static void assertSort(Map<String, Object> searchSpec, String field, String order) {
         assertThat(searchSpec.get("sort"))
                 .isEqualTo(List.of(Map.of(field, Map.of("order", order))));
+    }
+
+    @SuppressWarnings("unchecked")
+    private static void assertSeverityRankSort(Map<String, Object> searchSpec, String order) {
+        var sort = (List<Map<String, Object>>) searchSpec.get("sort");
+        var scriptSort = (Map<String, Object>) sort.get(0).get("_script");
+        var script = (Map<String, Object>) scriptSort.get("script");
+
+        assertThat(scriptSort).containsEntry("type", "number");
+        assertThat(scriptSort).containsEntry("order", order);
+        assertThat(script.get("source").toString())
+                .contains("if (value == 'critical') return 4")
+                .contains("if (value == 'high') return 3")
+                .contains("if (value == 'medium') return 2")
+                .contains("if (value == 'low') return 1");
     }
 
     @SuppressWarnings("unchecked")

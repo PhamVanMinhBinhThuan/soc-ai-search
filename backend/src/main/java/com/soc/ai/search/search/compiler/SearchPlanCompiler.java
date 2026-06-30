@@ -115,7 +115,28 @@ public class SearchPlanCompiler {
     }
 
     private Map<String, Object> sortClause(SortPlan sort) {
+        if ("severity".equals(sort.field())) {
+            return severityRankSortClause(sort.order());
+        }
+
         return Map.of(sort.field(), Map.of("order", sort.order().name().toLowerCase()));
+    }
+
+    private Map<String, Object> severityRankSortClause(SortOrder order) {
+        return Map.of("_script", Map.of(
+                "type", "number",
+                "order", order.name().toLowerCase(),
+                "script", Map.of(
+                        "lang", "painless",
+                        "source", """
+                                if (doc['severity'].size() == 0) return 0;
+                                def value = doc['severity'].value;
+                                if (value == 'critical') return 4;
+                                if (value == 'high') return 3;
+                                if (value == 'medium') return 2;
+                                if (value == 'low') return 1;
+                                return 0;
+                                """)));
     }
 
     private Map<String, Object> dateHistogramAggregation(SearchPlan validatedPlan) {
