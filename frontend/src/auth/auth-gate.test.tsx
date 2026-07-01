@@ -78,7 +78,7 @@ describe('AuthGateView', () => {
       </AuthGateView>,
     )
 
-    expect(screen.getByText(/restoring secure session/i)).toBeInTheDocument()
+    expect(screen.getByText(/securing your connection/i)).toBeInTheDocument()
     expect(screen.queryByText('Dashboard ready')).not.toBeInTheDocument()
   })
 })

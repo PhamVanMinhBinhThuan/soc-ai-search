@@ -1,4 +1,4 @@
-import { Activity, AlertCircle } from 'lucide-react'
+import { Shield, AlertCircle } from 'lucide-react'
 import { motion } from 'framer-motion'
 import type { ReactNode } from 'react'
 
@@ -41,14 +41,14 @@ function LoadingView() {
         className="relative z-10 flex flex-col items-center gap-4 py-2 text-center"
       >
         <div className="flex size-14 items-center justify-center rounded-2xl bg-cyan-400/10 ring-1 ring-cyan-400/25 shadow-[0_0_30px_rgba(34,211,238,0.15)]">
-          <Activity className="size-7 animate-spin text-cyan-300" />
+          <Shield className="size-7 animate-pulse text-cyan-300" />
         </div>
         <div>
           <p className="text-base font-bold tracking-tight text-white">
-            Restoring Secure Session
+            Securing Your Connection
           </p>
           <p className="mt-1 text-xs text-zinc-400">
-            Verifying your Keycloak credentials...
+            Verifying your access permissions...
           </p>
         </div>
         <div className="relative h-0.5 w-64 overflow-hidden rounded-full bg-zinc-800/90">
