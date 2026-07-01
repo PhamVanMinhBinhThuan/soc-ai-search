@@ -20,6 +20,15 @@ type BreakdownRow = {
   tone?: "default" | "time" | "severity" | "aggregation";
 };
 
+const COUNTRY_DISPLAY: Record<string, string> = {
+  CN: "🇨🇳 China",
+  DE: "🇩🇪 Germany",
+  RU: "🇷🇺 Russia",
+  SG: "🇸🇬 Singapore",
+  US: "🇺🇸 United States",
+  VN: "🇻🇳 Vietnam",
+};
+
 const FIELD_LABELS: Record<string, string> = {
   source: "Source",
   severity: "Severity",
@@ -69,6 +78,15 @@ function joinValue(value: string | string[] | null | undefined) {
     return value.filter((item) => item.trim() !== "").join(", ");
   }
   return value?.trim() ?? "";
+}
+
+function formatCountryValue(value: string | string[] | null | undefined) {
+  const values = Array.isArray(value) ? value : value ? [value] : [];
+  return values
+    .map((item) => item.trim().toUpperCase())
+    .filter(Boolean)
+    .map((code) => COUNTRY_DISPLAY[code] ?? code)
+    .join(", ");
 }
 
 function formatRelative(value: string) {
@@ -188,7 +206,7 @@ function buildRows(searchPlan: SearchPlanDto, chartMetadata?: ChartMetadataDto |
     if (hasValue(value)) {
       rows.push({
         field: label,
-        value: joinValue(value),
+        value: key === "country_code" ? formatCountryValue(value) : joinValue(value),
         tone: key === "severity" ? "severity" : "default",
       });
     }
@@ -308,15 +326,14 @@ export function QueryBreakdown({
 
   return (
     <div className={cn("rounded-2xl border border-zinc-800 bg-zinc-950/40 p-4", className)}>
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <span className="grid size-8 place-items-center rounded-xl border border-cyan-400/20 bg-cyan-400/10 text-cyan-200">
             <ListTree className="size-4" />
           </span>
-          <div>
-            <h3 className="text-sm font-semibold text-zinc-100">Query Breakdown</h3>
-            <p className="text-xs text-zinc-500">Human-readable SearchPlan fields</p>
-          </div>
+          <h3 className="text-sm font-semibold tracking-tight text-zinc-100">
+            Query Breakdown
+          </h3>
         </div>
         <span className="inline-flex items-center gap-1.5 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-cyan-200">
           <VisualizationIcon searchPlan={searchPlan} />
@@ -325,7 +342,7 @@ export function QueryBreakdown({
       </div>
 
       <div className="overflow-hidden rounded-xl border border-zinc-800">
-        <div className="grid grid-cols-[minmax(7rem,12rem)_1fr] border-b border-zinc-800 bg-zinc-900/60 text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
+        <div className="grid grid-cols-[minmax(7rem,11rem)_1fr] border-b border-zinc-800 bg-zinc-900/60 text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-500">
           <div className="px-3 py-2">Field</div>
           <div className="border-l border-zinc-800 px-3 py-2">Value</div>
         </div>
@@ -333,13 +350,15 @@ export function QueryBreakdown({
           {rows.map((row) => (
             <div
               key={`${row.field}-${row.value}`}
-              className="grid grid-cols-[minmax(7rem,12rem)_1fr] bg-zinc-950/30"
+              className="grid grid-cols-[minmax(7rem,11rem)_1fr] bg-zinc-950/30"
             >
-              <div className="px-3 py-3 text-sm text-zinc-400">{row.field}</div>
-              <div className="border-l border-zinc-800 px-3 py-2.5">
+              <div className="px-3 py-2.5 text-sm font-medium text-zinc-400">
+                {row.field}
+              </div>
+              <div className="border-l border-zinc-800 px-3 py-2">
                 <span
                   className={cn(
-                    "inline-flex max-w-full rounded-lg border px-2.5 py-1 text-sm font-medium",
+                    "inline-flex max-w-full rounded-lg border px-2.5 py-1 text-sm font-medium leading-5",
                     valueClassName(row.tone),
                   )}
                 >

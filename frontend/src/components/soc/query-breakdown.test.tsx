@@ -34,8 +34,28 @@ describe("QueryBreakdown", () => {
     expect(screen.getByText("Search")).toBeInTheDocument();
     expect(screen.getByText("Last 24 hours to now")).toBeInTheDocument();
     expect(screen.getByText("failed_login")).toBeInTheDocument();
+    expect(screen.getByText("🇨🇳 China")).toBeInTheDocument();
     expect(screen.getByText("Event logs table")).toBeInTheDocument();
     expect(screen.queryByText("Host")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Human-readable SearchPlan fields"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("formats multiple known country codes and keeps unknown codes readable", () => {
+    render(
+      <QueryBreakdown
+        searchPlan={{
+          ...searchPlan,
+          filters: {
+            ...searchPlan.filters,
+            country_code: ["VN", "CN", "XX"],
+          },
+        }}
+      />,
+    );
+
+    expect(screen.getByText("🇻🇳 Vietnam, 🇨🇳 China, XX")).toBeInTheDocument();
   });
 
   it("renders top_n aggregation details", () => {
