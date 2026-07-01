@@ -218,6 +218,35 @@ export type SearchErrorResponseDto = {
   errors: string[];
 };
 
+export type FollowUpSuggestionDto = {
+  title: string;
+  question: string;
+};
+
+export type FollowUpSuggestionRequestDto = {
+  question: string;
+  search_plan: SearchPlanDto;
+  result_count: number;
+  mode: SearchMode;
+  sample_events: {
+    event_type: string;
+    severity: string;
+    user: string;
+    host: string;
+    ip: string;
+    country_code: string;
+  }[];
+  aggregation_buckets: {
+    key: string;
+    value: number;
+  }[];
+};
+
+export type FollowUpSuggestionResponseDto = {
+  source: "llm" | "none";
+  suggestions: FollowUpSuggestionDto[];
+};
+
 export type EventErrorResponseDto = {
   message: string;
 };

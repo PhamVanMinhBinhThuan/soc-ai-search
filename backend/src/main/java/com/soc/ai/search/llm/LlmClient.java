@@ -7,4 +7,6 @@ public interface LlmClient {
     LlmResponse generateSummary(LlmSummaryRequest request);
 
     LlmResponse generateRefinedQuestion(LlmQuestionRefinementRequest request);
+
+    LlmResponse generateFollowUpSuggestions(LlmFollowUpSuggestionsRequest request);
 }

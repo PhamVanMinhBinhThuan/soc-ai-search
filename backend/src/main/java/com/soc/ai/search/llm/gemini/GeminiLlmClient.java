@@ -10,6 +10,7 @@ import java.util.Map;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.soc.ai.search.llm.LlmClient;
+import com.soc.ai.search.llm.LlmFollowUpSuggestionsRequest;
 import com.soc.ai.search.llm.LlmProperties;
 import com.soc.ai.search.llm.LlmQuestionRefinementRequest;
 import com.soc.ai.search.llm.LlmResponse;
@@ -142,6 +143,30 @@ public class GeminiLlmClient implements LlmClient {
             throw new GeminiLlmException("Gemini query refinement request timed out or is unavailable", exception);
         } catch (RestClientException exception) {
             throw new GeminiLlmException("Gemini query refinement request failed", exception);
+        }
+    }
+
+    @Override
+    public LlmResponse generateFollowUpSuggestions(LlmFollowUpSuggestionsRequest request) {
+        validateConfiguration();
+        var startedAt = System.nanoTime();
+
+        try {
+            var responseJson = callGemini(
+                    summaryRestClient,
+                    request.systemPrompt(),
+                    request.userContent(),
+                    true);
+            return new LlmResponse(
+                    extractText(responseJson),
+                    extractModel(responseJson),
+                    elapsedMs(startedAt));
+        } catch (RestClientResponseException exception) {
+            throw mapResponseException(exception);
+        } catch (ResourceAccessException exception) {
+            throw new GeminiLlmException("Gemini follow-up suggestion request timed out or is unavailable", exception);
+        } catch (RestClientException exception) {
+            throw new GeminiLlmException("Gemini follow-up suggestion request failed", exception);
         }
     }
 

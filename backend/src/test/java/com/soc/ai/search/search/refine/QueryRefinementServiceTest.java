@@ -7,6 +7,7 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.soc.ai.search.llm.LlmClient;
+import com.soc.ai.search.llm.LlmFollowUpSuggestionsRequest;
 import com.soc.ai.search.llm.LlmQuestionRefinementRequest;
 import com.soc.ai.search.llm.LlmResponse;
 import com.soc.ai.search.llm.LlmSearchPlanRequest;
@@ -93,6 +94,11 @@ class QueryRefinementServiceTest {
         @Override
         public LlmResponse generateRefinedQuestion(LlmQuestionRefinementRequest request) {
             return new LlmResponse(content, "stub-model", 12);
+        }
+
+        @Override
+        public LlmResponse generateFollowUpSuggestions(LlmFollowUpSuggestionsRequest request) {
+            throw new UnsupportedOperationException();
         }
     }
 }

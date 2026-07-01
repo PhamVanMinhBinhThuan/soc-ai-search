@@ -4,6 +4,7 @@ import {
   Sparkles,
   Pin,
 } from 'lucide-react'
+import { useEffect, useRef } from 'react'
 import type { FormEvent, KeyboardEvent } from 'react'
 
 import { Button } from '@/components/ui/button'
@@ -22,6 +23,7 @@ export function SearchSection({
   isPinned,
   onTogglePin,
   canPin = true,
+  focusSignal = 0,
 }: {
   question: string
   scenarios: MockScenario[]
@@ -34,8 +36,17 @@ export function SearchSection({
   isPinned?: boolean
   onTogglePin?: (pinned: boolean) => void
   canPin?: boolean
+  focusSignal?: number
 }) {
   const canSubmit = question.trim().length > 0 && !isLoading
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  useEffect(() => {
+    if (focusSignal > 0) {
+      textareaRef.current?.focus()
+      textareaRef.current?.setSelectionRange(question.length, question.length)
+    }
+  }, [focusSignal, question.length])
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -67,6 +78,7 @@ export function SearchSection({
             <Sparkles className="size-4" />
           </div>
           <Textarea
+            ref={textareaRef}
             value={question}
             onChange={(event) => onQuestionChange(event.target.value)}
             onKeyDown={handleQuestionKeyDown}

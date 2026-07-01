@@ -5,6 +5,7 @@ import java.util.Locale;
 import java.util.regex.Pattern;
 
 import com.soc.ai.search.llm.LlmClient;
+import com.soc.ai.search.llm.LlmFollowUpSuggestionsRequest;
 import com.soc.ai.search.llm.LlmProperties;
 import com.soc.ai.search.llm.LlmQuestionRefinementRequest;
 import com.soc.ai.search.llm.LlmResponse;
@@ -55,6 +56,11 @@ public class MockLlmClient implements LlmClient {
         }
         var latencyMs = (System.nanoTime() - startedAt) / 1_000_000;
         return new LlmResponse(question, properties.effectiveModel(), latencyMs);
+    }
+
+    @Override
+    public LlmResponse generateFollowUpSuggestions(LlmFollowUpSuggestionsRequest request) {
+        return new LlmResponse("[]", properties.effectiveModel(), 0);
     }
 
     private String contentFor(String question) {
