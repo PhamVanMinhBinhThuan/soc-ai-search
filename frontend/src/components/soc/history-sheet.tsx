@@ -115,52 +115,54 @@ function HistoryItem({
       tabIndex={0}
       onClick={runAgain}
       onKeyDown={handleKeyDown}
-      className="group w-full cursor-pointer rounded-xl border border-zinc-800/70 bg-zinc-900/30 p-4 text-left transition-all hover:bg-zinc-900/70 hover:border-zinc-700 focus-visible:ring-2 focus-visible:ring-cyan-400/55 focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
+      className="group w-full cursor-pointer rounded-xl border border-zinc-800/50 bg-zinc-900/30 p-4 text-left transition-all duration-300 hover:border-zinc-700/80 hover:bg-zinc-800/40 hover:shadow-sm focus-visible:ring-2 focus-visible:ring-cyan-400/55 focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none active:scale-[0.99]"
       aria-label={`Run query again: ${item.question}`}
     >
       <div className="flex min-w-0 items-start gap-4">
         <div className="min-w-0 flex-1">
-          <p className="line-clamp-2 text-sm font-medium text-zinc-200 transition-colors group-hover:text-white">
+          <p className="line-clamp-2 text-sm font-medium text-zinc-200 transition-colors group-hover:text-zinc-100">
             {item.question}
           </p>
 
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <Badge
-              variant="outline"
-              className={cn(
-                'h-5 rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide',
-                modeBadgeClass(item.mode),
-              )}
-            >
-              {modeLabel}
-            </Badge>
-            <Badge
-              variant="outline"
-              className={cn(
-                'h-5 rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide',
-                statusBadgeClass(item.status),
-              )}
-            >
-              {item.status}
-            </Badge>
-          </div>
+          <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-2">
+            <div className="flex items-center gap-2">
+              <Badge
+                variant="outline"
+                className={cn(
+                  'h-5 rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide',
+                  modeBadgeClass(item.mode),
+                )}
+              >
+                {modeLabel}
+              </Badge>
+              <Badge
+                variant="outline"
+                className={cn(
+                  'h-5 rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide',
+                  statusBadgeClass(item.status),
+                )}
+              >
+                {item.status}
+              </Badge>
+            </div>
 
-          <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-zinc-500">
-            <span className="inline-flex min-w-0 items-center gap-1.5 font-mono">
-              <Clock3 className="size-3" />
-              {formatCreatedAt(item.created_at)}
-            </span>
-            <span className="text-zinc-700" aria-hidden="true">
-              -
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              {item.mode === 'aggregation' ? (
-                <BarChart3 className="size-3" />
-              ) : (
-                <Database className="size-3" />
-              )}
-              {resultLabel}
-            </span>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-zinc-500">
+              <span className="inline-flex min-w-0 items-center gap-1.5 font-mono">
+                <Clock3 className="size-3" />
+                {formatCreatedAt(item.created_at)}
+              </span>
+              <span className="text-zinc-700" aria-hidden="true">
+                -
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                {item.mode === 'aggregation' ? (
+                  <BarChart3 className="size-3" />
+                ) : (
+                  <Database className="size-3" />
+                )}
+                {resultLabel}
+              </span>
+            </div>
           </div>
         </div>
 
@@ -169,9 +171,9 @@ function HistoryItem({
           title="Run this query again"
           aria-label={`Run this query again: ${item.question}`}
           onClick={handleActionClick}
-          className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg text-zinc-500 transition-all duration-200 hover:bg-zinc-700/70 hover:text-zinc-100 focus-visible:ring-2 focus-visible:ring-cyan-400/55 focus-visible:outline-none group-hover:text-cyan-300"
+          className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-full text-zinc-500 opacity-80 transition-all duration-300 hover:bg-cyan-500/20 hover:text-cyan-300 hover:opacity-100 focus-visible:ring-2 focus-visible:ring-cyan-400/55 focus-visible:outline-none group-hover:bg-cyan-500/10 group-hover:text-cyan-400 group-hover:opacity-100"
         >
-          <Play className="size-4" />
+          <Play className="ml-0.5 size-4" />
         </button>
       </div>
     </div>
@@ -281,10 +283,10 @@ export function HistorySheet({
         </div>
 
         {response && response.items.length > 0 && onViewAll ? (
-          <div className="flex items-center justify-center border-t border-zinc-800 bg-zinc-950/90 px-4 py-4 sm:px-5">
+          <div className="flex items-center justify-center border-t border-zinc-800/60 bg-zinc-950/60 px-4 py-4 backdrop-blur-md sm:px-5">
             <Button
-              variant="outline"
-              className="w-full text-zinc-300 hover:text-white"
+              variant="ghost"
+              className="w-full border border-zinc-800/60 bg-zinc-900/40 text-zinc-300 transition-all duration-300 hover:border-zinc-700 hover:bg-zinc-800/80 hover:text-white hover:shadow-[0_0_12px_rgba(34,211,238,0.15)]"
               onClick={onViewAll}
             >
               View all investigations
