@@ -10,7 +10,7 @@ import {
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
-export type SuggestionCategory = 'Next step' | 'Playbook' | 'Aggregation' | 'Raw events'
+export type SuggestionCategory = 'Next step' | 'Playbook' | 'Aggregation' | 'Event logs'
 
 export type Suggestion = {
   id: string
@@ -96,7 +96,7 @@ export function getSuggestions(response: NaturalLanguageSearchResponseDto | null
       },
       {
         id: 'fl-4',
-        category: 'Raw events',
+        category: 'Event logs',
         title: 'Admin failed logins',
         question: 'Tìm failed login của user admin',
         icon: Terminal,
@@ -169,7 +169,7 @@ export function getSuggestions(response: NaturalLanguageSearchResponseDto | null
       },
       {
         id: 'mal-2',
-        category: 'Raw events',
+        category: 'Event logs',
         title: 'Latest malware events',
         question: 'Tìm raw event malware detected mới nhất',
         icon: Terminal,
@@ -184,7 +184,7 @@ export function getSuggestions(response: NaturalLanguageSearchResponseDto | null
     suggestions.push(
       {
         id: 'ip-ctx-1',
-        category: 'Raw events',
+        category: 'Event logs',
         title: 'All blocked connections for IP',
         question: 'Tìm các kết nối bị chặn liên quan đến IP này',
         icon: ShieldAlert,
@@ -213,7 +213,7 @@ export function getSuggestions(response: NaturalLanguageSearchResponseDto | null
     suggestions.push(
       {
         id: 'user-ctx-1',
-        category: 'Raw events',
+        category: 'Event logs',
         title: 'Commands executed by user',
         question: 'Tìm các lệnh (commands) mà user này đã chạy',
         icon: Terminal,

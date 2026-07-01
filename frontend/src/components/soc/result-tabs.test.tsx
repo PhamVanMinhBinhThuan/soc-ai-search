@@ -155,7 +155,7 @@ describe("ResultTabs RBAC rendering", () => {
 });
 
 describe("ResultTabs polymorphic rendering", () => {
-  it("activates raw events for search mode and disables analytics", () => {
+  it("activates event logs for search mode and disables analytics", () => {
     const onSelectEvent = vi.fn();
     render(
       <ResultTabs
@@ -179,7 +179,7 @@ describe("ResultTabs polymorphic rendering", () => {
     expect(onSelectEvent).toHaveBeenCalledWith("seed-42-1001");
   });
 
-  it("activates analytics for aggregation mode and disables raw events", () => {
+  it("activates analytics for aggregation mode and disables event logs", () => {
     render(
       <ResultTabs
         {...baseProps}
@@ -194,7 +194,7 @@ describe("ResultTabs polymorphic rendering", () => {
 
     expect(screen.getByRole("tab", { name: /analytics view/i })).toBeEnabled();
     expect(
-      screen.queryByRole("tab", { name: /raw events/i }),
+      screen.queryByRole("tab", { name: /event logs/i }),
     ).not.toBeInTheDocument();
     expect(screen.getByText(/summary table/i)).toBeInTheDocument();
     expect(screen.getByText("admin")).toBeInTheDocument();
@@ -238,7 +238,7 @@ describe("ResultTabs polymorphic rendering", () => {
 
     expect(screen.getByText(/no matching events/i)).toBeInTheDocument();
     expect(
-      screen.getByText(/no raw events matched the validated SearchPlan/i),
+      screen.getByText(/no event logs matched the validated SearchPlan/i),
     ).toBeInTheDocument();
   });
 });
@@ -255,6 +255,7 @@ describe("ResultTabs filter and sort controls", () => {
     );
 
     expect(screen.getByText(/filter & sort results/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /filter & sort results/i }));
     expect(screen.queryByText(/filters are applied/i)).not.toBeInTheDocument();
     expect(screen.getByText("Severity")).toBeInTheDocument();
     expect(screen.getByText("Event Type")).toBeInTheDocument();
@@ -286,11 +287,11 @@ describe("ResultTabs filter and sort controls", () => {
       name: /filter & sort results/i,
     });
 
-    expect(screen.getByPlaceholderText("User")).toBeInTheDocument();
-    fireEvent.click(toggle);
     expect(screen.queryByPlaceholderText("User")).not.toBeInTheDocument();
     fireEvent.click(toggle);
     expect(screen.getByPlaceholderText("User")).toBeInTheDocument();
+    fireEvent.click(toggle);
+    expect(screen.queryByPlaceholderText("User")).not.toBeInTheDocument();
   });
 
   it("applies selected search filters and sort through the callback", () => {
@@ -304,6 +305,8 @@ describe("ResultTabs filter and sort controls", () => {
         onApplyResultPlan={onApplyResultPlan}
       />,
     );
+
+    fireEvent.click(screen.getByRole("button", { name: /filter & sort results/i }));
 
     fireEvent.click(screen.getByRole("button", { name: /select severities/i }));
     fireEvent.click(screen.getByRole("button", { name: /^critical$/i }));
@@ -343,6 +346,7 @@ describe("ResultTabs filter and sort controls", () => {
     );
 
     expect(screen.getByText(/filter & sort results/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /filter & sort results/i }));
     expect(screen.getByText("Bucket")).toBeInTheDocument();
     expect(screen.getByDisplayValue("Highest first")).toBeInTheDocument();
     expect(screen.queryByText("Severity")).not.toBeInTheDocument();

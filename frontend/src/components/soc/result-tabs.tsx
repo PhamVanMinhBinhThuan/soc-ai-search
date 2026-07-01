@@ -243,7 +243,7 @@ function RawEventsView({
       <EmptyModeState
         icon={FileSearch}
         title="No matching events"
-        description="The search completed successfully, but no raw events matched the validated SearchPlan."
+        description="The search completed successfully, but no event logs matched the validated SearchPlan."
       />
     );
   }
@@ -255,7 +255,7 @@ function RawEventsView({
     <div className="overflow-hidden rounded-xl border border-border">
       <div className="flex items-center gap-2 border-b border-border bg-secondary/25 px-4 py-3">
         <Table2 className="size-4 text-cyan-300" />
-        <h3 className="text-sm font-semibold">Raw Events</h3>
+        <h3 className="text-sm font-semibold">Event Logs</h3>
         <div className="flex-1" />
         <span className="hidden items-center gap-1 text-xs text-muted-foreground sm:inline-flex">
           <Lightbulb className="size-3.5 text-amber-300" />
@@ -509,7 +509,7 @@ function ResultControls({
   const [aggregationSort, setAggregationSort] = useState(
     `${aggregation?.order_by ?? "value"}:${aggregation?.order ?? "desc"}`,
   );
-  const [controlsExpanded, setControlsExpanded] = useState(true);
+  const [controlsExpanded, setControlsExpanded] = useState(false);
 
   if (!onApply) {
     return null;
