@@ -1,4 +1,5 @@
 import {
+  BookOpen,
   LoaderCircle,
   Search,
   Sparkles,
@@ -24,6 +25,7 @@ export function SearchSection({
   onTogglePin,
   canPin = true,
   focusSignal = 0,
+  onOpenQueryLibrary,
 }: {
   question: string
   scenarios: MockScenario[]
@@ -37,6 +39,7 @@ export function SearchSection({
   onTogglePin?: (pinned: boolean) => void
   canPin?: boolean
   focusSignal?: number
+  onOpenQueryLibrary?: () => void
 }) {
   const canSubmit = question.trim().length > 0 && !isLoading
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -139,6 +142,17 @@ export function SearchSection({
             {scenario.shortLabel}
           </button>
         ))}
+        {onOpenQueryLibrary && (
+          <button
+            type="button"
+            aria-label="View queries"
+            onClick={onOpenQueryLibrary}
+            className="inline-flex items-center gap-1.5 rounded-full border border-cyan-400/30 bg-cyan-500/10 px-3 py-1.5 text-xs font-medium text-cyan-100 transition-colors hover:bg-cyan-400/15"
+          >
+            <BookOpen className="size-3" />
+            View queries
+          </button>
+        )}
       </div>
     </section>
   )

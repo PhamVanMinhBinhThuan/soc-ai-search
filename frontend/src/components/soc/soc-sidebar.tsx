@@ -1,9 +1,11 @@
 import {
+  BookOpen,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
   History,
   LayoutDashboard,
+  Library,
   ListFilter,
   Power,
   ScrollText,
@@ -77,8 +79,8 @@ export function SocSidebar({
   roles: string[]
   authLoading: boolean
   authEnabled: boolean
-  activePage?: 'dashboard' | 'search' | 'investigations' | 'audit-logs'
-  onPageChange?: (page: 'dashboard' | 'search' | 'investigations' | 'audit-logs') => void
+  activePage?: 'dashboard' | 'search' | 'investigations' | 'audit-logs' | 'query-library'
+  onPageChange?: (page: 'dashboard' | 'search' | 'investigations' | 'audit-logs' | 'query-library') => void
   onOpenHistory?: () => void
   onOpenAuditLogs?: () => void
   onLogout?: () => void
@@ -86,6 +88,7 @@ export function SocSidebar({
   const [expanded, setExpanded] = useState(false)
   const [investigationsOpen, setInvestigationsOpen] = useState(false)
   const [adminOpen, setAdminOpen] = useState(false)
+  const [guideOpen, setGuideOpen] = useState(false)
   const collapsed = !expanded
   const permissionContext = { roles, loading: authLoading }
   const historyVisible = canViewHistory(permissionContext)
@@ -260,6 +263,66 @@ export function SocSidebar({
               )}
             </div>
           ) : null}
+
+          {/* Guide group */}
+          <div className="flex flex-col">
+            <CollapsedTooltip collapsed={collapsed} label="Guide">
+              <button
+                type="button"
+                aria-label="Guide"
+                onClick={() => {
+                  if (collapsed) {
+                    setExpanded(true)
+                    setGuideOpen(true)
+                  } else {
+                    setGuideOpen(!guideOpen)
+                  }
+                }}
+                className={cn(
+                  'relative flex h-10 w-full shrink-0 items-center rounded-xl transition-colors',
+                  expanded ? 'justify-start px-3' : 'justify-center',
+                  activePage === 'query-library'
+                    ? 'bg-cyan-400/10 text-cyan-300 ring-1 ring-cyan-400/25'
+                    : 'text-muted-foreground hover:bg-secondary hover:text-foreground',
+                )}
+              >
+                <BookOpen className="size-5 shrink-0" />
+                <span
+                  className={cn(
+                    'overflow-hidden whitespace-nowrap text-left text-sm transition-[width,opacity,margin] duration-300',
+                    expanded
+                      ? 'ml-3 w-36 opacity-100'
+                      : 'ml-0 w-0 opacity-0',
+                  )}
+                >
+                  Guide
+                </span>
+                {expanded && (
+                  <span className="ml-auto flex items-center justify-center opacity-60">
+                    {guideOpen ? <ChevronDown className="size-3.5" /> : <ChevronRight className="size-3.5" />}
+                  </span>
+                )}
+              </button>
+            </CollapsedTooltip>
+
+            {expanded && guideOpen && (
+              <div className="ml-8 mt-1 flex flex-col gap-1">
+                <button
+                  type="button"
+                  onClick={() => onPageChange?.('query-library')}
+                  className={cn(
+                    'flex h-8 items-center gap-2 rounded-lg px-3 text-sm transition-colors text-left w-full',
+                    activePage === 'query-library'
+                      ? 'bg-cyan-400/10 text-cyan-300'
+                      : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+                  )}
+                >
+                  <Library className="size-3.5 shrink-0" />
+                  Query Library
+                </button>
+              </div>
+            )}
+          </div>
 
           {adminVisible ? (
             <div className="flex flex-col">

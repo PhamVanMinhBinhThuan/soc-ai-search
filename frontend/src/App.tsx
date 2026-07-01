@@ -25,6 +25,7 @@ import { ResultTabs, type ResultTab } from "@/components/soc/result-tabs";
 import { SearchSection } from "@/components/soc/search-section";
 import { AuditLogsPage } from "@/components/soc/admin/audit-logs-page";
 import { InvestigationsPage } from "@/components/soc/investigations/investigations-page";
+import { QueryLibraryPage } from "@/components/soc/query-library-page";
 import { SocDashboard } from "@/components/soc/dashboard/soc-dashboard";
 import {
   SearchErrorState,
@@ -140,7 +141,9 @@ function App() {
         ? "investigations"
         : currentPath === "/audit-logs"
           ? "audit-logs"
-          : "search";
+          : currentPath === "/query-library"
+            ? "query-library"
+            : "search";
 
   const [detailOpen, setDetailOpen] = useState(false);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
@@ -692,6 +695,7 @@ function App() {
                   onTogglePin={handleTogglePinCurrentQuery}
                   canPin={canUseHistory}
                   focusSignal={searchFocusSignal}
+                  onOpenQueryLibrary={() => navigate('/query-library')}
                 />
 
                 {requestStatus === "idle" ? <SearchIdleState /> : null}
@@ -837,6 +841,19 @@ function App() {
                 ) : null}
               </main>
             </div>
+          }
+        />
+
+        <Route
+          path="/query-library"
+          element={
+            <QueryLibraryPage
+              onUseQuery={(q) => {
+                setQuestion(q);
+                setSearchFocusSignal((s) => s + 1);
+                navigate('/search');
+              }}
+            />
           }
         />
 
