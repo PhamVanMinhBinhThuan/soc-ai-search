@@ -13,13 +13,11 @@ export function SocHero({
   children,
   statusContent,
   onAccessConsole,
-  onExploreFeatures,
 }: {
   topRightContent?: React.ReactNode
   children?: React.ReactNode
   statusContent?: React.ReactNode
   onAccessConsole?: () => void
-  onExploreFeatures?: () => void
 }) {
   const rawX = useMotionValue(0)
   const rawY = useMotionValue(0)
@@ -79,7 +77,7 @@ export function SocHero({
             className="group inline-flex items-center gap-2 rounded-lg border border-zinc-700/80 bg-transparent px-4 py-2 text-sm font-medium text-zinc-300 transition-colors hover:border-cyan-400/60 hover:bg-cyan-400/10 hover:text-white"
           >
             <KeyRound className="h-4 w-4 text-cyan-300" />
-            Secure Login
+            Sign In
           </button>
         )}
       </header>
@@ -102,11 +100,11 @@ export function SocHero({
           className="text-balance text-5xl font-bold leading-[1.05] tracking-tight sm:text-6xl md:text-7xl"
           style={{ textShadow: "0 2px 40px rgba(3,7,18,0.9)" }}
         >
-          Intelligent Event Search
+          AI-Powered Event Search
           <br />
           for{" "}
           <span className="bg-gradient-to-r from-cyan-300 via-cyan-400 to-purple-400 bg-clip-text text-transparent">
-            Modern SOC Teams.
+            Security Teams.
           </span>
         </motion.h1>
 
@@ -117,8 +115,7 @@ export function SocHero({
           className="mt-6 max-w-2xl text-pretty text-base leading-relaxed text-zinc-300 sm:text-lg"
           style={{ textShadow: "0 2px 20px rgba(3,7,18,0.9)" }}
         >
-          Scale your security operations. AI-powered log analysis, real-time
-          aggregations, and zero-trust RBAC in one unified platform.
+          Search events using natural language. Fast, intelligent, and secure.
         </motion.p>
 
         <motion.div
@@ -141,14 +138,6 @@ export function SocHero({
                   Access Console
                   <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                 </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={onExploreFeatures}
-                className="inline-flex items-center gap-2 rounded-xl border border-zinc-700/80 bg-zinc-900/40 px-6 py-3 text-sm font-semibold text-zinc-200 backdrop-blur-sm transition-colors hover:border-zinc-500 hover:text-white"
-              >
-                Explore Features
               </button>
             </>
           )}

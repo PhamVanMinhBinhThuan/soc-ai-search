@@ -1253,3 +1253,100 @@ Validator reject vì aggregation.field phải nằm trong allowlist.
 Câu trả lời:
 
 > Aggregation chỉ được chạy trên field allowlist như source, severity, event_type, user, host, ip, country_code. Không cho group/top trên message/raw/password/script.
+
+---
+
+## Demo questions for multi-value entity filters
+
+Mục này dùng để test chức năng mới: `source`, `user`, `host`, `ip` có thể nhận nhiều giá trị. Ý nghĩa nghiệp vụ là:
+
+- Nhiều giá trị trong cùng một field là quan hệ **OR**.
+- Các field khác nhau vẫn kết hợp theo **AND**.
+- Ví dụ: `user = admin OR vpn.user` và `event_type = failed_login`.
+
+### Case nên demo với mentor
+
+| Mục tiêu demo | Câu hỏi nên dùng | SearchPlan kỳ vọng |
+| --- | --- | --- |
+| Nhiều user | `Find failed login events for admin or vpn.user in the last 24 hours` | `event_type=["failed_login"]`, `user=["admin","vpn.user"]`, `timestamp=now-24h..now` |
+| Nhiều user + country | `Show failed login events for admin or finance.user from China in the last 24 hours` | `event_type=["failed_login"]`, `user=["admin","finance.user"]`, `country_code=["CN"]` |
+| Account lockout theo nhiều user | `Show account lockout events for admin or vpn.user in the last 7 days` | `event_type=["account_lockout"]`, `user=["admin","vpn.user"]` |
+| Nhiều source | `Show windows-auth or vpn events in the last 24 hours` | `source=["windows-auth","vpn"]` |
+| Nhiều host | `Show events from host vpn-gw-01 or dc-01 in the last 24 hours` | `host=["vpn-gw-01","dc-01"]` |
+| Nhiều IP attacker | `Find activity from IP 203.0.113.45 or 198.51.100.200 in the last 30 days` | `ip=["203.0.113.45","198.51.100.200"]` |
+| EDR malware trên nhiều endpoint | `Show malware detected events on endpoint-014 or endpoint-023 in the last 30 days` | `event_type=["malware_detected"]`, `host=["endpoint-014","endpoint-023"]` |
+| Nhiều source SOC | `Show EDR or proxy events in the last 30 days` | `source=["edr","proxy"]` |
+
+### Câu hỏi aggregation hay để demo chart
+
+| Mục tiêu demo | Câu hỏi nên dùng | Kỳ vọng |
+| --- | --- | --- |
+| Bar chart theo user | `Group failed login events by user in the last 7 days` | `aggregation.type=group_by`, `field=user` |
+| Bar chart theo source | `Group events by source in the last 7 days` | `aggregation.type=group_by`, `field=source` |
+| Top IP | `Show the top 5 source IPs with the most events in the last 30 days` | `aggregation.type=top_n`, `field=ip`, `top_n=5` |
+| Line chart | `Show failed login trend by hour in the last 24 hours` | `aggregation.type=date_histogram`, `interval=hour` |
+| Count | `Count critical events in the last 24 hours` | `aggregation.type=count`, `severity=["critical"]` |
+
+### Bộ câu hỏi biểu đồ group_by, top_n, count
+
+Các câu này nên dùng khi muốn chứng minh hệ thống không chỉ trả raw logs mà còn sinh được aggregation an toàn từ SearchPlan.
+
+#### Group by - bar chart
+
+| Mục tiêu demo | Câu hỏi nên dùng | SearchPlan kỳ vọng |
+| --- | --- | --- |
+| Severity distribution | `Group events by severity in the last 24 hours` | `aggregation.type=group_by`, `field=severity` |
+| Event type distribution | `Group events by event type in the last 7 days` | `aggregation.type=group_by`, `field=event_type` |
+| Failed login by user | `Group failed login events by user in the last 7 days` | `event_type=["failed_login"]`, `aggregation.field=user` |
+| Events by source | `Group events by source in the last 7 days` | `aggregation.field=source` |
+| China events by event type | `Group China events by event type in the last 24 hours` | `country_code=["CN"]`, `aggregation.field=event_type` |
+| Malware by host | `Group malware detected events by host in the last 30 days` | `event_type=["malware_detected"]`, `aggregation.field=host` |
+
+#### Top N - ranked bar chart
+
+| Mục tiêu demo | Câu hỏi nên dùng | SearchPlan kỳ vọng |
+| --- | --- | --- |
+| Top source IPs | `Show the top 5 source IPs with the most events in the last 30 days` | `aggregation.type=top_n`, `field=ip`, `top_n=5` |
+| Top users | `Show the top 5 users with the most events in the last 30 days` | `aggregation.field=user`, `top_n=5` |
+| Top hosts | `Show the top 5 hosts with the most events in the last 30 days` | `aggregation.field=host`, `top_n=5` |
+| Top event types from China | `Show the top 5 event types from China in the last 24 hours` | `country_code=["CN"]`, `aggregation.field=event_type` |
+| Top IPs for failed login | `Show the top 5 source IPs for failed login events in the last 7 days` | `event_type=["failed_login"]`, `aggregation.field=ip` |
+
+#### Count - KPI/number card
+
+| Mục tiêu demo | Câu hỏi nên dùng | SearchPlan kỳ vọng |
+| --- | --- | --- |
+| Count all events | `Count all events in the last 24 hours` | `aggregation.type=count` |
+| Count critical events | `Count critical events in the last 24 hours` | `severity=["critical"]`, `aggregation.type=count` |
+| Count failed logins | `Count failed login events in the last 7 days` | `event_type=["failed_login"]`, `aggregation.type=count` |
+| Count China events | `Count events from China in the last 24 hours` | `country_code=["CN"]`, `aggregation.type=count` |
+| Count account lockouts | `Count account lockout events in the last 7 days` | `event_type=["account_lockout"]`, `aggregation.type=count` |
+
+### Multi-filter aggregation questions
+
+Các câu này dùng để test cả hai ý cùng lúc: nhiều filter trong SearchPlan và kết quả dạng biểu đồ.
+
+| Mục tiêu demo | Câu hỏi nên dùng | SearchPlan kỳ vọng |
+| --- | --- | --- |
+| Multi-user group_by | `Group failed login events for admin or vpn.user by source IP in the last 24 hours` | `user=["admin","vpn.user"]`, `event_type=["failed_login"]`, `aggregation.field=ip` |
+| Multi-source group_by | `Group windows-auth or vpn events by event type in the last 24 hours` | `source=["windows-auth","vpn"]`, `aggregation.field=event_type` |
+| Multi-IP top_n | `Show the top 5 users from IP 203.0.113.45 or 198.51.100.200 in the last 30 days` | `ip=["203.0.113.45","198.51.100.200"]`, `aggregation.field=user` |
+| Multi-host count | `Count events from host vpn-gw-01 or dc-01 in the last 24 hours` | `host=["vpn-gw-01","dc-01"]`, `aggregation.type=count` |
+| Multi-source count | `Count EDR or proxy events in the last 30 days` | `source=["edr","proxy"]`, `aggregation.type=count` |
+| Multi-user line chart | `Show failed login trend by hour for admin or vpn.user in the last 24 hours` | `user=["admin","vpn.user"]`, `event_type=["failed_login"]`, `aggregation.type=date_histogram` |
+
+### Câu nên tránh khi demo chính thức
+
+Không nên dùng lần đầu ngay trước hội đồng các câu quá mơ hồ như:
+
+```text
+Show bad activity from important machines
+Find suspicious stuff from users
+Show brute force or malware in message text
+```
+
+Lý do:
+
+- Dataset demo có field và giá trị cố định.
+- `message_query` hiện vẫn là một chuỗi đơn, không phải multi-value array.
+- Các câu mơ hồ có thể làm LLM chọn sai `event_type`, `source` hoặc `message_query`.

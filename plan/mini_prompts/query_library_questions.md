@@ -221,8 +221,105 @@ Nếu chỉ muốn đưa vào modal khoảng 20 câu đầu tiên, chọn bộ n
 18. `Investigate possible brute force activity from China in the last 24h`
 19. `Investigate suspicious outbound and large transfer activity from finance.user in the last 30 days`
 20. `Top 5 IP có nhiều event nhất tháng này`
+21. `Find failed login events for admin or vpn.user in the last 24 hours`
+22. `Show failed login events for admin or finance.user from China in the last 24 hours`
+23. `Show account lockout events for admin or vpn.user in the last 7 days`
+24. `Show windows-auth or vpn events in the last 24 hours`
+25. `Show malware detected events on endpoint-014 or endpoint-023 in the last 30 days`
+26. `Find activity from IP 203.0.113.45 or 198.51.100.200 in the last 30 days`
+27. `Group failed login events by user in the last 7 days`
+28. `Show failed login trend by hour in the last 24 hours`
+29. `Group windows-auth or vpn events by event type in the last 24 hours`
+30. `Show the top 5 users from IP 203.0.113.45 or 198.51.100.200 in the last 30 days`
+31. `Count events from host vpn-gw-01 or dc-01 in the last 24 hours`
+32. `Show failed login trend by hour for admin or vpn.user in the last 24 hours`
 
-## 9. Demo Tips
+## 9. Multi-value Entity Filter Demo Set
+
+Các câu hỏi dưới đây dùng để test chức năng `source`, `user`, `host`, `ip` nhận nhiều giá trị. Nên đưa một vài câu vào popup `Show more suggestions` để mentor thấy hệ thống không chỉ filter một giá trị đơn.
+
+| Category | Question | Expected SearchPlan / UI result |
+| --- | --- | --- |
+| Multi-user search | `Find failed login events for admin or vpn.user in the last 24 hours` | `event_type=["failed_login"]`, `user=["admin","vpn.user"]`, raw event table |
+| Multi-user + country | `Show failed login events for admin or finance.user from China in the last 24 hours` | `event_type=["failed_login"]`, `user=["admin","finance.user"]`, `country_code=["CN"]` |
+| Multi-user account lockout | `Show account lockout events for admin or vpn.user in the last 7 days` | `event_type=["account_lockout"]`, `user=["admin","vpn.user"]` |
+| Multi-source search | `Show windows-auth or vpn events in the last 24 hours` | `source=["windows-auth","vpn"]` |
+| Multi-host search | `Show events from host vpn-gw-01 or dc-01 in the last 24 hours` | `host=["vpn-gw-01","dc-01"]` |
+| Multi-IP search | `Find activity from IP 203.0.113.45 or 198.51.100.200 in the last 30 days` | `ip=["203.0.113.45","198.51.100.200"]` |
+| EDR malware endpoints | `Show malware detected events on endpoint-014 or endpoint-023 in the last 30 days` | `event_type=["malware_detected"]`, `host=["endpoint-014","endpoint-023"]` |
+| SOC source comparison | `Show EDR or proxy events in the last 30 days` | `source=["edr","proxy"]` |
+
+## 10. Chart / Diagram Query Set
+
+Các câu hỏi này nên đưa vào Query Library popup theo category để người dùng chọn nhanh khi muốn xem biểu đồ. Tất cả đều bám vào synthetic dataset hiện tại.
+
+### Group by - bar chart
+
+| Category | Question | Expected |
+| --- | --- | --- |
+| Severity distribution | `Group events by severity in the last 24 hours` | Bar chart by `severity` |
+| Event type distribution | `Group events by event type in the last 7 days` | Bar chart by `event_type` |
+| Failed login by user | `Group failed login events by user in the last 7 days` | Bar chart by `user` |
+| Events by source | `Group events by source in the last 7 days` | Bar chart by `source` |
+| China events by type | `Group China events by event type in the last 24 hours` | Bar chart by `event_type`, filtered `CN` |
+| Malware by host | `Group malware detected events by host in the last 30 days` | Bar chart by `host` |
+
+### Top N - ranked bar chart
+
+| Category | Question | Expected |
+| --- | --- | --- |
+| Top source IPs | `Show the top 5 source IPs with the most events in the last 30 days` | Top 5 bar chart by `ip` |
+| Top users | `Show the top 5 users with the most events in the last 30 days` | Top 5 bar chart by `user` |
+| Top hosts | `Show the top 5 hosts with the most events in the last 30 days` | Top 5 bar chart by `host` |
+| Top event types from China | `Show the top 5 event types from China in the last 24 hours` | Top 5 bar chart by `event_type` |
+| Top failed-login IPs | `Show the top 5 source IPs for failed login events in the last 7 days` | Top 5 bar chart by `ip`, filtered `failed_login` |
+
+### Count - KPI / number result
+
+| Category | Question | Expected |
+| --- | --- | --- |
+| Count all events | `Count all events in the last 24 hours` | Count result |
+| Count critical events | `Count critical events in the last 24 hours` | Count filtered by `critical` |
+| Count failed logins | `Count failed login events in the last 7 days` | Count filtered by `failed_login` |
+| Count China events | `Count events from China in the last 24 hours` | Count filtered by `CN` |
+| Count account lockouts | `Count account lockout events in the last 7 days` | Count filtered by `account_lockout` |
+
+### Time series - line chart
+
+| Category | Question | Expected |
+| --- | --- | --- |
+| Events by hour | `Show events by hour in the last 24 hours` | Line chart |
+| Failed login trend | `Show failed login trend by hour in the last 24 hours` | Line chart filtered by `failed_login` |
+| Critical trend | `Show critical event trend by hour in the last 24 hours` | Line chart filtered by `critical` |
+| Multi-user failed-login trend | `Show failed login trend by hour for admin or vpn.user in the last 24 hours` | Line chart with `user=["admin","vpn.user"]` |
+
+### Multi-filter chart questions
+
+| Category | Question | Expected |
+| --- | --- | --- |
+| Multi-user top IP | `Group failed login events for admin or vpn.user by source IP in the last 24 hours` | Bar chart by `ip`, filtered by two users |
+| Multi-source group by type | `Group windows-auth or vpn events by event type in the last 24 hours` | Bar chart by `event_type`, filtered by two sources |
+| Multi-IP top users | `Show the top 5 users from IP 203.0.113.45 or 198.51.100.200 in the last 30 days` | Top 5 users from two IPs |
+| Multi-host count | `Count events from host vpn-gw-01 or dc-01 in the last 24 hours` | Count with two hosts |
+| Multi-source count | `Count EDR or proxy events in the last 30 days` | Count with two sources |
+
+Recommended tags:
+
+- `MULTI-FILTER`
+- `SEARCH`
+- `ENTITY`
+- `GROUP_BY`
+- `TOP_N`
+- `COUNT`
+- `LINE_CHART`
+
+Ghi chú demo:
+
+- Trong cùng một field, nhiều giá trị là OR, ví dụ `admin OR vpn.user`.
+- Giữa các field khác nhau vẫn là AND, ví dụ `failed_login AND (admin OR vpn.user)`.
+- `message_query` vẫn là một chuỗi đơn, không dùng để demo multi-value ở task này.
+
+## 11. Demo Tips
 
 - Dùng `Top 5` thay vì `Top 10` vì dataset có số IP hữu hạn, chart nhìn gọn hơn.
 - Dùng `last 24h`, `last 7 days`, `last 30 days` để bám sát seed.
@@ -234,7 +331,7 @@ Nếu chỉ muốn đưa vào modal khoảng 20 câu đầu tiên, chọn bộ n
   - malware + EDR;
   - suspicious outbound + finance.user.
 
-## 10. Câu trả lời khi hội đồng hỏi
+## 12. Câu trả lời khi hội đồng hỏi
 
 **Query Library có phải LLM sinh không?**
 
