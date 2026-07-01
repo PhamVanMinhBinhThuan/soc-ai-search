@@ -73,6 +73,7 @@ export type SearchFiltersDto = {
   } | null;
   severity?: Severity[] | null;
   event_type?: string[] | null;
+  source?: string | null;
   user?: string | null;
   host?: string | null;
   ip?: string | null;

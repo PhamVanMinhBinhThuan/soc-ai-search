@@ -9,6 +9,7 @@ import {
   Copy,
   Edit2,
   FileJson2,
+  ListTree,
   Loader2,
   Play,
   RotateCcw,
@@ -24,7 +25,8 @@ import {
   TabsTrigger,
 } from '@/components/ui/tabs'
 import { toUiError } from '@/services/api-error-messages'
-import type { SearchPlanDto } from '@/types/soc'
+import type { ChartMetadataDto, SearchPlanDto } from '@/types/soc'
+import { QueryBreakdown } from './query-breakdown'
 
 function JsonViewer({
   value,
@@ -166,12 +168,14 @@ export function QueryTransparency({
   searchPlan,
   resetSearchPlan,
   generatedDsl,
+  chartMetadata = null,
   canEditPlan = false,
   onRunEditedPlan,
 }: {
   searchPlan: SearchPlanDto
   resetSearchPlan?: SearchPlanDto
   generatedDsl: Record<string, unknown>
+  chartMetadata?: ChartMetadataDto | null
   canEditPlan?: boolean
   onRunEditedPlan?: (plan: SearchPlanDto) => Promise<void>
 }) {
@@ -181,7 +185,7 @@ export function QueryTransparency({
     type: 'plan' | 'dsl'
     status: 'copied' | 'failed'
   } | null>(null)
-  const [activeTab, setActiveTab] = useState('plan')
+  const [activeTab, setActiveTab] = useState('breakdown')
   const [prevSearchPlan, setPrevSearchPlan] = useState(searchPlan)
   const ToggleIcon = expanded ? ChevronUp : ChevronDown
 
@@ -231,6 +235,10 @@ export function QueryTransparency({
         >
           <div className="mb-2 flex items-center justify-between">
             <TabsList className="max-w-full overflow-x-auto">
+              <TabsTrigger value="breakdown">
+                <ListTree />
+                Query Breakdown
+              </TabsTrigger>
               <TabsTrigger value="plan">
                 <FileJson2 />
                 Validated SearchPlan
@@ -260,12 +268,19 @@ export function QueryTransparency({
                   </span>
                 ) : null}
               </>
-            ) : (
+            ) : activeTab === 'dsl' ? (
               <span className="ml-auto hidden items-center rounded-md border border-amber-500/20 bg-amber-500/10 px-2 py-1 text-xs font-medium text-amber-500 sm:inline-flex">
                 Read-only
               </span>
-            )}
+            ) : null}
           </div>
+
+          <TabsContent value="breakdown" className="mt-0 outline-none">
+            <QueryBreakdown
+              searchPlan={searchPlan}
+              chartMetadata={chartMetadata}
+            />
+          </TabsContent>
 
           <TabsContent value="plan" className="mt-0 outline-none">
             {isEditing ? (

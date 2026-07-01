@@ -66,6 +66,12 @@ Component này sẽ hiển thị SearchPlan thành bảng dễ đọc:
 
 Chỉ hiển thị những field có ý nghĩa. Field `null`, empty array, empty string thì không cần render.
 
+Lưu ý type hiện tại:
+
+- `severity`, `event_type`, `country_code` có thể là array.
+- `user`, `host`, `ip`, `source`, `message_query` là single string.
+- Không tự biến single string field thành multi-select/multi-value UI.
+
 ## Yêu cầu chức năng
 
 ### 1. Tạo component dùng chung
@@ -285,6 +291,14 @@ Yêu cầu:
 - Không hiển thị query_id trong Query Breakdown.
 - Không hiển thị latency trong Query Breakdown.
 - Không thay đổi logic Run Again, Pin, Export.
+
+Nếu `searchPlan` hoặc `generatedDsl` null/empty trong Investigation/Audit detail, vẫn giữ đủ 3 tab để UI nhất quán:
+
+- Query Breakdown: `No SearchPlan available to build a query breakdown.`
+- Validated SearchPlan: `No SearchPlan stored for this query.`
+- Compiled DSL: `No compiled DSL stored for this query.`
+
+Không render bảng rỗng, không render `null`, không render `{}` như dữ liệu thật.
 
 ### 6. Hành vi sau edit/filter
 

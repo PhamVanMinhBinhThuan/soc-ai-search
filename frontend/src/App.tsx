@@ -677,6 +677,7 @@ function App() {
                       searchPlan={response.search_plan}
                       resetSearchPlan={originalAiSearchPlan}
                       generatedDsl={response.generated_dsl}
+                      chartMetadata={response.chart_metadata}
                       canEditPlan={canEditPlan}
                       onRunEditedPlan={async (editedPlan) => {
                         searchAbortRef.current?.abort();

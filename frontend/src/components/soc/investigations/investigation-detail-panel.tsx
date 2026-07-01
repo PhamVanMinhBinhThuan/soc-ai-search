@@ -3,8 +3,9 @@ import { Check, Copy, Download, Pin, PinOff, RotateCw, Sparkles, X } from "lucid
 import { cn } from "@/lib/utils"
 import type { SearchHistoryDetailDto } from "@/types/soc"
 import { MetaBadge, ModeBadge, StatusBadge } from "./investigation-badges"
+import { QueryBreakdown } from "../query-breakdown"
 
-type TabKey = "plan" | "dsl"
+type TabKey = "breakdown" | "plan" | "dsl"
 
 function highlight(code: string) {
   const lines = code.split("\n")
@@ -77,11 +78,16 @@ export function InvestigationDetailPanel({
   showExportAction?: boolean
   showLatency?: boolean
 }) {
-  const [tab, setTab] = useState<TabKey>("plan")
+  const [tab, setTab] = useState<TabKey>("breakdown")
   const [copied, setCopied] = useState(false)
 
   const codeObj = tab === "plan" ? item.search_plan : item.generated_dsl
-  const code = codeObj ? JSON.stringify(codeObj, null, 2) : "/* Not available */"
+  const hasCode =
+    tab !== "breakdown" &&
+    codeObj !== null &&
+    codeObj !== undefined &&
+    (!isPlainRecord(codeObj) || Object.keys(codeObj).length > 0)
+  const code = hasCode ? JSON.stringify(codeObj, null, 2) : ""
   const date = new Date(item.created_at)
   const dateStr = date.toLocaleDateString("en-US", { month: "short", day: "numeric" })
   const timeStr = date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })
@@ -89,6 +95,9 @@ export function InvestigationDetailPanel({
   const summary = item.summary?.trim()
 
   async function copyCode() {
+    if (!hasCode) {
+      return
+    }
     try {
       await navigator.clipboard.writeText(code)
       setCopied(true)
@@ -184,6 +193,7 @@ export function InvestigationDetailPanel({
         <div className="mt-4">
           <div className="flex items-center gap-1 border-b border-zinc-800">
             {[
+              { key: "breakdown", label: "Query Breakdown" },
               { key: "plan", label: "Validated SearchPlan" },
               { key: "dsl", label: "Compiled DSL" },
             ].map((t) => (
@@ -202,42 +212,59 @@ export function InvestigationDetailPanel({
             ))}
           </div>
 
-          <div className="relative mt-3 overflow-hidden rounded-lg border border-zinc-800 bg-[#0a0a0c]">
-            <div className="flex items-center justify-between border-b border-zinc-800/80 bg-zinc-900/40 px-3 py-1.5">
-              <div className="flex items-center gap-1.5">
-                <span className="size-2.5 rounded-full bg-rose-500/70" />
-                <span className="size-2.5 rounded-full bg-amber-500/70" />
-                <span className="size-2.5 rounded-full bg-emerald-500/70" />
-                <span className="ml-2 font-mono text-[11px] text-zinc-500">
-                  {tab === "plan" ? "search_plan.json" : "compiled.dsl"}
-                </span>
+          {tab === "breakdown" ? (
+            <QueryBreakdown searchPlan={item.search_plan} className="mt-3" />
+          ) : (
+            <div className="relative mt-3 overflow-hidden rounded-lg border border-zinc-800 bg-[#0a0a0c]">
+              <div className="flex items-center justify-between border-b border-zinc-800/80 bg-zinc-900/40 px-3 py-1.5">
+                <div className="flex items-center gap-1.5">
+                  <span className="size-2.5 rounded-full bg-rose-500/70" />
+                  <span className="size-2.5 rounded-full bg-amber-500/70" />
+                  <span className="size-2.5 rounded-full bg-emerald-500/70" />
+                  <span className="ml-2 font-mono text-[11px] text-zinc-500">
+                    {tab === "plan" ? "search_plan.json" : "compiled.dsl"}
+                  </span>
+                </div>
+                <button
+                  onClick={copyCode}
+                  disabled={!hasCode}
+                  className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px] font-medium text-zinc-400 transition hover:bg-zinc-800 hover:text-zinc-200 disabled:cursor-not-allowed disabled:opacity-50"
+                  aria-label="Copy code"
+                >
+                  {copied ? (
+                    <>
+                      <Check className="size-3.5 text-emerald-400" />
+                      Copied
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="size-3.5" />
+                      Copy
+                    </>
+                  )}
+                </button>
               </div>
-              <button
-                onClick={copyCode}
-                className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px] font-medium text-zinc-400 transition hover:bg-zinc-800 hover:text-zinc-200"
-                aria-label="Copy code"
-              >
-                {copied ? (
-                  <>
-                    <Check className="size-3.5 text-emerald-400" />
-                    Copied
-                  </>
+              <div className="overflow-x-auto p-4">
+                {hasCode ? (
+                  <div className="table font-mono text-[13px] leading-relaxed">
+                    {highlight(code)}
+                  </div>
                 ) : (
-                  <>
-                    <Copy className="size-3.5" />
-                    Copy
-                  </>
+                  <p className="text-sm text-zinc-500">
+                    {tab === "plan"
+                      ? "No SearchPlan stored for this query."
+                      : "No compiled DSL stored for this query."}
+                  </p>
                 )}
-              </button>
-            </div>
-            <div className="overflow-x-auto p-4">
-              <div className="table font-mono text-[13px] leading-relaxed">
-                {highlight(code)}
               </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>
   )
+}
+
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value)
 }
