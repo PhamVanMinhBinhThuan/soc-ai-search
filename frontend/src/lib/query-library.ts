@@ -1,7 +1,7 @@
-// ──────────────────────────────────────────────────────────────────────────────
-// Query Library – static curated SOC investigation questions
+﻿// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Query Library â€“ static curated SOC investigation questions
 // Source: plan/mini_prompts/query_library_questions.md
-// ──────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export type QueryLibraryCategory =
   | 'search'
@@ -29,7 +29,7 @@ export type QueryLibraryItem = {
   tags: string[]
 }
 
-// ── Display helpers ─────────────────────────────────────────────────────────
+// â”€â”€ Display helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export const CATEGORY_LABELS: Record<QueryLibraryCategory, string> = {
   search: 'Search',
@@ -44,16 +44,16 @@ export const CATEGORY_LABELS: Record<QueryLibraryCategory, string> = {
 }
 
 export const BADGE_CLASS_MAP: Record<string, string> = {
-  SEARCH: 'border-cyan-400/30 bg-cyan-500/10 text-cyan-100',
-  AGGREGATION: 'border-violet-400/30 bg-violet-500/10 text-violet-100',
-  COUNT: 'border-emerald-400/30 bg-emerald-500/10 text-emerald-100',
-  'TOP N': 'border-amber-400/30 bg-amber-500/10 text-amber-100',
-  LINE: 'border-sky-400/30 bg-sky-500/10 text-sky-100',
-  BAR: 'border-purple-400/30 bg-purple-500/10 text-purple-100',
-  PLAYBOOK: 'border-rose-400/30 bg-rose-500/10 text-rose-100',
-  'MULTI-FILTER': 'border-slate-400/30 bg-slate-500/10 text-slate-100',
-  'TIME SERIES': 'border-sky-400/30 bg-sky-500/10 text-sky-100',
-  'GROUP BY': 'border-violet-400/30 bg-violet-500/10 text-violet-100',
+  SEARCH: 'border-cyan-500/30 bg-cyan-500/10 text-cyan-300',
+  AGGREGATION: 'border-purple-500/30 bg-purple-500/10 text-purple-300',
+  COUNT: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300',
+  'TOP N': 'border-amber-500/30 bg-amber-500/10 text-amber-300',
+  LINE: 'border-sky-500/30 bg-sky-500/10 text-sky-300',
+  BAR: 'border-fuchsia-500/30 bg-fuchsia-500/10 text-fuchsia-300',
+  PLAYBOOK: 'border-rose-500/30 bg-rose-500/10 text-rose-300',
+  'MULTI-FILTER': 'border-slate-500/30 bg-slate-500/10 text-slate-300',
+  'TIME SERIES': 'border-sky-500/30 bg-sky-500/10 text-sky-300',
+  'GROUP BY': 'border-purple-500/30 bg-purple-500/10 text-purple-300',
 }
 
 export const EXPECTED_VIEW_LABELS: Record<QueryLibraryExpectedView, string> = {
@@ -63,10 +63,10 @@ export const EXPECTED_VIEW_LABELS: Record<QueryLibraryExpectedView, string> = {
   line_chart: 'Line chart',
 }
 
-// ── Data ────────────────────────────────────────────────────────────────────
+// â”€â”€ Data â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export const QUERY_LIBRARY_ITEMS: QueryLibraryItem[] = [
-  // ─── Quick Search ───────────────────────────────────────────────────
+  // â”€â”€â”€ Quick Search â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   {
     id: 'search-failed-login-cn-24h',
     question: 'Show me failed login attempts from China in the last 24h',
@@ -148,19 +148,19 @@ export const QUERY_LIBRARY_ITEMS: QueryLibraryItem[] = [
     tags: ['suspicious_outbound', 'finance.user', '30d'],
   },
 
-  // ─── Count Queries ──────────────────────────────────────────────────
+  // â”€â”€â”€ Count Queries â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   {
     id: 'count-all-24h',
     question: 'Count all events in the last 24 hours',
-    categories: ['count'],
+    categories: ['aggregation', 'count'],
     badges: ['COUNT'],
     expectedView: 'number',
     tags: ['count', '24h'],
   },
   {
     id: 'count-critical-24h',
-    question: 'Count critical events in the last 24h',
-    categories: ['count'],
+    question: 'Count critical events in the last 24 hours',
+    categories: ['aggregation', 'count'],
     badges: ['COUNT'],
     expectedView: 'number',
     tags: ['count', 'critical', '24h'],
@@ -168,7 +168,7 @@ export const QUERY_LIBRARY_ITEMS: QueryLibraryItem[] = [
   {
     id: 'count-failed-login-7d',
     question: 'Count failed login events in the last 7 days',
-    categories: ['count'],
+    categories: ['aggregation', 'count'],
     badges: ['COUNT'],
     expectedView: 'number',
     tags: ['count', 'failed_login', '7d'],
@@ -176,7 +176,7 @@ export const QUERY_LIBRARY_ITEMS: QueryLibraryItem[] = [
   {
     id: 'count-account-lockout-7d',
     question: 'Count account lockout events in the last 7 days',
-    categories: ['count'],
+    categories: ['aggregation', 'count'],
     badges: ['COUNT'],
     expectedView: 'number',
     tags: ['count', 'account_lockout', '7d'],
@@ -184,7 +184,7 @@ export const QUERY_LIBRARY_ITEMS: QueryLibraryItem[] = [
   {
     id: 'count-malware-30d',
     question: 'Count malware detected events in the last 30 days',
-    categories: ['count'],
+    categories: ['aggregation', 'count'],
     badges: ['COUNT'],
     expectedView: 'number',
     tags: ['count', 'malware_detected', '30d'],
@@ -192,7 +192,7 @@ export const QUERY_LIBRARY_ITEMS: QueryLibraryItem[] = [
   {
     id: 'count-firewall-30d',
     question: 'Count firewall block events in the last 30 days',
-    categories: ['count'],
+    categories: ['aggregation', 'count'],
     badges: ['COUNT'],
     expectedView: 'number',
     tags: ['count', 'firewall_block', '30d'],
@@ -200,13 +200,13 @@ export const QUERY_LIBRARY_ITEMS: QueryLibraryItem[] = [
   {
     id: 'count-cn-24h',
     question: 'Count events from China in the last 24 hours',
-    categories: ['count', 'multi_filter'],
+    categories: ['aggregation', 'count', 'multi_filter'],
     badges: ['COUNT', 'MULTI-FILTER'],
     expectedView: 'number',
     tags: ['count', 'CN', '24h'],
   },
 
-  // ─── Group By / Bar Chart ──────────────────────────────────────────
+  // â”€â”€â”€ Group By / Bar Chart â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   {
     id: 'bar-failed-login-by-user-7d',
     question: 'Count failed login attempts by user in the last 7 days',
@@ -217,7 +217,7 @@ export const QUERY_LIBRARY_ITEMS: QueryLibraryItem[] = [
   },
   {
     id: 'bar-events-by-severity-24h',
-    question: 'Group events by severity in the last 24h',
+    question: 'Group events by severity in the last 24 hours',
     categories: ['aggregation', 'bar_chart'],
     badges: ['AGGREGATION', 'BAR', 'GROUP BY'],
     expectedView: 'bar_chart',
@@ -280,19 +280,19 @@ export const QUERY_LIBRARY_ITEMS: QueryLibraryItem[] = [
     tags: ['CN', 'event_type', '24h', 'group by'],
   },
 
-  // ─── Top N ──────────────────────────────────────────────────────────
+  // â”€â”€â”€ Top N â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   {
     id: 'topn-source-ips-30d',
     question: 'Show the top 5 source IPs with the most events in the last 30 days',
-    categories: ['top_n', 'bar_chart'],
+    categories: ['aggregation', 'top_n', 'bar_chart'],
     badges: ['TOP N', 'BAR'],
     expectedView: 'bar_chart',
     tags: ['ip', '30d', 'top 5'],
   },
   {
     id: 'topn-3-source-ips-12d',
-    question: 'Show the top 3 source IPs with the most alerts in the last 12 days',
-    categories: ['top_n', 'bar_chart'],
+    question: 'Show the top 3 source IPs with the most events in the last 12 days',
+    categories: ['aggregation', 'top_n', 'bar_chart'],
     badges: ['TOP N', 'BAR'],
     expectedView: 'bar_chart',
     tags: ['ip', '12d', 'top 3'],
@@ -300,7 +300,7 @@ export const QUERY_LIBRARY_ITEMS: QueryLibraryItem[] = [
   {
     id: 'topn-users-30d',
     question: 'Show the top 5 users with the most events in the last 30 days',
-    categories: ['top_n', 'bar_chart'],
+    categories: ['aggregation', 'top_n', 'bar_chart'],
     badges: ['TOP N', 'BAR'],
     expectedView: 'bar_chart',
     tags: ['user', '30d', 'top 5'],
@@ -308,7 +308,7 @@ export const QUERY_LIBRARY_ITEMS: QueryLibraryItem[] = [
   {
     id: 'topn-hosts-30d',
     question: 'Show the top 5 hosts with the most events in the last 30 days',
-    categories: ['top_n', 'bar_chart'],
+    categories: ['aggregation', 'top_n', 'bar_chart'],
     badges: ['TOP N', 'BAR'],
     expectedView: 'bar_chart',
     tags: ['host', '30d', 'top 5'],
@@ -316,7 +316,7 @@ export const QUERY_LIBRARY_ITEMS: QueryLibraryItem[] = [
   {
     id: 'topn-countries-30d',
     question: 'Show the top 5 countries with the most events in the last 30 days',
-    categories: ['top_n', 'bar_chart'],
+    categories: ['aggregation', 'top_n', 'bar_chart'],
     badges: ['TOP N', 'BAR'],
     expectedView: 'bar_chart',
     tags: ['country_code', '30d', 'top 5'],
@@ -324,7 +324,7 @@ export const QUERY_LIBRARY_ITEMS: QueryLibraryItem[] = [
   {
     id: 'topn-event-types-30d',
     question: 'Show the top 5 event types in the last 30 days',
-    categories: ['top_n', 'bar_chart'],
+    categories: ['aggregation', 'top_n', 'bar_chart'],
     badges: ['TOP N', 'BAR'],
     expectedView: 'bar_chart',
     tags: ['event_type', '30d', 'top 5'],
@@ -332,7 +332,7 @@ export const QUERY_LIBRARY_ITEMS: QueryLibraryItem[] = [
   {
     id: 'topn-cn-event-types-24h',
     question: 'Show the top 5 event types from China in the last 24 hours',
-    categories: ['top_n', 'bar_chart', 'multi_filter'],
+    categories: ['aggregation', 'top_n', 'bar_chart', 'multi_filter'],
     badges: ['TOP N', 'BAR', 'MULTI-FILTER'],
     expectedView: 'bar_chart',
     tags: ['event_type', 'CN', '24h', 'top 5'],
@@ -340,16 +340,16 @@ export const QUERY_LIBRARY_ITEMS: QueryLibraryItem[] = [
   {
     id: 'topn-failed-login-ips-7d',
     question: 'Show the top 5 source IPs for failed login events in the last 7 days',
-    categories: ['top_n', 'bar_chart', 'multi_filter'],
+    categories: ['aggregation', 'top_n', 'bar_chart', 'multi_filter'],
     badges: ['TOP N', 'BAR', 'MULTI-FILTER'],
     expectedView: 'bar_chart',
     tags: ['ip', 'failed_login', '7d', 'top 5'],
   },
 
-  // ─── Time Series / Line Chart ──────────────────────────────────────
+  // â”€â”€â”€ Time Series / Line Chart â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   {
     id: 'line-events-by-hour-24h',
-    question: 'Show events by hour in the last 24h',
+    question: 'Show events by hour in the last 24 hours',
     categories: ['time_series', 'line_chart', 'aggregation'],
     badges: ['AGGREGATION', 'LINE', 'TIME SERIES'],
     expectedView: 'line_chart',
@@ -357,7 +357,7 @@ export const QUERY_LIBRARY_ITEMS: QueryLibraryItem[] = [
   },
   {
     id: 'line-failed-login-trend-24h',
-    question: 'Show failed login trend by hour in the last 24h',
+    question: 'Show failed login trend by hour in the last 24 hours',
     categories: ['time_series', 'line_chart', 'aggregation'],
     badges: ['AGGREGATION', 'LINE', 'TIME SERIES'],
     expectedView: 'line_chart',
@@ -365,7 +365,7 @@ export const QUERY_LIBRARY_ITEMS: QueryLibraryItem[] = [
   },
   {
     id: 'line-critical-trend-24h',
-    question: 'Show critical event trend by hour in the last 24h',
+    question: 'Show critical event trend by hour in the last 24 hours',
     categories: ['time_series', 'line_chart', 'aggregation'],
     badges: ['AGGREGATION', 'LINE', 'TIME SERIES'],
     expectedView: 'line_chart',
@@ -373,7 +373,7 @@ export const QUERY_LIBRARY_ITEMS: QueryLibraryItem[] = [
   },
   {
     id: 'line-firewall-trend-24h',
-    question: 'Show firewall block trend by hour in the last 24h',
+    question: 'Show firewall block trend by hour in the last 24 hours',
     categories: ['time_series', 'line_chart', 'aggregation'],
     badges: ['AGGREGATION', 'LINE', 'TIME SERIES'],
     expectedView: 'line_chart',
@@ -381,7 +381,7 @@ export const QUERY_LIBRARY_ITEMS: QueryLibraryItem[] = [
   },
   {
     id: 'line-malware-trend-24h',
-    question: 'Show malware detected events by hour in the last 24h',
+    question: 'Show malware detected events by hour in the last 24 hours',
     categories: ['time_series', 'line_chart', 'aggregation'],
     badges: ['AGGREGATION', 'LINE', 'TIME SERIES'],
     expectedView: 'line_chart',
@@ -404,7 +404,7 @@ export const QUERY_LIBRARY_ITEMS: QueryLibraryItem[] = [
     tags: ['date_histogram', '36h', 'trend'],
   },
 
-  // ─── Multi-filter (entity) ─────────────────────────────────────────
+  // â”€â”€â”€ Multi-filter (entity) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   {
     id: 'multi-user-failed-login-24h',
     question: 'Find failed login events for admin or vpn.user in the last 24 hours',
@@ -470,7 +470,7 @@ export const QUERY_LIBRARY_ITEMS: QueryLibraryItem[] = [
     tags: ['edr', 'proxy', '30d', 'multi-source'],
   },
 
-  // ─── Multi-filter Chart Queries ────────────────────────────────────
+  // â”€â”€â”€ Multi-filter Chart Queries â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   {
     id: 'multi-user-bar-ip-24h',
     question: 'Group failed login events for admin or vpn.user by source IP in the last 24 hours',
@@ -490,7 +490,7 @@ export const QUERY_LIBRARY_ITEMS: QueryLibraryItem[] = [
   {
     id: 'multi-ip-topn-users-30d',
     question: 'Show the top 5 users from IP 203.0.113.45 or 198.51.100.200 in the last 30 days',
-    categories: ['top_n', 'bar_chart', 'multi_filter'],
+    categories: ['aggregation', 'top_n', 'bar_chart', 'multi_filter'],
     badges: ['TOP N', 'BAR', 'MULTI-FILTER'],
     expectedView: 'bar_chart',
     tags: ['user', '203.0.113.45', '198.51.100.200', '30d', 'top 5'],
@@ -498,7 +498,7 @@ export const QUERY_LIBRARY_ITEMS: QueryLibraryItem[] = [
   {
     id: 'multi-host-count-24h',
     question: 'Count events from host vpn-gw-01 or dc-01 in the last 24 hours',
-    categories: ['count', 'multi_filter'],
+    categories: ['aggregation', 'count', 'multi_filter'],
     badges: ['COUNT', 'MULTI-FILTER'],
     expectedView: 'number',
     tags: ['vpn-gw-01', 'dc-01', '24h', 'count'],
@@ -506,7 +506,7 @@ export const QUERY_LIBRARY_ITEMS: QueryLibraryItem[] = [
   {
     id: 'multi-source-count-30d',
     question: 'Count EDR or proxy events in the last 30 days',
-    categories: ['count', 'multi_filter'],
+    categories: ['aggregation', 'count', 'multi_filter'],
     badges: ['COUNT', 'MULTI-FILTER'],
     expectedView: 'number',
     tags: ['edr', 'proxy', '30d', 'count'],
@@ -514,7 +514,7 @@ export const QUERY_LIBRARY_ITEMS: QueryLibraryItem[] = [
   {
     id: 'multi-user-line-trend-24h',
     question: 'Show failed login trend by hour for admin or vpn.user in the last 24 hours',
-    categories: ['time_series', 'line_chart', 'multi_filter'],
+    categories: ['aggregation', 'time_series', 'line_chart', 'multi_filter'],
     badges: ['LINE', 'TIME SERIES', 'MULTI-FILTER'],
     expectedView: 'line_chart',
     tags: ['failed_login', 'admin', 'vpn.user', '24h', 'trend'],
@@ -528,7 +528,7 @@ export const QUERY_LIBRARY_ITEMS: QueryLibraryItem[] = [
     tags: ['failed_login', 'user', '7d', 'group by'],
   },
 
-  // ─── SOC Playbooks ─────────────────────────────────────────────────
+  // â”€â”€â”€ SOC Playbooks â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   {
     id: 'playbook-brute-force-cn-24h',
     question: 'Investigate possible brute force activity from China in the last 24h',
@@ -578,7 +578,7 @@ export const QUERY_LIBRARY_ITEMS: QueryLibraryItem[] = [
     tags: ['account_lockout', 'failed_login', '7d', 'investigation'],
   },
 
-  // ─── Vietnamese Demo ───────────────────────────────────────────────
+  // â”€â”€â”€ Vietnamese Demo â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   {
     id: 'vi-events-by-hour-24h',
     question: 'Số event theo giờ trong 24h qua',
@@ -590,7 +590,7 @@ export const QUERY_LIBRARY_ITEMS: QueryLibraryItem[] = [
   {
     id: 'vi-top-ip-30d',
     question: 'Top 5 IP có nhiều event nhất tháng này',
-    categories: ['top_n', 'bar_chart'],
+    categories: ['aggregation', 'top_n', 'bar_chart'],
     badges: ['TOP N', 'BAR'],
     expectedView: 'bar_chart',
     tags: ['vietnamese', 'ip', '30d', 'top 5'],
@@ -620,3 +620,4 @@ export const QUERY_LIBRARY_ITEMS: QueryLibraryItem[] = [
     tags: ['vietnamese', 'failed_login', 'user', '7d'],
   },
 ]
+
