@@ -74,14 +74,9 @@ export function FollowUpSuggestions({
           <span className="flex size-8 items-center justify-center rounded-lg bg-violet-500/15 text-violet-200 ring-1 ring-violet-400/25">
             <Sparkles className="size-4" />
           </span>
-          <div>
-            <h2 className="text-sm font-semibold text-foreground">
-              AI Follow-up Suggestions
-            </h2>
-            <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-violet-200">
-              AI
-            </span>
-          </div>
+          <h2 className="text-sm font-semibold text-foreground">
+            Next Investigation Steps
+          </h2>
         </div>
         <div className="grid gap-3 md:grid-cols-3">
           {[0, 1, 2].map((item) => (
@@ -101,18 +96,13 @@ export function FollowUpSuggestions({
 
   return (
     <section className="rounded-2xl border border-border bg-card p-4 shadow-[0_0_30px_-24px_#22d3ee]">
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <span className="flex size-8 items-center justify-center rounded-lg bg-violet-500/15 text-violet-200 ring-1 ring-violet-400/25">
-            <Sparkles className="size-4" />
-          </span>
-          <h2 className="text-sm font-semibold text-foreground">
-            AI Follow-up Suggestions
-          </h2>
-        </div>
-        <span className="rounded-full border border-violet-400/30 bg-violet-500/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-violet-200">
-          AI
+      <div className="mb-3 flex items-center gap-2">
+        <span className="flex size-8 items-center justify-center rounded-lg bg-violet-500/15 text-violet-200 ring-1 ring-violet-400/25">
+          <Sparkles className="size-4" />
         </span>
+        <h2 className="text-sm font-semibold text-foreground">
+          Next Investigation Steps
+        </h2>
       </div>
 
       <div className="grid gap-3 md:grid-cols-3">

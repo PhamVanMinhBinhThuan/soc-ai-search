@@ -795,17 +795,6 @@ function App() {
                       />
                     ) : null}
 
-                    <FollowUpSuggestions
-                      response={response}
-                      question={currentOriginalQuestion()}
-                      enabled={
-                        followUpEligibleQueryId === response.query_id &&
-                        (requestStatus === "success" ||
-                          requestStatus === "empty")
-                      }
-                      onSelectSuggestion={selectFollowUpSuggestion}
-                    />
-
                     <ResultTabs
                       mode={response.mode}
                       activeTab={activeTab}
@@ -835,7 +824,17 @@ function App() {
                       onApplyResultPlan={(plan) =>
                         void runRefinedSearchPlan(plan)
                       }
-                      onSuggestionClick={submitQuestion}
+                    />
+
+                    <FollowUpSuggestions
+                      response={response}
+                      question={currentOriginalQuestion()}
+                      enabled={
+                        followUpEligibleQueryId === response.query_id &&
+                        (requestStatus === "success" ||
+                          requestStatus === "empty")
+                      }
+                      onSelectSuggestion={selectFollowUpSuggestion}
                     />
                   </>
                 ) : null}

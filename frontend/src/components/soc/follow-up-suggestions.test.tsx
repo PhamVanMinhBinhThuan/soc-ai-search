@@ -79,7 +79,8 @@ describe("FollowUpSuggestions", () => {
       />,
     );
 
-    expect(screen.getByText("AI Follow-up Suggestions")).toBeInTheDocument();
+    expect(screen.getByText("Next Investigation Steps")).toBeInTheDocument();
+    expect(screen.queryByText("AI")).not.toBeInTheDocument();
     expect(getFollowUpSuggestions).toHaveBeenCalledTimes(1);
   });
 
@@ -114,6 +115,10 @@ describe("FollowUpSuggestions", () => {
     );
 
     await screen.findByText("Top source IPs");
+    
+    expect(screen.getByText("Next Investigation Steps")).toBeInTheDocument();
+    expect(screen.queryByText("AI")).not.toBeInTheDocument();
+
     fireEvent.click(screen.getByText("Top source IPs"));
 
     expect(onSelectSuggestion).toHaveBeenCalledWith(
@@ -137,7 +142,7 @@ describe("FollowUpSuggestions", () => {
     );
 
     await waitFor(() =>
-      expect(screen.queryByText("AI Follow-up Suggestions")).not.toBeInTheDocument(),
+      expect(screen.queryByText("Next Investigation Steps")).not.toBeInTheDocument(),
     );
   });
 
@@ -152,6 +157,6 @@ describe("FollowUpSuggestions", () => {
     );
 
     expect(getFollowUpSuggestions).not.toHaveBeenCalled();
-    expect(screen.queryByText("AI Follow-up Suggestions")).not.toBeInTheDocument();
+    expect(screen.queryByText("Next Investigation Steps")).not.toBeInTheDocument();
   });
 });
