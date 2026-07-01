@@ -70,13 +70,17 @@ describe("QueryTransparency", () => {
     );
 
     expect(screen.getByText("Correct or Refine Query")).toBeInTheDocument();
+    
+    expect(screen.queryByText(/AI assisted/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Describe what should be corrected or refined/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/AI only updates the question/i)).not.toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText("Correction or refinement note"), {
       target: {
         value: "Add admin or vpn.user and change the time range to 7 days",
       },
     });
-    fireEvent.click(screen.getByRole("button", { name: /apply ai update/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^Refine$/i }));
 
     await waitFor(() =>
       expect(onApplyQueryUpdate).toHaveBeenCalledWith({

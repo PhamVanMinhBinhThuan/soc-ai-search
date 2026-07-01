@@ -23,7 +23,7 @@ Mục tiêu của task này:
 
 - Đổi `AI Follow-up Suggestions` thành `Next Investigation Steps`.
 - Đưa AI suggestions xuống vị trí cuối trang, nơi hiện đang là `Suggested next steps`.
-- Ẩn/xóa phần `Suggested next steps` playbook cũ.
+- Xóa phần render UI `Suggested next steps` playbook cũ.
 - Xóa badge `AI` ở góc phải của AI suggestions.
 - Không đổi backend, không đổi API sinh suggestions.
 
@@ -136,7 +136,7 @@ hoặc refactor tương đương miễn sao code sạch.
 
 Chọn cách ít phá code nhất.
 
-### 4. Ẩn/xóa phần `Suggested next steps` playbook cũ
+### 4. Xóa phần render UI `Suggested next steps` playbook cũ
 
 Trong `frontend/src/components/soc/result-tabs.tsx`, hiện có đoạn render:
 
@@ -149,16 +149,16 @@ Trong `frontend/src/components/soc/result-tabs.tsx`, hiện có đoạn render:
 )}
 ```
 
-Hãy xóa hoặc vô hiệu hóa block này.
+Hãy xóa phần render block này khỏi UI. Không chỉ ẩn bằng CSS, không để lại điều kiện giả kiểu `false && (...)`.
 
 Yêu cầu:
 
 - UI không còn hiển thị title `Suggested next steps`.
 - UI không còn hiển thị các static playbook cards ở cuối result.
-- Nếu prop `suggestions` và `onSuggestionClick` chỉ còn phục vụ block này, cân nhắc xóa khỏi `ResultTabs` props để code sạch.
-- Nếu xóa prop làm lan rộng thay đổi quá nhiều, có thể giữ prop nhưng không render, tuy nhiên nên ưu tiên dọn sạch nếu an toàn.
+- Nếu prop `suggestions` và `onSuggestionClick` chỉ còn phục vụ block này, hãy xóa khỏi `ResultTabs` props và dọn call site tương ứng để code sạch.
+- Nếu dọn prop làm lan rộng thay đổi quá nhiều hoặc có nơi khác còn phụ thuộc, có thể giữ prop tạm thời nhưng tuyệt đối không render UI cũ.
 
-Không xóa `frontend/src/lib/investigation-suggestions.ts` nếu còn được dùng ở nơi khác hoặc nếu xóa làm task phình to. Chỉ cần đảm bảo UI cũ không còn hiện.
+Không bắt buộc xóa `frontend/src/lib/investigation-suggestions.ts` hoặc static data nếu file đó còn được dùng ở nơi khác, hoặc nếu xóa làm task phình to. Trọng tâm của task này là **xóa khỏi UI**, còn dọn data/source file là optional nếu thật sự an toàn.
 
 ### 5. UI của `Next Investigation Steps`
 

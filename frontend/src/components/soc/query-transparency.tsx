@@ -223,23 +223,17 @@ function QueryRefiner({
   }
 
   return (
-    <div className="mt-3 rounded-2xl border border-cyan-400/15 bg-cyan-950/10 p-4">
+    <div className="rounded-2xl border border-cyan-400/15 bg-zinc-950/40 p-4">
       <div className="flex flex-wrap items-start gap-3">
         <div className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-cyan-400/25 bg-cyan-400/10 text-cyan-300">
           <Sparkles className="size-4" />
         </div>
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex h-9 items-center gap-2">
             <h3 className="text-sm font-semibold text-foreground">
               Correct or Refine Query
             </h3>
-            <span className="rounded-full border border-purple-400/25 bg-purple-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-purple-200">
-              AI assisted
-            </span>
           </div>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Describe what should be corrected or refined. The system rewrites the question and reruns the safe SearchPlan pipeline.
-          </p>
         </div>
       </div>
 
@@ -248,9 +242,8 @@ function QueryRefiner({
           value={refinement}
           onChange={(event) => setRefinement(event.target.value)}
           maxLength={500}
-          rows={3}
           placeholder="Example: Change the time range to last 7 days and include vpn.user"
-          className="min-h-24 resize-y rounded-xl border border-border bg-zinc-950/70 px-3 py-2 text-sm text-foreground outline-none transition focus:border-cyan-400/60 focus:ring-2 focus:ring-cyan-400/10"
+          className="min-h-28 resize-y rounded-xl border border-border bg-zinc-950/70 px-3 py-2 text-sm text-foreground outline-none transition focus:border-cyan-400/60 focus:ring-2 focus:ring-cyan-400/10"
           aria-label="Correction or refinement note"
         />
 
@@ -260,10 +253,7 @@ function QueryRefiner({
           </div>
         ) : null}
 
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <span className="text-xs text-muted-foreground">
-            AI only updates the question. SearchPlan and DSL are regenerated and validated by the backend.
-          </span>
+        <div className="flex justify-end gap-2">
           <div className="flex items-center gap-2">
             <Button
               type="button"
@@ -286,7 +276,7 @@ function QueryRefiner({
               ) : (
                 <Sparkles className="mr-2 size-4" />
               )}
-              Apply AI Update
+              Refine
             </Button>
           </div>
         </div>
@@ -417,18 +407,22 @@ export function QueryTransparency({
           </div>
 
           <TabsContent value="breakdown" className="mt-0 outline-none">
-            <QueryBreakdown
-              searchPlan={searchPlan}
-              chartMetadata={chartMetadata}
-            />
-            {onApplyQueryUpdate && currentQuestion ? (
-              <QueryRefiner
-                originalQuestion={originalQuestion ?? currentQuestion}
-                currentQuestion={currentQuestion}
+            <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(22rem,28rem)]">
+              <QueryBreakdown
                 searchPlan={searchPlan}
-                onApplyQueryUpdate={onApplyQueryUpdate}
+                chartMetadata={chartMetadata}
               />
-            ) : null}
+              {onApplyQueryUpdate && currentQuestion ? (
+                <div>
+                  <QueryRefiner
+                    originalQuestion={originalQuestion ?? currentQuestion}
+                    currentQuestion={currentQuestion}
+                    searchPlan={searchPlan}
+                    onApplyQueryUpdate={onApplyQueryUpdate}
+                  />
+                </div>
+              ) : null}
+            </div>
           </TabsContent>
 
           <TabsContent value="plan" className="mt-0 outline-none">
