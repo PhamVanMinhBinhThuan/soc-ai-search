@@ -64,7 +64,7 @@ export function mockScenarioToResponse(
 
   return {
     query_id: `00000000-0000-4000-8000-${String(scenarioIndex + 1).padStart(12, '0')}`,
-    original_question: request.question,
+    original_question: request.audit_question ?? request.question,
     mode: scenario.mode,
     search_plan: {
       ...structuredClone(scenario.search_plan),

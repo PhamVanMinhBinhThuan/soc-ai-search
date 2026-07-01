@@ -11,6 +11,7 @@ import jakarta.validation.constraints.Size;
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public record NaturalLanguageSearchRequest(
         @NotBlank @Size(max = 500) String question,
+        @Size(max = 1500) String auditQuestion,
         @NotNull @Min(0) Integer page,
         @NotNull @Min(1) @Max(100) Integer size) {
 }

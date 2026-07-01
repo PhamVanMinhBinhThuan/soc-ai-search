@@ -12,6 +12,7 @@ import {
   ListTree,
   Loader2,
   Play,
+  Sparkles,
   RotateCcw,
 } from 'lucide-react'
 import { useState } from 'react'
@@ -25,6 +26,7 @@ import {
   TabsTrigger,
 } from '@/components/ui/tabs'
 import { toUiError } from '@/services/api-error-messages'
+import { refineQuery } from '@/services/query-refinement-api'
 import type { ChartMetadataDto, SearchPlanDto } from '@/types/soc'
 import { QueryBreakdown } from './query-breakdown'
 
@@ -164,20 +166,159 @@ function SearchPlanEditor({
   )
 }
 
+function QueryRefiner({
+  originalQuestion,
+  currentQuestion,
+  searchPlan,
+  onApplyQueryUpdate,
+}: {
+  originalQuestion: string
+  currentQuestion: string
+  searchPlan: SearchPlanDto
+  onApplyQueryUpdate?: (params: {
+    rewrittenQuestion: string
+    feedback: string
+    originalQuestion: string
+  }) => void
+}) {
+  const [refinement, setRefinement] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [isRefining, setIsRefining] = useState(false)
+
+  const handleRefine = async () => {
+    if (!refinement.trim()) {
+      setError('Describe how you want to refine this query.')
+      return
+    }
+
+    const feedback = refinement.trim()
+    setIsRefining(true)
+    setError(null)
+
+    try {
+      const response = await refineQuery({
+        original_question: originalQuestion,
+        current_question: currentQuestion,
+        current_search_plan: searchPlan,
+        refinement: feedback,
+      })
+      onApplyQueryUpdate?.({
+        rewrittenQuestion: response.rewritten_question,
+        feedback,
+        originalQuestion,
+      })
+    } catch (err) {
+      const uiError = toUiError(err)
+      setError(
+        [uiError.message, ...uiError.errors].filter(Boolean).join(' '),
+      )
+    } finally {
+      setIsRefining(false)
+    }
+  }
+
+  const reset = () => {
+    setRefinement('')
+    setError(null)
+  }
+
+  return (
+    <div className="mt-3 rounded-2xl border border-cyan-400/15 bg-cyan-950/10 p-4">
+      <div className="flex flex-wrap items-start gap-3">
+        <div className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-cyan-400/25 bg-cyan-400/10 text-cyan-300">
+          <Sparkles className="size-4" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="text-sm font-semibold text-foreground">
+              Correct or Refine Query
+            </h3>
+            <span className="rounded-full border border-purple-400/25 bg-purple-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-purple-200">
+              AI assisted
+            </span>
+          </div>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Describe what should be corrected or refined. The system rewrites the question and reruns the safe SearchPlan pipeline.
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-3 grid gap-3">
+        <textarea
+          value={refinement}
+          onChange={(event) => setRefinement(event.target.value)}
+          maxLength={500}
+          rows={3}
+          placeholder="Example: Change the time range to last 7 days and include vpn.user"
+          className="min-h-24 resize-y rounded-xl border border-border bg-zinc-950/70 px-3 py-2 text-sm text-foreground outline-none transition focus:border-cyan-400/60 focus:ring-2 focus:ring-cyan-400/10"
+          aria-label="Correction or refinement note"
+        />
+
+        {error ? (
+          <div className="rounded-xl border border-rose-400/25 bg-rose-950/20 px-3 py-2 text-sm text-rose-200">
+            {error}
+          </div>
+        ) : null}
+
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <span className="text-xs text-muted-foreground">
+            AI only updates the question. SearchPlan and DSL are regenerated and validated by the backend.
+          </span>
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={reset}
+              disabled={isRefining || !refinement.trim()}
+            >
+              Reset
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => void handleRefine()}
+              disabled={isRefining || !refinement.trim()}
+              className="bg-cyan-600 text-white hover:bg-cyan-700 disabled:bg-cyan-600/50"
+            >
+              {isRefining ? (
+                <Loader2 className="mr-2 size-4 animate-spin" />
+              ) : (
+                <Sparkles className="mr-2 size-4" />
+              )}
+              Apply AI Update
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export function QueryTransparency({
   searchPlan,
   resetSearchPlan,
   generatedDsl,
   chartMetadata = null,
   canEditPlan = false,
+  currentQuestion,
+  originalQuestion,
   onRunEditedPlan,
+  onApplyQueryUpdate,
 }: {
   searchPlan: SearchPlanDto
   resetSearchPlan?: SearchPlanDto
   generatedDsl: Record<string, unknown>
   chartMetadata?: ChartMetadataDto | null
   canEditPlan?: boolean
+  currentQuestion?: string
+  originalQuestion?: string
   onRunEditedPlan?: (plan: SearchPlanDto) => Promise<void>
+  onApplyQueryUpdate?: (params: {
+    rewrittenQuestion: string
+    feedback: string
+    originalQuestion: string
+  }) => void
 }) {
   const [expanded, setExpanded] = useState(true)
   const [isEditing, setIsEditing] = useState(false)
@@ -280,6 +421,14 @@ export function QueryTransparency({
               searchPlan={searchPlan}
               chartMetadata={chartMetadata}
             />
+            {onApplyQueryUpdate && currentQuestion ? (
+              <QueryRefiner
+                originalQuestion={originalQuestion ?? currentQuestion}
+                currentQuestion={currentQuestion}
+                searchPlan={searchPlan}
+                onApplyQueryUpdate={onApplyQueryUpdate}
+              />
+            ) : null}
           </TabsContent>
 
           <TabsContent value="plan" className="mt-0 outline-none">

@@ -112,6 +112,7 @@ export type ChartMetadataDto = {
 
 export type NaturalLanguageSearchRequestDto = {
   question: string;
+  audit_question?: string;
   page: number;
   size: number;
 };

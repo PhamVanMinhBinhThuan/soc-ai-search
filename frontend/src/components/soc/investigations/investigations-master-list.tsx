@@ -1,4 +1,5 @@
 import { ChevronLeft, ChevronRight, Search, Star } from "lucide-react"
+import { formatQuestionForList } from "@/lib/audit-question-format"
 import { cn } from "@/lib/utils"
 import type { SearchHistoryItemDto } from "@/types/soc"
 import { ModeBadge, StatusBadge } from "./investigation-badges"
@@ -160,7 +161,7 @@ export function InvestigationsMasterList({
                     </td>
                     <td className="px-3 py-3">
                       <span className="line-clamp-1 text-sm font-medium text-zinc-200">
-                        {item.question}
+                        {formatQuestionForList(item.question)}
                       </span>
                     </td>
                     <td className="whitespace-nowrap px-3 py-3 text-right font-mono text-xs text-zinc-400">
@@ -229,7 +230,7 @@ export function InvestigationsMasterList({
                         isActive ? "text-zinc-100" : "text-zinc-300",
                       )}
                     >
-                      {item.question}
+                      {formatQuestionForList(item.question)}
                     </p>
                     <div className="flex flex-wrap items-center gap-1.5">
                       <ModeBadge mode={item.mode} />

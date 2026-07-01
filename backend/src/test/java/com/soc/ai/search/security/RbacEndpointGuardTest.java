@@ -42,6 +42,10 @@ import com.soc.ai.search.search.execution.SearchPlanExecutor;
 import com.soc.ai.search.search.execution.SearchPlanSearchResponse;
 import com.soc.ai.search.search.plan.SearchMode;
 import com.soc.ai.search.search.plan.SearchPlan;
+import com.soc.ai.search.search.refine.QueryRefinementController;
+import com.soc.ai.search.search.refine.QueryRefinementRequest;
+import com.soc.ai.search.search.refine.QueryRefinementResponse;
+import com.soc.ai.search.search.refine.QueryRefinementService;
 import com.soc.ai.search.summary.ResultSummaryService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -60,7 +64,8 @@ import org.springframework.test.web.servlet.request.RequestPostProcessor;
         EventController.class,
         CsvExportController.class,
         AuditQueryController.class,
-        SearchController.class
+        SearchController.class,
+        QueryRefinementController.class
 })
 @Import(SecurityConfig.class)
 @TestPropertySource(properties = "app.auth.enabled=true")
@@ -96,6 +101,9 @@ class RbacEndpointGuardTest {
     private QueryIdGenerator queryIdGenerator;
 
     @MockitoBean
+    private QueryRefinementService queryRefinementService;
+
+    @MockitoBean
     private JwtDecoder jwtDecoder;
 
     @BeforeEach
@@ -124,6 +132,19 @@ class RbacEndpointGuardTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.mode").value("search"))
                 .andExpect(jsonPath("$.events[0].event_id").value("seed-42-1"));
+    }
+
+    @Test
+    void viewerCanPreviewQueryRefinement() throws Exception {
+        when(queryRefinementService.refine(any(QueryRefinementRequest.class)))
+                .thenReturn(new QueryRefinementResponse("Show failed login events in the last 7 days", "gemini", 10));
+
+        mockMvc.perform(post("/api/v1/search/refine")
+                        .with(role(RoleNames.ROLE_VIEWER))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(queryRefinementJson()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.rewritten_question").value("Show failed login events in the last 7 days"));
     }
 
     @Test
@@ -320,6 +341,26 @@ class RbacEndpointGuardTest {
                   },
                   "page": 0,
                   "size": 20
+                }
+                """;
+    }
+
+    private String queryRefinementJson() {
+        return """
+                {
+                  "original_question": "Show failed login events from China in the last 24h",
+                  "current_question": "Show failed login events from China in the last 24h",
+                  "current_search_plan": {
+                    "mode": "search",
+                    "filters": {
+                      "timestamp": { "from": "now-24h", "to": "now" },
+                      "event_type": ["failed_login"],
+                      "country_code": ["CN"]
+                    },
+                    "page": 0,
+                    "size": 20
+                  },
+                  "refinement": "Make it 7 days"
                 }
                 """;
     }

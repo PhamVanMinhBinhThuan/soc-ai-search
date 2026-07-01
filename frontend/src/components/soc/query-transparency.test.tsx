@@ -1,6 +1,6 @@
 import "@testing-library/jest-dom/vitest";
 
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { QueryTransparency } from "@/components/soc/query-transparency";
@@ -8,6 +8,15 @@ import type { SearchPlanDto } from "@/types/soc";
 
 vi.mock("@uiw/react-codemirror", () => ({
   default: () => <textarea aria-label="SearchPlan editor" />,
+}));
+
+vi.mock("@/services/query-refinement-api", () => ({
+  refineQuery: vi.fn(async () => ({
+    rewritten_question:
+      "Show failed login events from China for admin or vpn.user in the last 7 days",
+    source: "gemini",
+    latency_ms: 12,
+  })),
 }));
 
 afterEach(() => cleanup());
@@ -45,5 +54,37 @@ describe("QueryTransparency", () => {
       "Compiled DSL",
     ]);
     expect(screen.getByText("Event logs table")).toBeInTheDocument();
+  });
+
+  it("applies an AI query correction and reruns the safe search flow", async () => {
+    const onApplyQueryUpdate = vi.fn();
+
+    render(
+      <QueryTransparency
+        searchPlan={searchPlan}
+        generatedDsl={{ query: { match_all: {} } }}
+        currentQuestion="Show failed login events from China in the last 24h"
+        originalQuestion="Show failed login events from China in the last 24h"
+        onApplyQueryUpdate={onApplyQueryUpdate}
+      />,
+    );
+
+    expect(screen.getByText("Correct or Refine Query")).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("Correction or refinement note"), {
+      target: {
+        value: "Add admin or vpn.user and change the time range to 7 days",
+      },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /apply ai update/i }));
+
+    await waitFor(() =>
+      expect(onApplyQueryUpdate).toHaveBeenCalledWith({
+        rewrittenQuestion:
+          "Show failed login events from China for admin or vpn.user in the last 7 days",
+        feedback: "Add admin or vpn.user and change the time range to 7 days",
+        originalQuestion: "Show failed login events from China in the last 24h",
+      }),
+    );
   });
 });

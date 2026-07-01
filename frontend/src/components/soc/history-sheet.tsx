@@ -25,6 +25,7 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet'
 import { Skeleton } from '@/components/ui/skeleton'
+import { formatQuestionForList } from '@/lib/audit-question-format'
 import { cn } from '@/lib/utils'
 import type {
   HistoryStatus,
@@ -96,6 +97,7 @@ function HistoryItem({
     item.result_count === null
       ? 'No result count'
       : `${item.result_count.toLocaleString('en-US')} results`
+  const displayQuestion = formatQuestionForList(item.question)
 
   const runAgain = () => onRunAgain(item)
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
@@ -116,12 +118,12 @@ function HistoryItem({
       onClick={runAgain}
       onKeyDown={handleKeyDown}
       className="group w-full cursor-pointer rounded-xl border border-zinc-800/50 bg-zinc-900/30 p-4 text-left transition-all duration-300 hover:border-zinc-700/80 hover:bg-zinc-800/40 hover:shadow-sm focus-visible:ring-2 focus-visible:ring-cyan-400/55 focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none active:scale-[0.99]"
-      aria-label={`Run query again: ${item.question}`}
+      aria-label={`Run query again: ${displayQuestion}`}
     >
       <div className="flex min-w-0 items-start gap-4">
         <div className="min-w-0 flex-1">
           <p className="line-clamp-2 text-sm font-medium text-zinc-200 transition-colors group-hover:text-zinc-100">
-            {item.question}
+            {displayQuestion}
           </p>
 
           <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-2">
@@ -169,7 +171,7 @@ function HistoryItem({
         <button
           type="button"
           title="Run this query again"
-          aria-label={`Run this query again: ${item.question}`}
+          aria-label={`Run this query again: ${displayQuestion}`}
           onClick={handleActionClick}
           className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-full text-zinc-500 opacity-80 transition-all duration-300 hover:bg-cyan-500/20 hover:text-cyan-300 hover:opacity-100 focus-visible:ring-2 focus-visible:ring-cyan-400/55 focus-visible:outline-none group-hover:bg-cyan-500/10 group-hover:text-cyan-400 group-hover:opacity-100"
         >

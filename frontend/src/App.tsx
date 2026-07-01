@@ -32,6 +32,10 @@ import {
 } from "@/components/soc/search-status";
 import { SocSidebar } from "@/components/soc/soc-sidebar";
 import { Button } from "@/components/ui/button";
+import {
+  buildAiCorrectedAuditQuestion,
+  parseAiCorrectedQuestion,
+} from "@/lib/audit-question-format";
 import { initialScenario, mockScenarios } from "@/lib/mock-data";
 import { downloadMockCsv } from "@/lib/mock-presentation";
 import { setAccessTokenProvider } from "@/services/api-client";
@@ -62,6 +66,11 @@ const DEFAULT_SEARCH_PAGE_SIZE = 10;
 const HISTORY_PAGE_SIZE = 5;
 
 function stripAuditQuestionPrefix(value: string) {
+  const aiCorrected = parseAiCorrectedQuestion(value);
+  if (aiCorrected) {
+    return aiCorrected.original;
+  }
+
   const marker = "Original question:";
   const markerIndex = value.indexOf(marker);
   if (markerIndex === -1) {
@@ -354,9 +363,10 @@ function App() {
     void loadEventDetail(eventId);
   };
 
-  const submitQuestion = (nextQuestion: string) => {
+  const submitQuestion = (nextQuestion: string, auditQuestion?: string) => {
     void executeSearch({
       question: nextQuestion,
+      audit_question: auditQuestion,
       page: 0,
       size:
         response?.size ?? submittedRequest?.size ?? DEFAULT_SEARCH_PAGE_SIZE,
@@ -509,11 +519,13 @@ function App() {
   };
 
   const runHistoryItem = (item: SearchHistoryItemDto) => {
+    const aiCorrected = parseAiCorrectedQuestion(item.question);
+    const runnableQuestion = aiCorrected?.rewritten ?? item.question;
     historyOpenRef.current = false;
     setHistoryOpen(false);
-    setQuestion(item.question);
+    setQuestion(runnableQuestion);
     void executeSearch({
-      question: item.question,
+      question: runnableQuestion,
       page: 0,
       size:
         response?.size ?? submittedRequest?.size ?? DEFAULT_SEARCH_PAGE_SIZE,
@@ -679,6 +691,22 @@ function App() {
                       generatedDsl={response.generated_dsl}
                       chartMetadata={response.chart_metadata}
                       canEditPlan={canEditPlan}
+                      currentQuestion={currentOriginalQuestion()}
+                      originalQuestion={currentOriginalQuestion()}
+                      onApplyQueryUpdate={({
+                        rewrittenQuestion,
+                        feedback,
+                        originalQuestion,
+                      }) =>
+                        submitQuestion(
+                          rewrittenQuestion,
+                          buildAiCorrectedAuditQuestion({
+                            original: originalQuestion,
+                            feedback,
+                            rewritten: rewrittenQuestion,
+                          }),
+                        )
+                      }
                       onRunEditedPlan={async (editedPlan) => {
                         searchAbortRef.current?.abort();
                         exportAbortRef.current?.abort();

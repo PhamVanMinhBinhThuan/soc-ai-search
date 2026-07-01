@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react"
 import { ChevronLeft, ChevronRight, Download, Search, ShieldAlert, ShieldCheck, Lightbulb } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { formatQuestionForList } from "@/lib/audit-question-format"
 import { downloadCsvBlob } from "@/services/csv-export-api"
 import { exportAuditLogs, getAuditLogs, getSearchHistoryDetail } from "@/services/history-api"
 import type { AuditLogItem, SearchHistoryDetailDto } from "@/types/soc"
@@ -206,7 +207,7 @@ export function AuditLogsPage() {
                         <span className="font-sans text-zinc-400">{item.user_identity}</span>
                       </div>
                       <p className={cn("mb-2 line-clamp-2 text-sm font-medium leading-snug text-pretty", isActive ? "text-zinc-100" : "text-zinc-300")}>
-                        {item.question}
+                        {formatQuestionForList(item.question)}
                       </p>
                       <div className="flex flex-wrap items-center gap-1.5">
                         <ModeBadge mode={item.mode} />
@@ -252,7 +253,7 @@ export function AuditLogsPage() {
                         <td className="px-3 py-3 text-sm text-zinc-300">{item.user_identity}</td>
                         <td className="px-3 py-3">
                           <span className="line-clamp-2 text-sm font-medium text-zinc-200">
-                            {item.question}
+                            {formatQuestionForList(item.question)}
                           </span>
                         </td>
                         <td className="whitespace-nowrap px-3 py-3 text-right font-mono text-xs text-zinc-400">

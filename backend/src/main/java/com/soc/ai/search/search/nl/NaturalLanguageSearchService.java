@@ -133,7 +133,7 @@ public class NaturalLanguageSearchService {
 
         return new NaturalLanguageSearchResponse(
                 queryId,
-                request.question(),
+                auditQuestion(request),
                 searchResponse.mode(),
                 searchPlan,
                 searchResponse.generatedDsl(),
@@ -168,7 +168,7 @@ public class NaturalLanguageSearchService {
 
         return new NaturalLanguageSearchResponse(
                 queryId,
-                request.question(),
+                auditQuestion(request),
                 aggregationResponse.mode(),
                 searchPlan,
                 aggregationResponse.generatedDsl(),
@@ -196,7 +196,7 @@ public class NaturalLanguageSearchService {
         try {
             searchAuditService.saveSuccess(
                     queryId,
-                    request.question(),
+                    auditQuestion(request),
                     searchPlan,
                     response.generatedDsl(),
                     response.total(),
@@ -216,7 +216,7 @@ public class NaturalLanguageSearchService {
         try {
             searchAuditService.saveFailure(
                     queryId,
-                    request.question(),
+                    auditQuestion(request),
                     searchPlan,
                     null,
                     elapsedMs(startedAt),
@@ -231,6 +231,13 @@ public class NaturalLanguageSearchService {
 
     private SearchPlan parseWithRequestPagination(String rawContent, NaturalLanguageSearchRequest request) {
         return searchPlanJsonParser.parseWithPaginationOverride(rawContent, request.page(), request.size());
+    }
+
+    private String auditQuestion(NaturalLanguageSearchRequest request) {
+        if (request.auditQuestion() != null && !request.auditQuestion().isBlank()) {
+            return request.auditQuestion().trim();
+        }
+        return request.question();
     }
 
     private SearchPlan parseRepairedOutput(String rawContent, NaturalLanguageSearchRequest request) {

@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.soc.ai.search.llm.LlmClient;
 import com.soc.ai.search.llm.LlmProperties;
+import com.soc.ai.search.llm.LlmQuestionRefinementRequest;
 import com.soc.ai.search.llm.LlmResponse;
 import com.soc.ai.search.llm.LlmSearchPlanRequest;
 import com.soc.ai.search.llm.LlmSummaryRequest;
@@ -117,6 +118,30 @@ public class GeminiLlmClient implements LlmClient {
             throw new GeminiLlmException("Gemini summary request timed out or is unavailable", exception);
         } catch (RestClientException exception) {
             throw new GeminiLlmException("Gemini summary request failed", exception);
+        }
+    }
+
+    @Override
+    public LlmResponse generateRefinedQuestion(LlmQuestionRefinementRequest request) {
+        validateConfiguration();
+        var startedAt = System.nanoTime();
+
+        try {
+            var responseJson = callGemini(
+                    summaryRestClient,
+                    request.systemPrompt(),
+                    request.userContent(),
+                    false);
+            return new LlmResponse(
+                    extractText(responseJson),
+                    extractModel(responseJson),
+                    elapsedMs(startedAt));
+        } catch (RestClientResponseException exception) {
+            throw mapResponseException(exception);
+        } catch (ResourceAccessException exception) {
+            throw new GeminiLlmException("Gemini query refinement request timed out or is unavailable", exception);
+        } catch (RestClientException exception) {
+            throw new GeminiLlmException("Gemini query refinement request failed", exception);
         }
     }
 

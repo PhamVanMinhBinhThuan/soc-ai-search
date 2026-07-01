@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { Check, Copy, Download, Pin, PinOff, RotateCw, Sparkles, X } from "lucide-react"
+import { parseAiCorrectedQuestion } from "@/lib/audit-question-format"
 import { cn } from "@/lib/utils"
 import type { SearchHistoryDetailDto } from "@/types/soc"
 import { MetaBadge, ModeBadge, StatusBadge } from "./investigation-badges"
@@ -93,6 +94,7 @@ export function InvestigationDetailPanel({
   const timeStr = date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })
   const fullTimeStr = `${dateStr} ${timeStr}`
   const summary = item.summary?.trim()
+  const aiCorrectedQuestion = parseAiCorrectedQuestion(item.question)
 
   async function copyCode() {
     if (!hasCode) {
@@ -112,7 +114,7 @@ export function InvestigationDetailPanel({
       <div className="flex items-start justify-between gap-4 border-b border-zinc-800 p-4">
         <div className="min-w-0">
           <h2 className="text-balance text-lg font-semibold leading-tight text-zinc-100">
-            {item.question}
+            {aiCorrectedQuestion ? "[AI Corrected]" : item.question}
           </h2>
           <p className="mt-1 font-mono text-xs text-zinc-500">
             {showQueryId ? `${item.query_id} · ${fullTimeStr}` : fullTimeStr}
@@ -163,6 +165,28 @@ export function InvestigationDetailPanel({
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto p-4">
+        {aiCorrectedQuestion ? (
+          <div className="mb-4 grid gap-2 rounded-lg border border-cyan-500/20 bg-cyan-500/[0.04] p-3 text-sm">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-cyan-300">
+                Original question
+              </p>
+              <p className="mt-1 text-zinc-200">{aiCorrectedQuestion.original}</p>
+            </div>
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-cyan-300">
+                Feedback
+              </p>
+              <p className="mt-1 text-zinc-200">{aiCorrectedQuestion.feedback}</p>
+            </div>
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-cyan-300">
+                Rewritten question
+              </p>
+              <p className="mt-1 text-zinc-200">{aiCorrectedQuestion.rewritten}</p>
+            </div>
+          </div>
+        ) : null}
         <div className="flex flex-wrap items-center gap-2">
           <ModeBadge mode={item.mode} />
           <StatusBadge status={item.status} />

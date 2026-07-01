@@ -6,6 +6,7 @@ import java.util.regex.Pattern;
 
 import com.soc.ai.search.llm.LlmClient;
 import com.soc.ai.search.llm.LlmProperties;
+import com.soc.ai.search.llm.LlmQuestionRefinementRequest;
 import com.soc.ai.search.llm.LlmResponse;
 import com.soc.ai.search.llm.LlmSearchPlanRequest;
 import com.soc.ai.search.llm.LlmSummaryRequest;
@@ -38,6 +39,22 @@ public class MockLlmClient implements LlmClient {
                 + "Analysts should use the displayed events and generated query details for further investigation.";
         var latencyMs = (System.nanoTime() - startedAt) / 1_000_000;
         return new LlmResponse(summary, properties.effectiveModel(), latencyMs);
+    }
+
+    @Override
+    public LlmResponse generateRefinedQuestion(LlmQuestionRefinementRequest request) {
+        var startedAt = System.nanoTime();
+        var normalized = normalize(request.userContent());
+        String question;
+        if (normalized.contains("vpn.user") && (normalized.contains("7 day") || normalized.contains("7 days"))) {
+            question = "Show failed login events from China for admin or vpn.user in the last 7 days";
+        } else if (normalized.contains("critical") && normalized.contains("high")) {
+            question = "Show critical or high severity events in the last 24 hours";
+        } else {
+            question = "Show failed login events from China in the last 24 hours";
+        }
+        var latencyMs = (System.nanoTime() - startedAt) / 1_000_000;
+        return new LlmResponse(question, properties.effectiveModel(), latencyMs);
     }
 
     private String contentFor(String question) {

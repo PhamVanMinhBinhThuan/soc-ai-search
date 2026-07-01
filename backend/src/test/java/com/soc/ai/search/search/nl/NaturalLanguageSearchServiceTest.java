@@ -67,7 +67,7 @@ class NaturalLanguageSearchServiceTest {
         when(executor.search(any(SearchPlan.class))).thenReturn(searchResponse(0, 5, 30));
         var service = service(new MockLlmClient(mockProperties()), executor);
 
-        var response = service.search(new NaturalLanguageSearchRequest("failed login china", 0, 5));
+        var response = service.search(new NaturalLanguageSearchRequest("failed login china", null, 0, 5));
 
         assertThat(response.queryId()).isEqualTo(queryId);
         assertThat(response.originalQuestion()).isEqualTo("failed login china");
@@ -101,7 +101,7 @@ class NaturalLanguageSearchServiceTest {
         when(executor.search(any(SearchPlan.class))).thenReturn(searchResponse(0, 5, 30));
         var service = service(new MockLlmClient(mockProperties()), executor);
 
-        var response = service.search(new NaturalLanguageSearchRequest(question, 0, 5));
+        var response = service.search(new NaturalLanguageSearchRequest(question, null, 0, 5));
 
         assertThat(response.originalQuestion()).isEqualTo(question);
         assertThat(response.searchPlan().mode()).isEqualTo(SearchMode.SEARCH);
@@ -126,7 +126,7 @@ class NaturalLanguageSearchServiceTest {
         when(executor.aggregate(any(SearchPlan.class))).thenReturn(aggregationResponse(expected.type()));
         var service = service(new MockLlmClient(mockProperties()), executor);
 
-        var response = service.search(new NaturalLanguageSearchRequest(question, 0, 5));
+        var response = service.search(new NaturalLanguageSearchRequest(question, null, 0, 5));
 
         assertThat(response.originalQuestion()).isEqualTo(question);
         assertThat(response.mode()).isEqualTo(SearchMode.AGGREGATION);
@@ -166,7 +166,7 @@ class NaturalLanguageSearchServiceTest {
         when(executor.search(any(SearchPlan.class))).thenReturn(searchResponse(0, 5, 11));
         var service = service(llmClient, executor);
 
-        var response = service.search(new NaturalLanguageSearchRequest("failed login", 0, 5));
+        var response = service.search(new NaturalLanguageSearchRequest("failed login", null, 0, 5));
 
         var planCaptor = ArgumentCaptor.forClass(SearchPlan.class);
         verify(executor).search(planCaptor.capture());
@@ -174,6 +174,48 @@ class NaturalLanguageSearchServiceTest {
         assertThat(planCaptor.getValue().size()).isEqualTo(5);
         assertThat(response.searchPlan().size()).isEqualTo(5);
         assertThat(response.size()).isEqualTo(5);
+    }
+
+    @Test
+    void optionalAuditQuestionOverridesStoredAndReturnedQuestionOnly() {
+        var llmClient = org.mockito.Mockito.mock(LlmClient.class);
+        var executor = org.mockito.Mockito.mock(SearchPlanExecutor.class);
+        when(llmClient.generateSearchPlan(any(LlmSearchPlanRequest.class))).thenReturn(new LlmResponse("""
+                {
+                  "mode": "search",
+                  "filters": {
+                    "event_type": ["failed_login"]
+                  },
+                  "page": 0,
+                  "size": 5
+                }
+                """, "mock", 7));
+        when(executor.search(any(SearchPlan.class))).thenReturn(searchResponse(0, 5, 11));
+        var service = service(llmClient, executor);
+        var auditQuestion = "[AI Corrected] Original question: failed login | Feedback: make it 7 days | Rewritten question: failed login in the last 7 days";
+
+        var response = service.search(new NaturalLanguageSearchRequest(
+                "failed login in the last 7 days",
+                auditQuestion,
+                0,
+                5));
+
+        assertThat(response.originalQuestion()).isEqualTo(auditQuestion);
+
+        var llmRequestCaptor = ArgumentCaptor.forClass(LlmSearchPlanRequest.class);
+        verify(llmClient).generateSearchPlan(llmRequestCaptor.capture());
+        assertThat(llmRequestCaptor.getValue().userQuestion())
+                .contains("failed login in the last 7 days")
+                .doesNotContain("[AI Corrected]");
+
+        verify(searchAuditService).saveSuccess(
+                eq(queryId),
+                eq(auditQuestion),
+                eq(response.searchPlan()),
+                eq(response.generatedDsl()),
+                eq(response.total()),
+                eq(response.latencyMs()),
+                eq(response.summary()));
     }
 
     @Test
@@ -195,7 +237,7 @@ class NaturalLanguageSearchServiceTest {
                 .thenReturn(new LlmResponse(invalidAggregation, "mock", 1));
         var service = service(llmClient, executor);
 
-        assertThatThrownBy(() -> service.search(new NaturalLanguageSearchRequest("top ip", 0, 5)))
+        assertThatThrownBy(() -> service.search(new NaturalLanguageSearchRequest("top ip", null, 0, 5)))
                 .isInstanceOf(NaturalLanguageSearchException.class)
                 .hasMessage("LLM output is invalid");
 
@@ -228,7 +270,7 @@ class NaturalLanguageSearchServiceTest {
         when(executor.search(any(SearchPlan.class))).thenReturn(searchResponse(0, 5, 9));
         var service = service(llmClient, executor);
 
-        service.search(new NaturalLanguageSearchRequest("failed login china", 0, 5));
+        service.search(new NaturalLanguageSearchRequest("failed login china", null, 0, 5));
 
         var requestCaptor = ArgumentCaptor.forClass(LlmSearchPlanRequest.class);
         verify(llmClient, times(2)).generateSearchPlan(requestCaptor.capture());
@@ -250,7 +292,7 @@ class NaturalLanguageSearchServiceTest {
                 .thenReturn(new LlmResponse("{\"mode\":\"search\",\"hack_field\":true}", "mock", 1));
         var service = service(llmClient, executor);
 
-        assertThatThrownBy(() -> service.search(new NaturalLanguageSearchRequest("failed login china", 0, 5)))
+        assertThatThrownBy(() -> service.search(new NaturalLanguageSearchRequest("failed login china", null, 0, 5)))
                 .isInstanceOf(NaturalLanguageSearchException.class)
                 .hasMessage("LLM output is invalid")
                 .hasMessageNotContaining("Exception");
@@ -280,7 +322,7 @@ class NaturalLanguageSearchServiceTest {
                         any(String.class));
         var service = service(new MockLlmClient(mockProperties()), executor);
 
-        assertThatThrownBy(() -> service.search(new NaturalLanguageSearchRequest("failed login china", 0, 5)))
+        assertThatThrownBy(() -> service.search(new NaturalLanguageSearchRequest("failed login china", null, 0, 5)))
                 .isInstanceOf(AuditPersistenceException.class)
                 .hasMessage("Search completed but audit persistence failed");
 
@@ -310,7 +352,7 @@ class NaturalLanguageSearchServiceTest {
                         any());
         var service = service(llmClient, executor);
 
-        assertThatThrownBy(() -> service.search(new NaturalLanguageSearchRequest("failed login china", 0, 5)))
+        assertThatThrownBy(() -> service.search(new NaturalLanguageSearchRequest("failed login china", null, 0, 5)))
                 .isInstanceOf(NaturalLanguageSearchException.class)
                 .hasMessage("LLM provider is unavailable");
     }
