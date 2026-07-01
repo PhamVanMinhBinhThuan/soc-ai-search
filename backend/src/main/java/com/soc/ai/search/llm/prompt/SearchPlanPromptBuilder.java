@@ -149,6 +149,10 @@ public class SearchPlanPromptBuilder {
                 - Use message_query only for free-text phrases that cannot be represented by structured fields.
                 - Use filters.source for source/vendor/log-origin filters such as windows-auth, vpn, firewall, edr, proxy, or dns.
                 - Use aggregation.field = "source" only when the user asks to group/top/count by source.
+                - filters.source, filters.user, filters.host, and filters.ip may be a string or an array of strings.
+                - If the user asks for multiple sources/users/hosts/IPs, use an array. Values inside one field mean OR.
+                - Different filter fields still mean AND.
+                - message_query remains one string, never an array.
                 - For relative time, preserve the user's requested amount:
                   last 12 hours -> "now-12h";
                   last 10 days -> "now-10d";
@@ -163,9 +167,9 @@ public class SearchPlanPromptBuilder {
                     "source": ["windows-auth"],
                     "severity": ["high", "critical"],
                     "event_type": ["failed_login"],
-                    "user": "admin",
-                    "host": "host-001",
-                    "ip": "203.0.113.10",
+                    "user": ["admin", "vpn.user"],
+                    "host": ["host-001"],
+                    "ip": ["203.0.113.10"],
                     "country_code": ["CN"]
                   },
                   "message_query": "malware detected",
@@ -198,6 +202,10 @@ public class SearchPlanPromptBuilder {
                 - top_n must include an allowed field and top_n between 1 and 100.
                 - date_histogram must include interval and always uses timestamp internally.
                 - Do not add .keyword to any field.
+
+                Multi-value filter example:
+                User asks: Find failed login events for admin or vpn.user in the last 24 hours
+                Return filters.event_type = ["failed_login"], filters.user = ["admin", "vpn.user"], and filters.timestamp = { "from": "now-24h", "to": "now" }.
 
                 Allowed fields:
                 %s

@@ -474,6 +474,23 @@ function MultiSelectDropdown<T extends string>({
   );
 }
 
+function formatEntityInput(value: string | string[] | null | undefined) {
+  if (Array.isArray(value)) {
+    return value.join(", ");
+  }
+
+  return value ?? "";
+}
+
+function parseEntityInput(value: string) {
+  const values = value
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+  return values.length > 0 ? values : null;
+}
+
 function ResultControls({
   mode,
   searchPlan,
@@ -496,9 +513,10 @@ function ResultControls({
   const [eventTypes, setEventTypes] = useState<string[]>(
     currentFilters.event_type ?? [],
   );
-  const [user, setUser] = useState(currentFilters.user ?? "");
-  const [host, setHost] = useState(currentFilters.host ?? "");
-  const [ip, setIp] = useState(currentFilters.ip ?? "");
+  const [source, setSource] = useState(formatEntityInput(currentFilters.source));
+  const [user, setUser] = useState(formatEntityInput(currentFilters.user));
+  const [host, setHost] = useState(formatEntityInput(currentFilters.host));
+  const [ip, setIp] = useState(formatEntityInput(currentFilters.ip));
   const [countryCode, setCountryCode] = useState(
     currentFilters.country_code?.join(", ") ?? "",
   );
@@ -523,9 +541,10 @@ function ResultControls({
     ...(searchPlan.filters ?? {}),
     severity: severity.length > 0 ? severity : null,
     event_type: eventTypes.length > 0 ? eventTypes : null,
-    user: user.trim() || null,
-    host: host.trim() || null,
-    ip: ip.trim() || null,
+    source: parseEntityInput(source),
+    user: parseEntityInput(user),
+    host: parseEntityInput(host),
+    ip: parseEntityInput(ip),
     country_code:
       countryCode
         .split(",")
@@ -644,6 +663,12 @@ function ResultControls({
                 </div>
 
                 <input
+                  value={source}
+                  onChange={(event) => setSource(event.target.value)}
+                  placeholder="Source, e.g. vpn"
+                  className="rounded-xl border border-border bg-zinc-950/70 px-3 py-2.5 text-sm outline-none transition placeholder:text-muted-foreground focus:border-cyan-400/50"
+                />
+                <input
                   value={user}
                   onChange={(event) => setUser(event.target.value)}
                   placeholder="User"
@@ -697,6 +722,7 @@ function ResultControls({
                 onClick={() => {
                   setSeverity([]);
                   setEventTypes([]);
+                  setSource("");
                   setUser("");
                   setHost("");
                   setIp("");

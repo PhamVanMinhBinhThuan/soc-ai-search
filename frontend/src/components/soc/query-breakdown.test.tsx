@@ -58,6 +58,28 @@ describe("QueryBreakdown", () => {
     expect(screen.getByText("🇻🇳 Vietnam, 🇨🇳 China, XX")).toBeInTheDocument();
   });
 
+  it("renders multi-value entity filters", () => {
+    render(
+      <QueryBreakdown
+        searchPlan={{
+          ...searchPlan,
+          filters: {
+            ...searchPlan.filters,
+            source: ["vpn", "windows-auth"],
+            user: ["admin", "vpn.user"],
+            host: ["vpn-gw-01", "web-01"],
+            ip: ["203.0.113.45", "198.51.100.200"],
+          },
+        }}
+      />,
+    );
+
+    expect(screen.getByText("vpn, windows-auth")).toBeInTheDocument();
+    expect(screen.getByText("admin, vpn.user")).toBeInTheDocument();
+    expect(screen.getByText("vpn-gw-01, web-01")).toBeInTheDocument();
+    expect(screen.getByText("203.0.113.45, 198.51.100.200")).toBeInTheDocument();
+  });
+
   it("renders top_n aggregation details", () => {
     render(
       <QueryBreakdown

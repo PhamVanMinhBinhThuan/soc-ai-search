@@ -64,7 +64,7 @@ class MockLlmClientTest {
         assertList(plan.filters().source(), expected.source());
         assertList(plan.filters().countryCode(), expected.countryCode());
         assertList(plan.filters().severity(), expected.severity());
-        assertThat(plan.filters().user()).isEqualTo(expected.user());
+        assertList(plan.filters().user(), expected.user());
     }
 
     @ParameterizedTest(name = "{0}")
@@ -172,7 +172,10 @@ class MockLlmClientTest {
                         new ExpectedPlan(null, List.of("edr"), null, null, null, null, "now-7d", "now")),
                 Arguments.of(
                         "Show windows-auth events for admin in the last 24h",
-                        new ExpectedPlan(null, List.of("windows-auth"), null, null, "admin", null, "now-24h", "now")),
+                        new ExpectedPlan(null, List.of("windows-auth"), null, null, List.of("admin"), null, "now-24h", "now")),
+                Arguments.of(
+                        "Find failed login events for admin or vpn.user in the last 24 hours",
+                        new ExpectedPlan(List.of("failed_login"), null, null, null, List.of("admin", "vpn.user"), null, "now-24h", "now")),
                 Arguments.of(
                         "Tim malware detected trong 7 ngay qua",
                         new ExpectedPlan(null, null, null, null, null, "malware detected", "now-7d", "now")),
@@ -184,13 +187,13 @@ class MockLlmClientTest {
                         new ExpectedPlan(List.of("firewall_block"), null, List.of("CN"), null, null, null, "now-30d", "now")),
                 Arguments.of(
                         "Show privilege escalation by admin",
-                        new ExpectedPlan(List.of("privilege_escalation"), null, null, null, "admin", null, "now-30d", "now")),
+                        new ExpectedPlan(List.of("privilege_escalation"), null, null, null, List.of("admin"), null, "now-30d", "now")),
                 Arguments.of(
                         "Tim account lockout trong 7 ngay qua",
                         new ExpectedPlan(List.of("account_lockout"), null, null, null, null, null, "now-7d", "now")),
                 Arguments.of(
                         "Show failed login events for user admin",
-                        new ExpectedPlan(List.of("failed_login"), null, null, null, "admin", null, "now-30d", "now")));
+                        new ExpectedPlan(List.of("failed_login"), null, null, null, List.of("admin"), null, "now-30d", "now")));
     }
     private static Stream<Arguments> synonymQuestions() {
         return Stream.of(
@@ -260,7 +263,7 @@ class MockLlmClientTest {
             List<String> source,
             List<String> countryCode,
             List<String> severity,
-            String user,
+            List<String> user,
             String messageQuery,
             String from,
             String to) {

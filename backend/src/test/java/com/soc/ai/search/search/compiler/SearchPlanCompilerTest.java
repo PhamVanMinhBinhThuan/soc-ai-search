@@ -114,12 +114,33 @@ class SearchPlanCompilerTest {
                             assertNoTerm(searchSpec, "severity");
                         }),
                 Arguments.of(
-                        "scalar fields use term filters",
+                        "entity fields use terms filters",
                         validSearchPlan(),
                         (DslAssertion) searchSpec -> {
-                            assertTerm(searchSpec, "user", "admin");
-                            assertTerm(searchSpec, "host", "vpn-gw-01");
-                            assertTerm(searchSpec, "ip", "203.0.113.45");
+                            assertTerms(searchSpec, "user", List.of("admin"));
+                            assertTerms(searchSpec, "host", List.of("vpn-gw-01"));
+                            assertTerms(searchSpec, "ip", List.of("203.0.113.45"));
+                        }),
+                Arguments.of(
+                        "multi-value entity fields use terms filters",
+                        new SearchPlan(
+                                SEARCH,
+                                new SearchFilters(
+                                        new TimeRange("now-24h", "now"),
+                                        List.of("vpn", "windows-auth"),
+                                        List.of("high"),
+                                        List.of("failed_login"),
+                                        List.of("admin", "vpn.user"),
+                                        List.of("vpn-gw-01", "web-01"),
+                                        List.of("203.0.113.45", "198.51.100.200"),
+                                        List.of("CN")),
+                                0,
+                                20),
+                        (DslAssertion) searchSpec -> {
+                            assertTerms(searchSpec, "source", List.of("vpn", "windows-auth"));
+                            assertTerms(searchSpec, "user", List.of("admin", "vpn.user"));
+                            assertTerms(searchSpec, "host", List.of("vpn-gw-01", "web-01"));
+                            assertTerms(searchSpec, "ip", List.of("203.0.113.45", "198.51.100.200"));
                         }),
                 Arguments.of(
                         "message query uses match in bool must",
@@ -242,12 +263,6 @@ class SearchPlanCompilerTest {
         var values = findClause(searchSpec, "terms", field);
 
         assertThat(values).isEqualTo(expectedValues);
-    }
-
-    private static void assertTerm(Map<String, Object> searchSpec, String field, String expectedValue) {
-        var value = findClause(searchSpec, "term", field);
-
-        assertThat(value).isEqualTo(expectedValue);
     }
 
     private static void assertNoTerm(Map<String, Object> searchSpec, String field) {

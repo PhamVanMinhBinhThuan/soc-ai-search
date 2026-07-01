@@ -90,6 +90,19 @@ class SearchPlanValidatorTest {
                                 null),
                         0,
                         20)),
+                Arguments.of("multi-value entity filters", new SearchPlan(
+                        SEARCH,
+                        new SearchFilters(
+                                new TimeRange("now-24h", "now"),
+                                List.of("vpn", "windows-auth"),
+                                List.of("high"),
+                                List.of("failed_login"),
+                                List.of("admin", "vpn.user"),
+                                List.of("vpn-gw-01", "web-01"),
+                                List.of("203.0.113.45", "198.51.100.200"),
+                                List.of("CN")),
+                        0,
+                        20)),
                 Arguments.of("safe search sort", new SearchPlan(
                         SEARCH,
                         validFilters(),
@@ -134,6 +147,13 @@ class SearchPlanValidatorTest {
                 Arguments.of("wildcard query syntax", withEventType(List.of("failed*login")), "wildcard"),
                 Arguments.of("source wildcard query syntax", withSource(List.of("edr*")), "wildcard"),
                 Arguments.of("script query syntax", withUser("painless script"), "script"),
+                Arguments.of("query_string syntax", withUser("query_string admin"), "script"),
+                Arguments.of("empty user list", withUsers(List.of()), "filters.user"),
+                Arguments.of("blank user list item", withUsers(List.of("admin", " ")), "user"),
+                Arguments.of("too many user values", withUsers(List.of(
+                        "u01", "u02", "u03", "u04", "u05", "u06", "u07", "u08", "u09", "u10", "u11")),
+                        "at most 10"),
+                Arguments.of("invalid multi-value IP", withIps(List.of("203.0.113.45", "999.999.999.999")), "IPv4"),
                 Arguments.of("blank message query", withMessageQuery(" "), "messageQuery"),
                 Arguments.of("message query too long", withMessageQuery("a".repeat(201)), "messageQuery"),
                 Arguments.of("message query wildcard", withMessageQuery("malware*"), "wildcard"),
@@ -202,6 +222,7 @@ class SearchPlanValidatorTest {
                 SEARCH,
                 new SearchFilters(
                         filters.timestamp(),
+                        filters.source(),
                         severity,
                         filters.eventType(),
                         filters.user(),
@@ -235,11 +256,12 @@ class SearchPlanValidatorTest {
                 SEARCH,
                 new SearchFilters(
                         filters.timestamp(),
+                        filters.source(),
                         filters.severity(),
                         filters.eventType(),
                         filters.user(),
                         filters.host(),
-                        ip,
+                        List.of(ip),
                         filters.countryCode()),
                 0,
                 20);
@@ -251,6 +273,7 @@ class SearchPlanValidatorTest {
                 SEARCH,
                 new SearchFilters(
                         filters.timestamp(),
+                        filters.source(),
                         filters.severity(),
                         filters.eventType(),
                         filters.user(),
@@ -267,6 +290,7 @@ class SearchPlanValidatorTest {
                 SEARCH,
                 new SearchFilters(
                         timeRange,
+                        filters.source(),
                         filters.severity(),
                         filters.eventType(),
                         filters.user(),
@@ -283,6 +307,7 @@ class SearchPlanValidatorTest {
                 SEARCH,
                 new SearchFilters(
                         filters.timestamp(),
+                        filters.source(),
                         filters.severity(),
                         eventType,
                         filters.user(),
@@ -294,16 +319,38 @@ class SearchPlanValidatorTest {
     }
 
     private static SearchPlan withUser(String user) {
+        return withUsers(List.of(user));
+    }
+
+    private static SearchPlan withUsers(List<String> users) {
         var filters = validFilters();
         return new SearchPlan(
                 SEARCH,
                 new SearchFilters(
                         filters.timestamp(),
+                        filters.source(),
                         filters.severity(),
                         filters.eventType(),
-                        user,
+                        users,
                         filters.host(),
                         filters.ip(),
+                        filters.countryCode()),
+                0,
+                20);
+    }
+
+    private static SearchPlan withIps(List<String> ips) {
+        var filters = validFilters();
+        return new SearchPlan(
+                SEARCH,
+                new SearchFilters(
+                        filters.timestamp(),
+                        filters.source(),
+                        filters.severity(),
+                        filters.eventType(),
+                        filters.user(),
+                        filters.host(),
+                        ips,
                         filters.countryCode()),
                 0,
                 20);

@@ -310,8 +310,11 @@ describe("ResultTabs filter and sort controls", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /select severities/i }));
     fireEvent.click(screen.getByRole("button", { name: /^critical$/i }));
+    fireEvent.change(screen.getByPlaceholderText("Source, e.g. vpn"), {
+      target: { value: "vpn, windows-auth" },
+    });
     fireEvent.change(screen.getByPlaceholderText("User"), {
-      target: { value: "admin" },
+      target: { value: "admin, vpn.user" },
     });
     fireEvent.change(screen.getByDisplayValue("Newest first"), {
       target: { value: "severity:desc" },
@@ -324,7 +327,8 @@ describe("ResultTabs filter and sort controls", () => {
         page: 0,
         filters: expect.objectContaining({
           severity: ["critical"],
-          user: "admin",
+          source: ["vpn", "windows-auth"],
+          user: ["admin", "vpn.user"],
         }),
         sort: [{ field: "severity", order: "desc" }],
       }),

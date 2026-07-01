@@ -65,6 +65,50 @@ class SearchPlanJsonParserTest {
     }
 
     @Test
+    void parsesBackwardCompatibleStringEntityFilters() {
+        var plan = parser.parse("""
+                {
+                  "mode": "search",
+                  "filters": {
+                    "source": "vpn",
+                    "user": "admin",
+                    "host": "vpn-gw-01",
+                    "ip": "203.0.113.45"
+                  },
+                  "page": 0,
+                  "size": 20
+                }
+                """);
+
+        assertThat(plan.filters().source()).containsExactly("vpn");
+        assertThat(plan.filters().user()).containsExactly("admin");
+        assertThat(plan.filters().host()).containsExactly("vpn-gw-01");
+        assertThat(plan.filters().ip()).containsExactly("203.0.113.45");
+    }
+
+    @Test
+    void parsesMultiValueEntityFilters() {
+        var plan = parser.parse("""
+                {
+                  "mode": "search",
+                  "filters": {
+                    "source": ["vpn", "windows-auth"],
+                    "user": ["admin", "vpn.user"],
+                    "host": ["vpn-gw-01", "web-01"],
+                    "ip": ["203.0.113.45", "198.51.100.200"]
+                  },
+                  "page": 0,
+                  "size": 20
+                }
+                """);
+
+        assertThat(plan.filters().source()).containsExactly("vpn", "windows-auth");
+        assertThat(plan.filters().user()).containsExactly("admin", "vpn.user");
+        assertThat(plan.filters().host()).containsExactly("vpn-gw-01", "web-01");
+        assertThat(plan.filters().ip()).containsExactly("203.0.113.45", "198.51.100.200");
+    }
+
+    @Test
     void backendPaginationOverrideWinsOverLlmPagination() {
         var plan = parser.parseWithPaginationOverride("""
                 {

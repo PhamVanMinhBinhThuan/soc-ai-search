@@ -185,9 +185,9 @@ public class SearchPlanCompiler {
         addTermsFilter("source", searchFilters.source(), filters);
         addTermsFilter("severity", searchFilters.severity(), filters);
         addTermsFilter("event_type", searchFilters.eventType(), filters);
-        addTermFilter("user", searchFilters.user(), filters);
-        addTermFilter("host", searchFilters.host(), filters);
-        addTermFilter("ip", searchFilters.ip(), filters);
+        addTermsFilter("user", searchFilters.user(), filters);
+        addTermsFilter("host", searchFilters.host(), filters);
+        addTermsFilter("ip", searchFilters.ip(), filters);
         addTermsFilter("country_code", searchFilters.countryCode(), filters);
     }
 
@@ -215,14 +215,6 @@ public class SearchPlanCompiler {
         }
 
         filters.add(Map.of("terms", Map.of(field, List.copyOf(values))));
-    }
-
-    private void addTermFilter(String field, String value, List<Map<String, Object>> filters) {
-        if (!hasText(value)) {
-            return;
-        }
-
-        filters.add(Map.of("term", Map.of(field, value)));
     }
 
     private Map<String, Object> match(String field, String value) {

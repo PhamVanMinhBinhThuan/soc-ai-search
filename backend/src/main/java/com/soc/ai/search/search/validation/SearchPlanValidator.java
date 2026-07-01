@@ -24,8 +24,10 @@ import org.springframework.stereotype.Service;
 public class SearchPlanValidator {
 
     private static final Pattern RELATIVE_TIME_PATTERN = Pattern.compile("^now-(\\d+)(h|d)$");
+    private static final Pattern IPV4_PATTERN = Pattern.compile("^((25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)(\\.|$)){4}$");
     private static final int MAX_RELATIVE_HOURS = 720;
     private static final int MAX_RELATIVE_DAYS = 90;
+    private static final int MAX_ENTITY_FILTER_VALUES = 10;
 
     private static final Set<String> AGGREGATION_FIELD_ALLOWLIST = Set.of(
             "source",
@@ -222,11 +224,12 @@ public class SearchPlanValidator {
         }
 
         validateTimeRange(filters.timestamp(), errors);
-        rejectDangerousValues("filters.source", filters.source(), errors);
+        validateEntityValues("filters.source", filters.source(), errors);
         rejectDangerousValues("filters.event_type", filters.eventType(), errors);
-        rejectDangerousValue("filters.user", filters.user(), errors);
-        rejectDangerousValue("filters.host", filters.host(), errors);
-        rejectDangerousValue("filters.ip", filters.ip(), errors);
+        validateEntityValues("filters.user", filters.user(), errors);
+        validateEntityValues("filters.host", filters.host(), errors);
+        validateEntityValues("filters.ip", filters.ip(), errors);
+        validateIpValues(filters.ip(), errors);
     }
 
     private void validateSort(SearchPlan plan, List<String> errors) {
@@ -328,6 +331,39 @@ public class SearchPlanValidator {
         }
     }
 
+    private void validateEntityValues(String field, List<String> values, List<String> errors) {
+        if (values == null) {
+            return;
+        }
+        if (values.isEmpty()) {
+            errors.add(field + ": must not be empty");
+            return;
+        }
+        if (values.size() > MAX_ENTITY_FILTER_VALUES) {
+            errors.add(field + ": must contain at most " + MAX_ENTITY_FILTER_VALUES + " values");
+        }
+
+        for (var value : values) {
+            if (value == null || value.isBlank()) {
+                errors.add(field + ": values must not be blank");
+                continue;
+            }
+            rejectDangerousValue(field, value, errors);
+        }
+    }
+
+    private void validateIpValues(List<String> values, List<String> errors) {
+        if (values == null) {
+            return;
+        }
+
+        for (var value : values) {
+            if (value != null && !value.isBlank() && !IPV4_PATTERN.matcher(value).matches()) {
+                errors.add("filters.ip: must contain only valid IPv4 addresses");
+            }
+        }
+    }
+
     private void rejectDangerousValue(String field, String value, List<String> errors) {
         if (value == null || value.isBlank()) {
             return;
@@ -338,7 +374,7 @@ public class SearchPlanValidator {
         }
 
         var normalized = value.toLowerCase(Locale.ROOT);
-        if (normalized.contains("script") || normalized.contains("painless")) {
+        if (normalized.contains("script") || normalized.contains("painless") || normalized.contains("query_string")) {
             errors.add(field + ": script query syntax is not allowed");
         }
     }

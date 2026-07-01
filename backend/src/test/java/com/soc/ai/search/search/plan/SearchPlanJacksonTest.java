@@ -40,6 +40,9 @@ class SearchPlanJacksonTest {
         assertThat(plan.mode()).isEqualTo(SearchMode.SEARCH);
         assertThat(plan.filters().source()).containsExactly("windows-auth");
         assertThat(plan.filters().eventType()).containsExactly("failed_login");
+        assertThat(plan.filters().user()).containsExactly("admin");
+        assertThat(plan.filters().host()).containsExactly("vpn-gw-01");
+        assertThat(plan.filters().ip()).containsExactly("203.0.113.45");
         assertThat(plan.filters().countryCode()).containsExactly("CN");
         assertThat(plan.filters().timestamp().from()).isEqualTo("now-24h");
         assertThat(plan.messageQuery()).isEqualTo("malware detected");
@@ -55,9 +58,9 @@ class SearchPlanJacksonTest {
                         List.of("windows-auth"),
                         List.of("high", "critical"),
                         List.of("failed_login"),
-                        "admin",
-                        "vpn-gw-01",
-                        "203.0.113.45",
+                        List.of("admin"),
+                        List.of("vpn-gw-01"),
+                        List.of("203.0.113.45"),
                         List.of("CN")),
                 "malware detected",
                 0,

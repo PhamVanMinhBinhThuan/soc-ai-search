@@ -63,6 +63,10 @@ public class MockLlmClient implements LlmClient {
             return edrEventsSevenDaysPlan();
         }
 
+        if (containsFailedLoginAdminOrVpnUser(normalized)) {
+            return failedLoginAdminOrVpnUserPlan();
+        }
+
         if (containsFailedLoginAdmin(normalized)) {
             return failedLoginAdminPlan();
         }
@@ -125,6 +129,12 @@ public class MockLlmClient implements LlmClient {
         return value.contains("failed login") && value.contains("admin");
     }
 
+    private boolean containsFailedLoginAdminOrVpnUser(String value) {
+        return value.contains("failed login")
+                && value.contains("admin")
+                && value.contains("vpn.user");
+    }
+
     private boolean containsEdrEvents(String value) {
         return value.contains("edr")
                 && (value.contains("event") || value.contains("alert"));
@@ -177,6 +187,19 @@ public class MockLlmClient implements LlmClient {
                     "timestamp": { "from": "now-30d", "to": "now" },
                     "event_type": ["failed_login"],
                     "user": "admin"
+                  }
+                }
+                """;
+    }
+
+    private String failedLoginAdminOrVpnUserPlan() {
+        return """
+                {
+                  "mode": "search",
+                  "filters": {
+                    "timestamp": { "from": "now-24h", "to": "now" },
+                    "event_type": ["failed_login"],
+                    "user": ["admin", "vpn.user"]
                   }
                 }
                 """;
