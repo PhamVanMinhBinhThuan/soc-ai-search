@@ -48,7 +48,7 @@ function LoadingView() {
             Securing Your Connection
           </p>
           <p className="mt-1 text-xs text-zinc-400">
-            Verifying your access permissions...
+            Verifying your workspace...
           </p>
         </div>
         <div className="relative h-0.5 w-64 overflow-hidden rounded-full bg-zinc-800/90">

@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { motion, useMotionValue, useSpring } from "framer-motion"
-import { ArrowRight, KeyRound, Shield, Sparkles } from "lucide-react"
+import { ArrowRight, KeyRound, Shield } from "lucide-react"
 import { StarField } from "./star-field"
 import { AiCore } from "./ai-core"
 import { ParallaxOrbits } from "./parallax-orbits"
@@ -83,26 +83,14 @@ export function SocHero({
       </header>
 
       <section className="relative z-20 mx-auto flex min-h-[calc(100vh-92px)] max-w-4xl flex-col items-center justify-center px-6 text-center">
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, ease: "easeOut" }}
-          className="mb-6 inline-flex items-center gap-2 rounded-full border border-purple-400/30 bg-purple-400/10 px-4 py-1.5 text-xs font-medium text-purple-200"
-        >
-          <Sparkles className="h-3.5 w-3.5" />
-          Zero-Trust Security Intelligence
-        </motion.div>
-
         <motion.h1
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.1, ease: "easeOut" }}
-          className="text-balance text-5xl font-bold leading-[1.05] tracking-tight sm:text-6xl md:text-7xl"
+          className="text-balance text-4xl font-bold leading-[1.05] tracking-tight sm:text-5xl md:text-6xl"
           style={{ textShadow: "0 2px 40px rgba(3,7,18,0.9)" }}
         >
-          AI-Powered Event Search
-          <br />
-          for{" "}
+          AI-Powered Event Search for{" "}
           <span className="bg-gradient-to-r from-cyan-300 via-cyan-400 to-purple-400 bg-clip-text text-transparent">
             Security Teams.
           </span>
