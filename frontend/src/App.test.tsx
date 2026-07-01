@@ -106,13 +106,13 @@ describe('App history UX', () => {
     )
   })
 
-  it('renders a polished logout button and calls signOut', () => {
+  it('renders a polished sign out button and calls signOut', () => {
     const signOut = vi.fn()
     mockState.auth = authState({ signOut })
 
     render(<MemoryRouter><App /></MemoryRouter>)
 
-    const logoutButton = screen.getByRole('button', { name: /logout/i })
+    const logoutButton = screen.getByRole('button', { name: /sign out/i })
     expect(logoutButton).toBeInTheDocument()
 
     fireEvent.click(logoutButton)

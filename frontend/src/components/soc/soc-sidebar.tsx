@@ -5,7 +5,7 @@ import {
   History,
   LayoutDashboard,
   ListFilter,
-  LogOut,
+  Power,
   ScrollText,
   Search,
   ShieldCheck,
@@ -342,17 +342,17 @@ export function SocSidebar({
 
         <div className="mt-auto flex flex-col gap-1.5 px-3">
           {authEnabled && onLogout ? (
-            <CollapsedTooltip collapsed={collapsed} label="Logout">
+            <CollapsedTooltip collapsed={collapsed} label="Sign Out">
               <button
                 type="button"
-                aria-label="Logout"
+                aria-label="Sign Out"
                 onClick={onLogout}
                 className={cn(
-                  'flex h-10 w-full shrink-0 items-center rounded-xl transition-colors text-muted-foreground hover:bg-secondary hover:text-foreground',
+                  'flex h-10 w-full shrink-0 items-center rounded-xl transition-colors text-muted-foreground hover:bg-rose-500/10 hover:text-rose-400',
                   expanded ? 'justify-start px-3' : 'justify-center',
                 )}
               >
-                <LogOut className="size-5 shrink-0" />
+                <Power className="size-5 shrink-0" />
                 <span
                   className={cn(
                     'overflow-hidden whitespace-nowrap text-left text-sm transition-[width,opacity,margin] duration-300',
@@ -361,7 +361,7 @@ export function SocSidebar({
                       : 'ml-0 w-0 opacity-0',
                   )}
                 >
-                  Logout
+                  Sign Out
                 </span>
               </button>
             </CollapsedTooltip>
