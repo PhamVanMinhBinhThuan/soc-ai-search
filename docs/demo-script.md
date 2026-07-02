@@ -1,175 +1,240 @@
-# 🎤 5-Minute Executive Demonstration Script - SOC AI Search MVP
+# Demo Script - SOC AI Search
 
-<details open>
-  <summary><b>📖 Table of Contents</b></summary>
+Target duration: 5-7 minutes.
 
-  - [⏱️ 0:00 - 0:30 | Executive Overview](#000---030-executive-overview)
-  - [⏱️ 0:30 - 1:30 | Analyst Authentication & Search Execution](#030---130-analyst-authentication-search-execution)
-  - [⏱️ 1:30 - 2:10 | SearchPlan & DSL Transparency Audit](#130---210-searchplan-dsl-transparency-audit)
-  - [⏱️ 2:10 - 2:50 | Event Drilldown & Raw Log Inspection](#210---250-event-drilldown-raw-log-inspection)
-  - [⏱️ 2:50 - 3:30 | Analytical Aggregations & Visualizations](#250---330-analytical-aggregations-visualizations)
-  - [⏱️ 3:30 - 4:00 | Secure CSV Extraction & Query History](#330---400-secure-csv-extraction-query-history)
-  - [⏱️ 4:00 - 4:35 | RBAC Verification & System Auditing](#400---435-rbac-verification-system-auditing)
-  - [⏱️ 4:35 - 5:00 | Production Infrastructure & Resilience](#435---500-production-infrastructure-resilience)
-  - [📚 Appendix: Contingency Queries](#appendix-contingency-queries)
-</details>
+## 1. Opening
 
-**Objective:** Execute a concise, high-impact demonstration showcasing the AI Search pipeline, SearchPlan architecture, DSL transparency, Analytical Results, Role-Based Access Control (RBAC), System Audit Logging, and the CI/CD deployment pipeline. 
+Open:
 
-*Security Directive: Demonstration credentials must be transmitted via secure out-of-band channels and must never be recorded within the repository.*
+```text
+https://soc-ai-search.app
+```
 
-## ⏱️ 0:00 - 0:30 | Executive Overview
+Say:
 
-1. 🌐 Navigate to `https://soc-ai-search.app`.
-2. 🗣️ Deliver the opening statement:
-   - "Welcome to the SOC Investigation Console."
-   - "This platform empowers security analysts to query complex event datasets using natural language (English or Vietnamese)."
-   - "Crucially, the Large Language Model (LLM) is strictly confined to generating a structured `SearchPlan`. The backend system enforces hard guardrails, validates the plan, and compiles it into actionable Elasticsearch DSL."
-   - "Elasticsearch functions as our primary event store, while PostgreSQL maintains the immutable audit trail and query history."
+> This project helps SOC analysts search and investigate security events using natural language. The key point is that AI does not query Elasticsearch directly. AI only proposes a SearchPlan; the backend validates and compiles it into safe Elasticsearch DSL.
 
-## ⏱️ 0:30 - 1:30 | Analyst Authentication & Search Execution
+## 2. Login as Analyst
 
-1. 🔐 Authenticate utilizing an identity provisioned with the `SOC_ANALYST` role.
-2. 🔍 Execute the primary search query:
+Use an analyst account.
+
+Show:
+
+- role badge
+- dark SOC console
+- Event Search page
+
+## 3. Run a Search Query
+
+Query:
 
 ```text
 Show me failed login attempts from China in the last 24h
 ```
 
-3. 👁️ Highlight the following UI elements:
-   - ⚙️ **Mode:** `search`.
-   - 🔢 **Total Events:** Real-time document hit count.
-   - 🤖 **AI Summary Block:** Contextual analysis of the result set.
-   - 📊 **Raw Events Table:** Paginated log data view.
-   - ⏱️ **Operational Telemetry:** Query latencies (if displayed).
+Show:
 
-**Core Messaging Point:**
+- total events
+- AI Summary
+- Query Result table
+- Event logs pagination
+- result filter/sort panel
 
-> "Analysts are no longer required to possess deep expertise in Elasticsearch DSL. The system intelligently architects a controlled query plan while explicitly exposing the underlying DSL to guarantee absolute operational transparency."
+Say:
 
-## ⏱️ 1:30 - 2:10 | SearchPlan & DSL Transparency Audit
+> The user writes a question, but the backend controls how it becomes a query.
 
-1. 📂 Expand the **SearchPlan** inspection panel.
-2. 📂 Expand the **Generated DSL** inspection panel.
-3. 🛡️ Highlight the architectural safety mechanisms:
-   - 📄 The `search_plan` is transmitted as a natively structured JSON object.
-   - 📄 The `generated_dsl` is transmitted as a structured JSON object, completely bypassing string escaping.
-   - 🎯 Point out the active filters: `event_type`, `country_code`, and `timestamp`.
-   - 📉 Highlight the enforced sorting mechanism (Timestamp Descending).
+## 4. Explain Query Transparency
 
-**Core Messaging Point:**
+Open Query Transparency.
 
-> "This is our primary architectural guardrail: The LLM is structurally prohibited from injecting arbitrary or unvalidated DSL directly into the Elasticsearch cluster."
+Show:
 
-## ⏱️ 2:10 - 2:50 | Event Drilldown & Raw Log Inspection
+1. Query Breakdown
+2. Validated SearchPlan
+3. Compiled DSL
 
-1. 🖱️ Interact with a specific event row or click the **View** action.
-2. 🖥️ Launch the **Event Detail Drawer**.
-3. 🔬 Highlight the forensic capabilities:
-   - 📑 The **Formatted Fields** tab.
-   - 📜 The **Raw Log** payload.
-   - 🔗 Emphasize that the `event_id` maps perfectly to the underlying Elasticsearch document `_id`.
+Say:
 
-**Core Messaging Point:**
+> Query Breakdown is for analysts who do not want to read JSON. SearchPlan and DSL are still available for audit and technical review.
 
-> "The search list intentionally returns a streamlined response to optimize payload size, whereas the detail endpoint fetches the comprehensive raw log to facilitate deep forensic investigations."
+## 5. Event Detail
 
-## ⏱️ 2:50 - 3:30 | Analytical Aggregations & Visualizations
+Click an event row.
 
-1. 📈 Execute an aggregation query:
+Show:
 
-```text
-Show the top 10 IP addresses with the most alerts this month
-```
+- formatted fields
+- raw log tab
 
-Or an alternative structural query:
+Say:
+
+> The table is optimized for scanning. Full forensic detail is loaded only when needed.
+
+## 6. Correct or Refine Query
+
+Use feedback such as:
 
 ```text
-Count failed login events grouped by user over the last 7 days
+Change the time range to last 7 days and include vpn.user
 ```
 
-2. 👁️ Highlight the analytical UI elements:
-   - ⚙️ **Mode:** `aggregation`.
-   - 📊 The automated deployment of the **Analytics View**.
-   - 📈 The interactive **Recharts** visualization.
-   - 📋 The **Summary Data Table**.
-   - 🗄️ The underlying `aggregation_results` and `chart_metadata` JSON payloads.
+Show that the system reruns the query.
 
-**Core Messaging Point:**
+Say:
 
-> "The backend standardizes the aggregation response geometry. This intentionally decouples the frontend architecture from the underlying Elasticsearch response shape, enabling UI stability."
+> This is a human-in-the-loop correction flow. The AI rewrites the natural language question, then the backend runs the same safe SearchPlan pipeline.
 
-## ⏱️ 3:30 - 4:00 | Secure CSV Extraction & Query History
+## 7. Aggregation Demo
 
-1. 📤 While authenticated as an Analyst, click the **Export CSV** action.
-2. 📜 Navigate to the **Recent Investigations** history sheet.
-3. 🔄 Highlight the **Run Again** functionality.
-
-**Core Messaging Point:**
-
-> "Our export mechanism strictly refuses client-supplied DSL. The backend forcefully replays the stored query utilizing its cryptographic `query_id`, re-validates the SearchPlan, re-compiles the DSL, and executes the extraction with a hard safety limit of 10,000 rows."
-
-## ⏱️ 4:00 - 4:35 | RBAC Verification & System Auditing
-
-*(If time permits for dynamic credential swapping):*
-
-1. 🚪 Terminate the Analyst session.
-2. 👁️ Authenticate as a Viewer. Demonstrate that the **Export CSV** and **Audit Logs** actions are structurally locked in the UI and actively rejected (HTTP 403) by the backend.
-3. 👮 Authenticate as an Admin. Launch the **System Audit Logs** interface.
-
-*(If operating under strict time constraints):*
-
-- 🗣️ Verbally outline the RBAC Entitlement Matrix:
-  - 👤 `SOC_VIEWER`: Read-only access to dashboard and search operations.
-  - 🕵️ `SOC_ANALYST`: Inherits Viewer rights + Authorized for CSV data extraction.
-  - 👑 `SOC_ADMIN`: Inherits Analyst rights + Authorized to inspect system audit logs.
-
-**Core Messaging Point:**
-
-> "The React frontend operates solely as a UX gating layer; the true perimeter defense is enforced deep within the backend utilizing Spring Security and Keycloak RBAC policies."
-
-## ⏱️ 4:35 - 5:00 | Production Infrastructure & Resilience
-
-1. 🌐 Briefly highlight the live production domains:
-   - `https://soc-ai-search.app`
-   - `https://api.soc-ai-search.app`
-   - `https://auth.soc-ai-search.app`
-2. 🏗️ Summarize the deployment and CI/CD topology:
-   - ☁️ "The platform is actively deployed across DigitalOcean infrastructure, utilizing Name.com for DNS and Caddy for edge termination."
-   - 🤖 "GitHub Actions powers the CI pipeline, enforcing Backend verification, Frontend linting/testing, and configuration validation."
-   - 🚀 "The CD pipeline automates secure deployments to the VPS via SSH upon passing all CI gates."
-   - 🛡️ "Architectural resilience: Should the Gemini LLM provider experience an outage, the search pipeline automatically executes a deterministic fallback summary, guaranteeing an uninterrupted user experience."
-
-**Closing Statement:**
-
-> "This Minimum Viable Product successfully operationalizes the complete investigative lifecycle: Natural language ingestion, DSL transparency, high-speed aggregation, forensic log inspection, AI-driven summarization, immutable auditing, secure data extraction, enterprise RBAC, and automated HTTPS deployments."
-
-## 📚 Appendix: Contingency Queries
-
-**Standard Search Execution:**
+Query:
 
 ```text
-Find critical alerts over the past 7 days
+Show the top 5 source IPs with the most events in the last 30 days
 ```
 
-**Aggregation Execution (`group_by` operation):**
+Show:
+
+- bar chart
+- aggregation table
+- Query Breakdown showing aggregation intent
+
+Alternative line chart:
 
 ```text
-Count failed login events grouped by user over the last 7 days
+Show failed login trend by hour in the last 24 hours
 ```
 
-**Aggregation Execution (`date_histogram` operation):**
+Say:
+
+> The system supports both raw event search and analytical aggregation.
+
+## 8. Query Library
+
+Open:
 
 ```text
-Show the number of events per hour over the last 24 hours
+/query-library
 ```
 
-**LLM Instability Mitigation:**
+Show:
 
-If the external Gemini provider exhibits instability during the demonstration, immediately toggle the local environment to utilize the mock provider:
+- category filters
+- search input
+- copy button
+- use query button
+- 2-query pagination
 
-```env
-LLM_PROVIDER=mock
+Say:
+
+> Query Library is static and deterministic. It gives analysts demo-safe starting points based on the synthetic dataset.
+
+## 9. Next Investigation Steps
+
+After a successful search, show AI follow-up suggestions if available.
+
+Say:
+
+> These are AI-generated next investigation steps. If Gemini is unavailable or mock mode is used, this section simply does not appear.
+
+## 10. Investigations
+
+Open All Investigations.
+
+Show:
+
+- server-side search/filter
+- pinned queries
+- detail panel
+- SearchPlan and DSL
+- run again
+- export CSV
+
+Say:
+
+> Every meaningful query is stored for audit and replay. Pinning helps analysts keep useful investigations.
+
+## 11. CSV Export
+
+Click Export CSV from a successful query/investigation.
+
+Say:
+
+> Export does not accept raw DSL from the browser. The backend loads the stored SearchPlan by query_id, validates it again, compiles it again, and replays it with a 10,000-row safety limit.
+
+## 12. Admin Audit
+
+If time allows, log in as admin or open System Audit Logs.
+
+Show:
+
+- server-side search/filter
+- audit details
+- audit CSV export
+
+Say:
+
+> Admins can trace who asked what, which SearchPlan and DSL were generated, result count, status, and errors.
+
+## 13. Viewer RBAC
+
+If time allows, log in as viewer.
+
+Show:
+
+- can search
+- cannot edit SearchPlan
+- cannot export CSV
+- cannot access audit logs
+
+Say:
+
+> The frontend hides actions, but backend Spring Security is the real enforcement layer.
+
+## 14. Closing
+
+Say:
+
+> The system demonstrates the full investigation lifecycle: natural language search, backend guardrails, transparent DSL, analytics, AI summary, AI follow-up, audit history, secure export, RBAC, and public HTTPS deployment.
+
+## Demo Query Set
+
+Search:
+
+```text
+Show me failed login attempts from China in the last 24h
 ```
 
-*Architectural Note:* Summary fallback mechanisms are an intentional architectural design. LLM failures are deliberately engineered to gracefully degrade without compromising the core search execution.
+Multi-filter:
+
+```text
+Find failed login events for admin or vpn.user in the last 24 hours
+```
+
+Aggregation:
+
+```text
+Show the top 5 source IPs with the most events in the last 30 days
+```
+
+Line chart:
+
+```text
+Show failed login trend by hour in the last 24 hours
+```
+
+Count:
+
+```text
+Count critical events in the last 24 hours
+```
+
+Vietnamese:
+
+```text
+Tìm account lockout trong 7 ngày qua
+```
+
+```text
+Số event theo giờ trong 24h qua
+```

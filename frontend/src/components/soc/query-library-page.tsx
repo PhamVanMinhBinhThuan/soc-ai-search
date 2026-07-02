@@ -113,9 +113,9 @@ function QueryCard({
   onUseQuery: (question: string) => void
 }) {
   return (
-    <article className="rounded-xl border border-zinc-800 bg-zinc-950/70 p-4 transition-colors hover:border-cyan-500/35 hover:bg-cyan-950/10">
+    <article className="rounded-xl border border-zinc-800 bg-zinc-950/70 p-3 transition-colors hover:border-cyan-500/35 hover:bg-cyan-950/10">
       <div className="flex items-start justify-between gap-4">
-        <p className="min-w-0 text-sm font-semibold leading-6 text-zinc-100">
+        <p className="min-w-0 text-sm font-semibold leading-5 text-zinc-100">
           {item.question}
         </p>
         <div className="flex shrink-0 items-center gap-1.5">
@@ -132,13 +132,13 @@ function QueryCard({
         </div>
       </div>
 
-      <div className="mt-3 flex flex-wrap items-center gap-1.5">
+      <div className="mt-2 flex flex-wrap items-center gap-1.5">
         {item.badges.map((badge) => (
           <QueryBadge key={badge} badge={badge} />
         ))}
       </div>
 
-      <p className="mt-3 text-xs text-zinc-500">
+      <p className="mt-1.5 text-[11px] text-zinc-500">
         Expected: {EXPECTED_VIEW_LABELS[item.expectedView]}
       </p>
     </article>

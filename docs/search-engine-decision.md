@@ -1,112 +1,141 @@
-# 📐 Architectural Decision Record: Search Engine Selection - SOC AI Search MVP
+# ADR: Search Engine Selection
 
-<details open>
-  <summary><b>📖 Table of Contents</b></summary>
+## Decision
 
-  - [🎯 1. Executive Conclusion](#1-executive-conclusion)
-  - [⚖️ 2. Technical Justification for Elasticsearch](#2-technical-justification-for-elasticsearch)
-  - [🗺️ 3. Data Mapping Architecture (MVP)](#3-data-mapping-architecture-mvp)
-  - [🛡️ 4. Architectural Guardrail: The SearchPlan Contract](#4-architectural-guardrail-the-searchplan-contract)
-  - [🧩 5. Defined DSL Topologies](#5-defined-dsl-topologies)
-  - [📊 6. Strategic Technology Comparison](#6-strategic-technology-comparison)
-  - [⚙️ 7. Operational Guidelines](#7-operational-guidelines)
-  - [🔄 8. Strategic Re-evaluation Triggers](#8-strategic-re-evaluation-triggers)
-</details>
+SOC AI Search uses Elasticsearch `9.4.2` as the primary search engine for the MVP and demo deployment.
 
-## 🎯 1. Executive Conclusion
+Target index:
 
-For the Minimum Viable Product (MVP) phase, the architectural board has selected ![Elasticsearch](https://img.shields.io/badge/elasticsearch-%23005571.svg?style=for-the-badge&logo=elasticsearch&logoColor=white) **Elasticsearch `9.4.2` (Basic, self-managed)** as the singular, authoritative search engine. The platform standardizes on **Elasticsearch Query DSL** as the query runtime, which is dynamically compiled by the backend engine after validating the AI-generated `SearchPlan`.
+```text
+soc-events-v1
+```
 
-We deliberately reject the concurrent deployment of multiple indexing engines (e.g., Elasticsearch alongside OpenSearch or ClickHouse) for the MVP. A unified search engine satisfies all current requirements regarding high-velocity searching, filtering, statistical aggregation, forensic event drilldowns, and CSV replay mechanisms. Integrating secondary engines at this maturity stage would exponentially increase the complexity of data ingestion, testing pipelines, and deployment topologies without delivering proportional business value.
+The backend compiles validated SearchPlans into Elasticsearch Query DSL.
 
-## ⚖️ 2. Technical Justification for Elasticsearch
+## Why Elasticsearch
 
-Elasticsearch was strategically chosen because its native capability matrix closely aligns with Security Operations Center (SOC) event telemetry requirements. It provides highly optimized support for:
+Elasticsearch fits the project because it supports:
 
-- 🔍 Broad-spectrum full-text search capabilities across the `message` field.
-- ⚡ High-performance exact-match filtering against highly cardinal fields (keywords and IP addresses).
-- ⏱️ Precision time-range querying against `timestamp` indices.
-- 📊 Efficient `terms` aggregations supporting critical `group_by` and `top_n` analytical operations.
-- 📈 Robust `date_histogram` aggregations essential for temporal event plotting.
-- 🔎 Comprehensive Search APIs, deep pagination, sorting algorithms, and direct `_source` extraction for granular event forensics.
-- 🐳 Industry-standard Docker imagery supported by extensive enterprise documentation.
+- full-text search on event messages
+- exact filtering on keyword fields
+- IP filtering
+- timestamp range queries
+- sorting by timestamp/severity
+- terms aggregations
+- top-N aggregations
+- date histogram time-series charts
+- document lookup for event detail
+- Docker-based local and VPS deployment
 
-The self-managed Basic tier of Elasticsearch is functionally complete for the MVP scope. Advanced, commercial-tier capabilities (such as Elastic Machine Learning anomaly detection, native cluster-level audit logging, Document-Level Security (DLS), or native Reciprocal Rank Fusion) are deemed out-of-scope for the current implementation phase.
+## Mapping
 
-## 🗺️ 3. Data Mapping Architecture (MVP)
-
-Target Index: `soc-events-v1`.
-
-| Telemetry Field | Elasticsearch Type | Operational Purpose |
+| Field | Type | Used for |
 | --- | --- | --- |
-| `timestamp` | `date` | Range filtering, chronological sorting, date histograms |
-| `source` | `keyword` | Exact filtering, grouping, top-N calculations |
-| `severity` | `keyword` | Exact filtering, grouping, top-N calculations |
-| `event_type` | `keyword` | Exact filtering, grouping, top-N calculations |
-| `user` | `keyword` | Exact filtering, grouping, top-N calculations |
-| `host` | `keyword` | Exact filtering, grouping, top-N calculations |
-| `ip` | `ip` | Exact IP filtering, highly cardinal Top IP analytics |
-| `country_code` | `keyword` | Exact filtering, grouping, top-N calculations |
-| `message` | `text` | Full-text `match` queries and tokenization |
-| `raw` | `text`, `index: false` | Forensic log storage (unindexed payload) |
+| `timestamp` | `date` | range, sort, date histogram |
+| `source` | `keyword` | filter, group_by, top_n |
+| `severity` | `keyword` | filter, sort, group_by, top_n |
+| `event_type` | `keyword` | filter, group_by, top_n |
+| `user` | `keyword` | filter, group_by, top_n |
+| `host` | `keyword` | filter, group_by, top_n |
+| `ip` | `ip` | filter, group_by, top_n |
+| `country_code` | `keyword` | filter, group_by, top_n |
+| `message` | `text` | message search |
+| `raw` | `text`, not indexed | raw forensic payload |
 
-*Compiler Constraint:* The backend query compiler intentionally does not append `.keyword` modifiers, as the foundational MVP mapping already strictly defines aggregatable fields natively as `keyword` or `ip` data types.
+The compiler does not append `.keyword` because aggregatable fields are already mapped as `keyword` or `ip`.
 
-## 🛡️ 4. Architectural Guardrail: The SearchPlan Contract
+## SearchPlan Contract
 
-The MVP strictly prohibits the Large Language Model (LLM) from directly generating executable Elasticsearch Query DSL. The mandated execution pipeline is:
+The LLM does not generate executable DSL. It generates a SearchPlan.
 
 ```mermaid
 flowchart LR
-    Q["Natural language question"]
+    User["User question"]
     LLM["LLM"]
-    Plan["SearchPlan JSON"]
-    Guard["Validator / Guardrail"]
-    Compiler["SearchPlanCompiler"]
+    Plan["SearchPlan"]
+    Validator["Validator"]
+    Compiler["Compiler"]
     DSL["Elasticsearch DSL"]
     ES["Elasticsearch"]
 
-    Q --> LLM --> Plan --> Guard --> Compiler --> DSL --> ES
+    User --> LLM --> Plan --> Validator --> Compiler --> DSL --> ES
 ```
 
-**Security and Engineering Rationale:**
+Benefits:
 
-- 🛑 Establishes a rigid, deterministic boundary to reject fields or operational directives outside the MVP scope.
-- 🧪 Facilitates comprehensive unit testing of the DSL structural shape.
-- 💉 Actively mitigates prompt injection vulnerabilities preventing the LLM from synthesizing computationally expensive wildcard queries, unconstrained query strings, or destructive inline `script` execution.
-- 👁️ Ensures system transparency by continuously exposing the safely compiled `generated_dsl` back to the User Interface for human auditing.
+- easier to validate than arbitrary DSL
+- safer for prompt injection
+- easier to explain to SOC analysts
+- enables Query Breakdown UI
+- keeps DSL generation deterministic and testable
 
-## 🧩 5. Defined DSL Topologies
+## Supported Query Shapes
 
-**Search Execution Mode:**
+### Search
 
-- `bool.filter` enforces precise, non-scoring exact matches.
-- `term` queries execute against singular fields (`user`, `host`, `ip`).
-- `terms` queries execute against enumerable list fields (`severity`, `event_type`, `country_code`).
-- `range` queries strictly bound the `timestamp` axis.
-- `match` queries execute tokenized analysis against the `message` field exclusively when `message_query` is invoked.
-- `sort` enforces a deterministic `timestamp desc` default sequence.
+Search mode compiles to:
 
-**Aggregation Execution Mode:**
+- `bool.filter`
+- `range` for timestamp
+- `term` or `terms` for exact filters
+- `match` for `message_query`
+- default sort by timestamp descending
+- optional severity sort
 
-- `count`: Enforces `size = 0` to suppress payload bloat, bypassing empty `aggs` generation, and directly extracts the `hits.total` metric.
-- `group_by`: Utilizes `terms` aggregation mechanisms. If a `top_n` parameter is absent, the compiler hardcodes a default bucket threshold of 20 to preserve memory.
-- `top_n`: Utilizes `terms` aggregation mechanisms, mandating a strict `top_n` validation boundary of 1 to 100.
-- `date_histogram`: Anchored to the `timestamp` field, restricted to standardized `fixed_interval` mappings (`1m`, `1h`, `1d`).
+### Count
 
-## 📊 6. Strategic Technology Comparison
+Count aggregation uses:
 
-| Search Engine | Core Strengths | Technical Trade-offs | MVP Decision |
+- `size = 0`
+- no aggregation field
+- total hits as the count result
+
+### Group By
+
+Group-by uses a terms aggregation.
+
+If no bucket limit is provided, the compiler defaults to a safe bucket size.
+
+### Top N
+
+Top-N uses a terms aggregation with a required `top_n` value.
+
+### Date Histogram
+
+Date histogram uses `timestamp` internally.
+
+Supported intervals:
+
+- minute
+- hour
+- day
+
+For dashboard/time-series stability, the compiler can use `extended_bounds` and `min_doc_count = 0` so empty time buckets remain visible.
+
+## Alternatives Considered
+
+| Option | Pros | Cons | Decision |
 | --- | --- | --- | --- |
-| **Elasticsearch Basic** | Search-first architecture, superior full-text capabilities, comprehensive aggregation framework, ubiquitous industry documentation, official Docker support. | High JVM heap footprint; advanced security/ML features locked behind commercial subscriptions. | **✅ Selected** |
-| **OpenSearch** | Functionally identical to ES Basic, Apache 2.0 open-source licensing, optimal if integrating deeply into an existing AWS OpenSearch ecosystem. | Fails to provide a disruptive technical advantage sufficient to pivot away from the industry standard for this MVP. | **⏸️ Deferred** (Post-MVP Reserve) |
-| **ClickHouse** | Unrivaled aggregation and log analytics performance over massive datasets; intuitive SQL dialect. | Search relevance scoring and raw event detail retrieval require intensive architectural redesign; misaligned with our search-first MVP priorities. | **⏸️ Deferred** (Slated for Post-MVP benchmarking at extreme scale) |
+| Elasticsearch | Strong search + aggregation support, mature docs, Docker-friendly | JVM memory footprint | Selected |
+| OpenSearch | Similar to Elasticsearch, open-source distribution | No major benefit for this MVP over Elasticsearch | Deferred |
+| ClickHouse | Very strong analytics performance | More work for full-text search and event detail UX | Deferred |
+| PostgreSQL only | Simple stack | Weak for SOC-scale search/aggregation | Rejected |
 
-## ⚙️ 7. Operational Guidelines
+## Operational Notes
 
-The local development environment is configured to bootstrap 10,000 synthetic events to minimize resource starvation. Prior to formal demonstrations, this dataset can be expanded via the provided batch ingestion scripts.
+Bootstrap index:
 
-When deploying Elasticsearch within Linux environments, virtual memory allocation must be explicitly tuned:
+```powershell
+.\scripts\bootstrap-elasticsearch.ps1
+```
+
+Seed dataset:
+
+```powershell
+.\scripts\seed-events.ps1 -Count 10000
+```
+
+Linux/VPS bootstrap requirement:
 
 ```bash
 sysctl -w vm.max_map_count=262144
@@ -114,15 +143,14 @@ echo "vm.max_map_count=262144" > /etc/sysctl.d/99-elasticsearch.conf
 sysctl --system
 ```
 
-*Security Posture:* Elasticsearch must never be exposed directly to the public internet. Production traffic is strictly routed through the backend API and Caddy edge proxy. Elasticsearch bindings are restricted to internal Docker overlay networks or loopback interfaces during debugging.
+Elasticsearch must not be exposed directly to the public internet.
 
-## 🔄 8. Strategic Re-evaluation Triggers
+## Re-evaluation Triggers
 
-The architectural board will revisit this decision if any of the following operational thresholds are breached:
+Revisit this decision if:
 
-- 🚀 The active dataset scales into the hundreds of millions of events, shifting the primary workload bottleneck from full-text search to complex statistical aggregations (triggering a potential ClickHouse migration).
-- 🧠 Functional requirements mandate the integration of native Vector/Hybrid semantic search modalities or advanced internal Machine Learning heuristics.
-- 🏢 The overarching enterprise standardizes on a managed OpenSearch or ClickHouse cluster infrastructure.
-- 🔒 Production compliance mandates the immediate implementation of granular Multi-Tenant logically isolated namespaces or Document-Level Security (DLS).
-
-Given the current MVP scope, Elasticsearch Basic delivers an optimal equilibrium between deployment velocity, demonstration capability, operational documentation, and horizontal scalability.
+- dataset grows to hundreds of millions of events
+- heavy analytics become more important than search
+- semantic/vector search becomes a core requirement
+- enterprise infrastructure standardizes on OpenSearch/ClickHouse
+- strict multi-tenant document-level security is required

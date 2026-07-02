@@ -1,104 +1,25 @@
-# 📋 System Requirements Specification - SOC AI Search MVP
+# Requirements - SOC AI Search
 
-<details open>
-  <summary><b>📖 Table of Contents</b></summary>
+## 1. Objective
 
-  - [🎯 1. Executive Objective](#1-executive-objective)
-  - [🚀 2. Mandatory MVP Scope (MoSCoW - Must Have)](#2-mandatory-mvp-scope-moscow---must-have)
-    - [🗄️ 2.1. Event Storage and Indexing Architecture](#21-event-storage-and-indexing-architecture)
-    - [🧠 2.2. Natural Language Parsing Pipeline](#22-natural-language-parsing-pipeline)
-    - [🔍 2.3. Search Mode Specifications](#23-search-mode-specifications)
-    - [📊 2.4. Analytical Aggregation Specifications](#24-analytical-aggregation-specifications)
-    - [🔬 2.5. Forensic Event Detail Retrieval](#25-forensic-event-detail-retrieval)
-    - [🤖 2.6. AI Summarization Architecture](#26-ai-summarization-architecture)
-    - [📜 2.7. Auditing, History, and Data Extraction](#27-auditing-history-and-data-extraction)
-    - [🔐 2.8. Identity and Role-Based Access Control (RBAC)](#28-identity-and-role-based-access-control-rbac)
-    - [🖥️ 2.9. Frontend Architecture](#29-frontend-architecture)
-    - [🚢 2.10. Infrastructure, Deployment, and Operations](#210-infrastructure-deployment-and-operations)
-  - [🛣️ 3. Post-MVP Strategic Roadmap (Out of Scope)](#3-post-mvp-strategic-roadmap-out-of-scope)
-  - [⚖️ 4. Non-Functional Requirements (NFRs)](#4-non-functional-requirements-nfrs)
-</details>
+Build a SOC investigation console where users can search, aggregate, inspect, and export security events using natural language while preserving backend-controlled security guardrails.
 
-## 🎯 1. Executive Objective
+The system must make the AI pipeline transparent:
 
-The SOC AI Search MVP aims to construct an advanced analytical platform enabling Security Operations Center (SOC) analysts to search, aggregate, and forensically investigate security events utilizing natural language queries in both English and Vietnamese. The platform leverages a Large Language Model (LLM) to synthesize structured `SearchPlan` documents, which are subsequently validated, compiled into Elasticsearch Query DSL by the backend engine, and executed against an Elasticsearch cluster.
+- original question
+- Query Breakdown
+- validated SearchPlan
+- compiled Elasticsearch DSL
+- result set
+- audit/history record
 
-The paramount objective of this system is to enforce **Absolute Transparency and Security**: Analysts must have unhindered visibility into the original prompt, the validated `SearchPlan`, and the final executable DSL. The LLM is strictly prohibited from interacting directly with the Elasticsearch cluster or generating raw executable code.
+## 2. Event Storage
 
-## 🚀 2. Mandatory MVP Scope (MoSCoW - Must Have)
+The system must store SOC events in Elasticsearch index `soc-events-v1`.
 
-### 🗄️ 2.1. Event Storage and Indexing Architecture
+Required fields:
 
-- 💾 **Primary Data Store:** Implement Elasticsearch `9.4.2` (Basic self-managed) as the exclusive event repository.
-- 📈 **Dataset Scale:** Support a minimum synthetic dataset of 10,000 SOC events for localized demonstrations.
-- 🌱 **Seeding Mechanisms:** Provide PowerShell scripts and leverage the Elasticsearch Bulk API for rapid dataset seeding.
-- 📜 **Enforced Event Schema:**
-  - `timestamp`
-  - `source`
-  - `severity`
-  - `event_type`
-  - `user`
-  - `host`
-  - `ip`
-  - `country_code`
-  - `message`
-  - `raw` (Forensic log payload)
-- 📥 **Ingestion APIs:** Support both single-document and bulk-ingestion REST endpoints.
-- 🛡️ **Data Segregation Rule:** PostgreSQL must strictly act as the metadata repository (audit logs, histories, export references) and must never store SOC event data.
-
-### 🧠 2.2. Natural Language Parsing Pipeline
-
-- 🌐 **Primary Endpoint:** Expose `POST /api/v1/search` for natural language processing.
-- 📦 **Ingress Payload Structure:**
-  - `question` (String)
-  - `page` (Integer)
-  - `size` (Integer)
-- 🗣️ **Linguistic Support:** Bilingual support for English and Vietnamese query ingestion.
-- 🚫 **LLM Output Constraints:** The LLM must output purely structured JSON mapping to the `SearchPlan` schema. Markdown, conversational prose, and raw DSL generation are strictly rejected.
-- 🛡️ **Parsing Security:** The backend must employ Jackson for strict JSON deserialization, violently rejecting unknown properties. Validation is subsequently enforced via the Bean Validation framework and a custom `SearchPlanValidator`.
-- 🔄 **Fault Tolerance:** If the LLM produces a malformed payload, the backend is permitted a maximum of *one* automated repair/retry cycle.
-- 🔒 **Failure Obfuscation:** Unrecoverable parsing failures must return controlled, sanitized HTTP responses without exposing underlying stack traces.
-
-### 🔍 2.3. Search Mode Specifications
-
-The Search execution mode must technically support:
-
-- ⏱️ **Temporal Filtering:** Dynamic evaluation of `now`, `now-24h`, `now-7d`, `now-30d`, and strict ISO-8601 timestamps.
-- 🎯 **Exact & List Matching:**
-  - `severity`
-  - `event_type`
-  - `user`
-  - `host`
-  - `ip`
-  - `country_code`
-- 📖 **Lexical Analysis:** Full-text evaluation utilizing the `message_query` parameter executed against the Elasticsearch `message` field.
-- 🛑 **Pagination Constraints:** `page` and `size` parameters must enforce a hard upper limit where `size <= 100`.
-- 📉 **Sorting Mechanisms:** Default sort behavior is forced to `timestamp desc`.
-- 📄 **Standardized Response Schema:**
-  - `query_id`
-  - `original_question`
-  - `mode`
-  - `search_plan`
-  - `generated_dsl`
-  - `summary`
-  - `summary_source`
-  - `total`
-  - `page`
-  - `size`
-  - `total_pages`
-  - `events`
-
-### 📊 2.4. Analytical Aggregation Specifications
-
-The Aggregation execution mode must technically support:
-
-- `count`
-- `group_by`
-- `top_n`
-- `date_histogram`
-
-**Aggregation Field Allowlists:**
-
+- `timestamp`
 - `source`
 - `severity`
 - `event_type`
@@ -106,128 +27,272 @@ The Aggregation execution mode must technically support:
 - `host`
 - `ip`
 - `country_code`
+- `message`
+- `raw`
 
-**Architectural Guardrails:**
+The system must provide scripts to bootstrap the index and seed synthetic demo data.
 
-- 🚫 Hard rejection of any field not explicitly defined within the allowlist.
-- 🚫 Rejection of `.keyword` modifiers injected by the user or the LLM.
-- 🚫 The `COUNT` operation must structurally reject `field`, `top_n`, or `interval` parameters.
-- ✅ The `TOP_N` operation mandates the presence of a `top_n` parameter constrained between 1 and 100.
-- ✅ The `GROUP_BY` operation, if lacking an explicit `top_n` parameter, defaults to a bucket limit of 20 at compile-time.
-- ✅ The `DATE_HISTOGRAM` must operate exclusively on the `timestamp` field utilizing `fixed_interval` mappings (`minute -> 1m`, `hour -> 1h`, `day -> 1d`).
+## 3. Natural Language Search
 
-**Standardized Aggregation Response Schema:**
+The system must expose `POST /api/v1/search`.
 
-- `mode = aggregation`
-- `aggregation_type`
-- `generated_dsl`
-- `total`
-- `aggregation_results`
-- `chart_metadata`
-- `events = []` (Returns an empty array for aggregation endpoints).
+Request fields:
 
-### 🔬 2.5. Forensic Event Detail Retrieval
+- `question`
+- `page`
+- `size`
 
-- 🌐 **Endpoint:** Expose `GET /api/v1/events/{event_id}`.
-- 🔑 **ID Resolution:** The `{event_id}` must mathematically map to the underlying Elasticsearch document `_id`.
-- 📄 **Payload Requirement:** The response must serialize the `raw` forensic log payload.
-- ❌ **Error Handling:** Null or blank identifiers return HTTP 400. Unresolved identifiers return an explicit HTTP 404.
+The backend must:
 
-### 🤖 2.6. AI Summarization Architecture
+1. Build a constrained LLM prompt.
+2. Ask the LLM for a SearchPlan.
+3. Parse only pure JSON.
+4. Validate the SearchPlan.
+5. Override pagination from the request.
+6. Compile Elasticsearch DSL.
+7. Execute Elasticsearch.
+8. Return SearchPlan, generated DSL, results, summary, and query id.
+9. Store an audit/history record.
 
-- ⚙️ **Execution Philosophy:** Summarization operates as an asynchronous, best-effort enhancement.
-- 🚀 **Precedence Rule:** Search and aggregation datasets must prioritize delivery; summary processing must not block result rendering.
-- 🛡️ **Resiliency:** Should the LLM experience a timeout or generate an invalid response, the backend must inject a deterministic fallback string while maintaining an HTTP 200 OK status.
-- 📝 **Output Constraints:** The summary must be returned as plain text, constrained to 3-5 analytical sentences.
-- 🔒 **Data Protection:** Raw forensic logs must never be transmitted to the LLM.
-- 🗜️ **Payload Compression:** The outbound prompt must strictly bound the number of sample events and the overall payload character length.
-- ⚡ **Aggregation Optimization:** Aggregation summaries must utilize pre-computed `aggregation_results` directly; initiating secondary Elasticsearch queries for summarization is prohibited.
+## 4. SearchPlan Validation
 
-### 📜 2.7. Auditing, History, and Data Extraction
+The system must reject:
 
-- 💾 **Metadata Persistence:** The PostgreSQL `search_query_logs` table must immutably record:
-  - `query_id`
-  - User identity (Principal)
-  - Original question
-  - Execution mode
-  - Execution status
-  - Failure stage tracking
-  - Validated `SearchPlan` payload
-  - `generated_dsl` snapshot
-  - Result hit count
-  - Execution latencies
-  - Generated summary
-  - Sanitized error messages
-  - Creation timestamp
-- 🔄 **History Retrieval:** Expose paginated endpoints for historical query retrieval.
-- 📤 **CSV Extraction Pipeline:** Bounded via `query_id`:
-  - 🚫 **Hard Constraint:** The system must actively reject raw DSL supplied by the client.
-  - 🔄 **Execution Flow:** Load the persisted SearchPlan, re-validate, re-compile, and execute a live replay against Elasticsearch.
-  - 🛑 **Volume Threshold:** Force a hard truncation limit of 10,000 rows per export.
-  - 📑 **Header Directives:** If data is truncated, inject the `X-Export-Truncated: true` HTTP response header.
+- unknown fields
+- unsupported modes
+- unsupported aggregation types
+- unsupported fields
+- unsafe script/wildcard/query string expressions
+- invalid IP values
+- invalid country codes
+- invalid pagination
+- invalid time expressions
+- unsupported aggregation field combinations
 
-### 🔐 2.8. Identity and Role-Based Access Control (RBAC)
+Relative time support:
 
-- 🔑 **Identity Provider (IdP):** Implement Keycloak OpenID Connect (OIDC).
-- 🧑‍💼 **Enterprise Roles:**
-  - `SOC_VIEWER`
-  - `SOC_ANALYST`
-  - `SOC_ADMIN`
-- 🛡️ **Security Enforcement:** The backend must independently verify JSON Web Tokens (JWTs) utilizing Spring Security Resource Server modules.
-- ⚖️ **Role Hierarchy Implementation:**
-  - `SOC_ADMIN > SOC_ANALYST > SOC_VIEWER`
-  - `SOC_ANALYST > SOC_VIEWER`
-- 📋 **Entitlement Matrix:**
-  - Viewers maintain read-only analytical access and are restricted from CSV exports.
-  - Analysts possess operational access and data extraction (CSV) capabilities.
-  - Administrators inherit all Analyst capabilities alongside exclusive access to system audit logs.
+- `now`
+- `now-<number>h`, maximum 720h
+- `now-<number>d`, maximum 90d
+- ISO-8601 timestamps
 
-### 🖥️ 2.9. Frontend Architecture
+## 5. Search Mode
 
-- ⚛️ **Technology Core:** React, TypeScript, and Vite.
-- 🎨 **Styling & Components:** Tailwind CSS, shadcn/ui, and lucide-react.
-- 📊 **Analytical Rendering:** Integrate Recharts for high-fidelity aggregation visualizations.
-- 🖼️ **Required UI Topologies:**
-  - Centralized Natural Language Search Input.
-  - Dynamic Suggested Query carousels.
-  - Collapsible Pipeline/Inspection panels.
-  - Read-only viewers for SearchPlan JSON and generated DSL structures.
-  - Paginated raw event data tables.
-  - Integrated Analytics charting with supplementary summary tables.
-  - Slide-out Event Detail Inspection drawers.
-  - AI-generated contextual summary blocks.
-  - Recent Investigation history matrices.
-  - Role-gated CSV Export action triggers.
+Search mode must support filters:
 
-### 🚢 2.10. Infrastructure, Deployment, and Operations
+- timestamp
+- source
+- severity
+- event_type
+- user
+- host
+- ip
+- country_code
+- message_query
 
-- 🐳 **Orchestration:** Local and target production environments standardized on Docker Compose.
-- ☁️ **Target Topology:** DigitalOcean Droplet + Name.com DNS routing + Caddy HTTPS Reverse Proxy.
-- 🧱 **Edge Security:** The public firewall must be aggressively configured to allow ingress exclusively on ports `22`, `80`, and `443`.
-- 🔏 **Internal Segmentation:** Ports `3000`, `8081`, `8082`, `9200`, `5433`, and `5601` must not be directly routable from the public internet.
-- 🚀 **Delivery Pipeline:** GitHub Actions executing CI testing gates and SSH-based CD deployments.
-- ✅ **Validation Gates:** Smoke tests must programmatically verify HTTPS termination, CORS policies, and port isolation at deployment.
+The following fields support multi-value filters:
 
-## 🛣️ 3. Post-MVP Strategic Roadmap (Out of Scope)
+- source
+- severity
+- event_type
+- user
+- host
+- ip
+- country_code
 
-The following architectural expansions are explicitly excluded from the current MVP boundary:
+The UI must support result filtering/sorting and rerun a validated SearchPlan without asking the LLM for a new SearchPlan.
 
-- ❌ Multi-turn, stateful investigative conversational chat interfaces.
-- ❌ Implementation of Semantic/Vector similarity search capabilities.
-- ❌ Persistence mechanisms for custom-built visual dashboards.
-- ❌ Machine Learning-powered advanced anomaly detection models.
-- ❌ Enterprise multi-tenant logical data isolation.
-- ❌ Integration of high-throughput, production-grade SIEM ingestion pipelines.
-- ❌ Telemetry instrumentation utilizing Prometheus and Grafana.
-- ❌ Migration to Kubernetes/Helm deployment topologies.
+## 6. Aggregation Mode
 
-## ⚖️ 4. Non-Functional Requirements (NFRs)
+Aggregation mode must support:
 
-- 📄 **API Documentation:** Comprehensive OpenAPI/Swagger specification required for all backend endpoints.
-- 🧪 **Test Coverage - Backend:** Unit, Integration (Service), and Controller-tier testing via JUnit 5, Mockito, and MockMvc.
-- 🧪 **Test Coverage - Frontend:** Component testing utilizing Vitest and React Testing Library.
-- ✅ **Quality Gates:** Enforcement of a minimum 50% code coverage threshold (JaCoCo) across core business logic boundaries.
-- 🔒 **Credential Security:** Absolute prohibition against committing production secrets, tokens, or private keys to version control.
-- 🛡️ **Data Privacy:** Hard constraint preventing the leakage of API keys, raw event payloads, or internal stack traces into client responses.
-- 💾 **Data Persistence:** Implementation of Docker Named Volumes to guarantee application state resilience across container lifecycles.
-- ⚠️ **Operational Safety:** Procedural mandate prohibiting the execution of `docker compose down -v` outside of controlled data purging events.
+- `count`
+- `group_by`
+- `top_n`
+- `date_histogram`
+
+Aggregation fields:
+
+- source
+- severity
+- event_type
+- user
+- host
+- ip
+- country_code
+
+Chart mapping:
+
+- `count` -> number result
+- `group_by` -> bar chart
+- `top_n` -> bar chart
+- `date_histogram` -> line chart
+
+Date histogram must use timestamp internally and must preserve chronological ordering.
+
+## 7. Query Transparency
+
+The UI must display:
+
+- Query Breakdown
+- Validated SearchPlan
+- Compiled DSL
+
+Query Breakdown must be human-readable and must hide null/empty fields.
+
+SearchPlan editing rules:
+
+- Viewer cannot edit.
+- Analyst and Admin can edit SearchPlan.
+- DSL is read-only.
+- Edited SearchPlan must be revalidated and recompiled by the backend.
+
+## 8. AI Features
+
+### SearchPlan generation
+
+The LLM can generate a SearchPlan, but the backend must validate before execution.
+
+### Summary
+
+The system must generate a bounded AI summary when appropriate. If the LLM fails, the system must return a deterministic fallback and keep the search response successful.
+
+### Correct or Refine Query
+
+Users can submit feedback to correct or refine the current query. The system rewrites the natural language question, then reruns the normal safe pipeline.
+
+### Follow-up Suggestions
+
+The system can ask the LLM for next investigation steps. Requirements:
+
+- exactly 3 suggestions when available
+- each suggestion has `title` and `question`
+- click fills and focuses the search box
+- click does not auto-run search
+- no static fallback if LLM/mock returns no suggestions
+
+## 9. Query Library
+
+The system must provide a static Query Library page with curated SOC questions based on the synthetic dataset.
+
+Requirements:
+
+- route: `/query-library`
+- search/filter by category and text
+- categories include search, aggregation, top N, count, time series, line chart, bar chart, multi-filter, playbook
+- copy query
+- use query by filling and focusing the search input
+- do not auto-run the query
+- pagination with 2 questions per page
+
+## 10. Dashboard
+
+The dashboard must use fixed SearchPlan/API calls and must not call the LLM.
+
+Requirements:
+
+- Total events
+- Critical/high alerts
+- Failed logins
+- Severity distribution
+- Top source IPs
+- Events over time
+- Auto-refresh every 10 minutes
+- Partial failure isolation: one broken card must not break the whole dashboard
+
+## 11. History, Investigations, and Audit
+
+Every executed search or SearchPlan rerun that changes the query should be stored in PostgreSQL.
+
+History/Audit records must include:
+
+- query id
+- user identity
+- question/display question
+- mode
+- status
+- SearchPlan
+- generated DSL
+- total result count
+- latency
+- summary if available
+- error if failed
+
+All Investigations:
+
+- server-side pagination
+- server-side search/filter
+- pin/unpin
+- run again
+- export result CSV for allowed roles
+
+System Audit Logs:
+
+- admin only
+- server-side pagination
+- server-side search/filter
+- audit CSV export
+
+## 12. CSV Export
+
+Result CSV export must:
+
+- accept only `query_id`
+- load stored SearchPlan from PostgreSQL
+- validate and compile again
+- replay against Elasticsearch
+- cap export at 10,000 rows
+- prevent CSV formula injection
+- avoid stack trace leakage
+
+Audit CSV export must:
+
+- be admin-only
+- export all matching rows for current filters, not just the current UI page
+
+## 13. Event Detail
+
+The event detail drawer must:
+
+- load event detail by id
+- show formatted fields
+- show raw log
+- avoid unnecessary internal fields in the main formatted view
+- format timestamps for readability
+
+## 14. Authentication and RBAC
+
+The system must use Keycloak OIDC.
+
+Roles:
+
+- `SOC_VIEWER`
+- `SOC_ANALYST`
+- `SOC_ADMIN`
+
+Backend must enforce:
+
+- Viewer: search/read-only.
+- Analyst: search, edit SearchPlan, pin, export, investigations.
+- Admin: all Analyst capabilities plus audit logs and Keycloak admin access.
+
+## 15. Deployment and Operations
+
+The system must support:
+
+- local Docker Compose
+- production Docker Compose override
+- Caddy HTTPS reverse proxy
+- DigitalOcean VPS deployment
+- GitHub Actions CI/CD
+- smoke tests after deployment
+
+## 16. Non-Functional Requirements
+
+- No production secrets in git.
+- No raw stack traces in client responses.
+- Backend must be the security authority.
+- Elasticsearch must not be exposed publicly.
+- LLM failures must degrade gracefully.
+- CI must run backend tests, frontend lint/test/build, and compose validation.
+- Demo data must be reproducible with seed scripts.

@@ -1,248 +1,210 @@
-# 🏗️ System Architecture - SOC AI Search MVP
+# System Architecture - SOC AI Search
 
-<details open>
-  <summary><b>📖 Table of Contents</b></summary>
+## 1. Summary
 
-  - [📝 1. Executive Summary](#1-executive-summary)
-  - [🏛️ 2. Macro Architecture](#2-macro-architecture)
-  - [🌐 3. Domain Routing Matrix](#3-domain-routing-matrix)
-  - [⚙️ 4. Backend Module Architecture](#4-backend-module-architecture)
-  - [🗄️ 5. Data Store Taxonomy](#5-data-store-taxonomy)
-    - [🔍 5.1. Elasticsearch](#51-elasticsearch)
-    - [💾 5.2. PostgreSQL](#52-postgresql)
-    - [🔑 5.3. Keycloak](#53-keycloak)
-  - [🔒 6. SearchPlan Security Model](#6-searchplan-security-model)
-  - [🤖 7. Intelligent Summary Architecture](#7-intelligent-summary-architecture)
-  - [📤 8. Cryptographically Bounded CSV Export Architecture](#8-cryptographically-bounded-csv-export-architecture)
-  - [🚢 9. Deployment Architecture](#9-deployment-architecture)
-</details>
+SOC AI Search is a modular monolith application for SOC event search and investigation. The frontend is a React SPA. The backend is a Spring Boot API that owns all security-sensitive execution: authentication, SearchPlan validation, Elasticsearch DSL compilation, audit persistence, and CSV export replay.
 
-## 📝 1. Executive Summary
+The LLM is an assistant, not an executor. It can generate a `SearchPlan`, summary text, follow-up suggestions, or a refined natural language query, but it cannot directly query Elasticsearch.
 
-This document delineates the current architectural state of the SOC AI Search MVP. The ecosystem is composed of a modernized React frontend, a Spring Boot backend API, Elasticsearch, PostgreSQL, Keycloak for strict RBAC (Role-Based Access Control), structured CSV export capabilities, AI-driven summarization, and a robust CI/CD pipeline. The production environment is publicly deployed across a DigitalOcean infrastructure utilizing Name.com for DNS and Caddy for HTTPS termination.
-
-## 🏛️ 2. Macro Architecture
-
-The system fundamentally adheres to a **Modular Monolith** architectural pattern:
-
-- ⚙️ A unified Spring Boot 3 backend encapsulates all business modules.
-- 🖥️ The React frontend operates as an independent Single Page Application (SPA).
-- 🗄️ Elasticsearch, PostgreSQL, Keycloak, Caddy, and the LLM engine operate as localized dependencies or managed runtime services.
-- 🧱 Deliberate architectural constraint: The backend is intentionally not fragmented into microservices for the MVP phase.
+## 2. High-Level Architecture
 
 ```mermaid
 flowchart LR
-    Analyst["SOC Analyst / Mentor"]
+    User["SOC user"]
     Browser["Browser"]
-    Caddy["Caddy\nHTTPS reverse proxy"]
-    Frontend["React SPA\nSOC Console"]
-    Backend["Spring Boot 3\nModular Monolith"]
-    ES[("Elasticsearch 9.4.2\nEvent Store")]
-    PG[("PostgreSQL\nAudit + History")]
+    Caddy["Caddy HTTPS reverse proxy"]
+    FE["React SPA"]
+    BE["Spring Boot backend"]
+    ES[("Elasticsearch\nsoc-events-v1")]
+    PG[("PostgreSQL\nsearch_query_logs")]
     KC["Keycloak\nOIDC + RBAC"]
-    LLM["LLM Provider\nMock / Gemini"]
+    LLM["Mock / Gemini"]
 
-    Analyst --> Browser
-    Browser -->|https://soc-ai-search.app| Caddy
-    Caddy -->|app domain| Frontend
-    Caddy -->|api.soc-ai-search.app| Backend
-    Caddy -->|auth.soc-ai-search.app| KC
-    Frontend -->|REST JSON + Bearer token| Backend
-    Backend -->|Search / aggregation / detail| ES
-    Backend -->|Audit / history / query replay| PG
-    Backend -->|JWT issuer + JWKS| KC
-    Backend -->|SearchPlan prompt / summary prompt| LLM
+    User --> Browser
+    Browser --> Caddy
+    Caddy --> FE
+    Caddy --> BE
+    Caddy --> KC
+    FE -->|REST + Bearer token| BE
+    BE -->|Search / aggregation / event detail| ES
+    BE -->|History / audit / pin / export replay| PG
+    BE -->|JWT issuer + JWKS| KC
+    BE -->|SearchPlan / summary / refine / suggestions| LLM
 ```
 
-## 🌐 3. Domain Routing Matrix
+## 3. Runtime Boundaries
 
-| Public Domain | Route Objective | Infrastructure Target |
-| --- | --- | --- |
-| `https://soc-ai-search.app` | Primary UI Application | Frontend Container |
-| `https://api.soc-ai-search.app` | RESTful API & Swagger Docs | Backend Container |
-| `https://auth.soc-ai-search.app` | OIDC Authorization & Admin Console | Keycloak Container |
+- The frontend never calls Elasticsearch or Gemini directly.
+- The backend is the only component allowed to compile Elasticsearch DSL.
+- Elasticsearch stores SOC event documents.
+- PostgreSQL stores application metadata only.
+- Keycloak owns identity, roles, and tokens.
+- Caddy owns public HTTPS routing in production.
 
-*Security Context:* Caddy exclusively binds to public ports `80` and `443`. Internal service orchestration ports remain structurally isolated and are not publicly exposed.
-
-## ⚙️ 4. Backend Module Architecture
-
-![Spring Boot](https://img.shields.io/badge/spring_boot-%236DB33F.svg?style=for-the-badge&logo=spring-boot&logoColor=white) ![Java](https://img.shields.io/badge/java-%23ED8B00.svg?style=for-the-badge&logo=openjdk&logoColor=white)
+## 4. Backend Modules
 
 ```mermaid
 flowchart TB
-    subgraph BE["Spring Boot Backend"]
-        Controllers["REST Controllers\nSwagger/OpenAPI"]
+    subgraph BE["Spring Boot backend"]
         Security["Security\nJWT + RBAC"]
-        NL["Natural Language Service"]
-        Prompt["Prompt Builder"]
-        Parser["SearchPlan JSON Parser"]
-        Validator["SearchPlan Validator"]
-        Compiler["SearchPlan Compiler\nElasticsearch DSL"]
-        Executor["Search/Aggregation Executor"]
-        Mapper["Response Mapper"]
-        Summary["Summary Service\nBest effort"]
-        Audit["Audit/History Service"]
-        Csv["CSV Export Service"]
-        Event["Event Ingest/Detail Service"]
-        LlmClient["LlmClient\nMock/Gemini"]
+        NL["Natural language search"]
+        Prompt["Prompt builders"]
+        Parser["Strict JSON parser"]
+        Validator["SearchPlan validator"]
+        Compiler["SearchPlan compiler"]
+        Executor["Elasticsearch executor"]
+        Summary["Result summary service"]
+        Refine["Query refiner"]
+        Suggestions["Follow-up suggestions"]
+        Audit["Audit/history service"]
+        CSV["CSV export service"]
+        Events["Event ingest/detail"]
     end
 
-    Controllers --> Security
-    Controllers --> NL
-    Controllers --> Csv
-    Controllers --> Event
+    Security --> NL
     NL --> Prompt
-    NL --> LlmClient
     NL --> Parser
     Parser --> Validator
     Validator --> Compiler
     Compiler --> Executor
-    Executor --> Mapper
-    Mapper --> Summary
+    Executor --> Summary
     NL --> Audit
-    Csv --> Audit
-    Csv --> Validator
-    Csv --> Compiler
-    Csv --> Executor
+    Refine --> Prompt
+    Suggestions --> Prompt
+    CSV --> Audit
+    CSV --> Validator
+    CSV --> Compiler
+    CSV --> Executor
 ```
 
-**Imperative Guardrail:** All output originating from the LLM must successfully traverse both the strict Jackson Parser and the Bean Validation framework prior to the Compiler generating actionable Elasticsearch DSL.
+Key backend responsibilities:
 
-## 🗄️ 5. Data Store Taxonomy
+- Accept natural language requests.
+- Build a constrained LLM prompt.
+- Parse only pure JSON SearchPlan output.
+- Reject unknown fields and unsafe expressions.
+- Validate time ranges, filters, aggregation fields, pagination, and sort.
+- Compile SearchPlan into Elasticsearch DSL.
+- Execute Elasticsearch requests with bounded timeout.
+- Persist audit/history in PostgreSQL.
+- Replay stored SearchPlans for CSV export.
 
-### 🔍 5.1. Elasticsearch
+## 5. Data Stores
 
-![Elasticsearch](https://img.shields.io/badge/elasticsearch-%23005571.svg?style=for-the-badge&logo=elasticsearch&logoColor=white)
+### Elasticsearch
 
-Elasticsearch serves as the authoritative repository for SOC event documents within the `soc-events-v1` index.
+Index: `soc-events-v1`
 
-Primary Operational Responsibilities:
+| Field | Type | Purpose |
+| --- | --- | --- |
+| `timestamp` | `date` | Time range, sort, time series |
+| `source` | `keyword` | Filter and aggregation |
+| `severity` | `keyword` | Filter, sort, aggregation |
+| `event_type` | `keyword` | Filter and aggregation |
+| `user` | `keyword` | Filter and aggregation |
+| `host` | `keyword` | Filter and aggregation |
+| `ip` | `ip` | IP filter and top IP |
+| `country_code` | `keyword` | Filter and aggregation |
+| `message` | `text` | Message text search |
+| `raw` | `text`, not indexed | Forensic raw log payload |
 
-- 🔎 Execution of Full-text `match` queries against the `message` field.
-- ⚡ High-velocity exact filtering on standardized keyword/IP fields.
-- ⏱️ Highly optimized range queries executing against `timestamp` indices.
-- 📊 Processing `terms` aggregations supporting `group_by` and `top_n` operations.
-- 📈 Execution of `date_histogram` aggregations essential for time-series analytics.
-- 🔬 Rapid extraction of Event Details mapped by the internal Elasticsearch `_id`.
+### PostgreSQL
 
-### 💾 5.2. PostgreSQL
+Main table: `search_query_logs`
 
-![PostgreSQL](https://img.shields.io/badge/postgresql-%23316192.svg?style=for-the-badge&logo=postgresql&logoColor=white)
+Stores:
 
-PostgreSQL functions strictly as the application state and metadata repository. It explicitly does **not** store SOC event documents.
+- `query_id`
+- user identity
+- original/display question
+- mode and status
+- validated SearchPlan
+- generated DSL snapshot
+- result count
+- latency
+- summary and summary source
+- error message/failure stage
+- pinned status
 
-Primary Relational Table:
+PostgreSQL does not store SOC event documents.
 
-- `search_query_logs`
+### Keycloak
 
-Responsibilities:
+Realm: `soc-ai-search`
 
-- 📜 Maintaining comprehensive query histories.
-- 🛡️ Serving as the immutable Audit Log.
-- 🚨 Tracking query status and failure stage telemetries.
-- 📸 Persisting validated SearchPlan snapshots.
-- 🔨 Storing generated DSL snapshots (structurally capped to mitigate storage overflow).
-- ⏱️ Recording executed result counts, operational latencies, and AI-generated summaries.
-- 📤 Supplying foundational source data essential for CSV export replays bound to a specific `query_id`.
-
-### 🔑 5.3. Keycloak
-
-![Keycloak](https://img.shields.io/badge/Keycloak-EE0000?style=for-the-badge&logo=keycloak&logoColor=white)
-
-Keycloak operates as the centralized Identity Provider (IdP) managing user sessions and realm-level entitlements:
+Roles:
 
 - `SOC_VIEWER`
 - `SOC_ANALYST`
 - `SOC_ADMIN`
 
-The Backend inherently maps these roles extracted from `realm_access.roles` applying Spring Security's role hierarchy engine. The Frontend consumes this role context solely for UX element gating, while the Backend Authorization mechanism remains mathematically authoritative.
+The backend maps Keycloak realm roles into Spring Security authorities and enforces authorization server-side.
 
-## 🔒 6. SearchPlan Security Model
+## 6. SearchPlan Security Model
 
 ```mermaid
 flowchart LR
-    Q["Natural language question"]
+    Q["Question"]
     LLM["LLM"]
-    Plan["SearchPlan JSON"]
-    Parser["Strict Jackson parser"]
-    Guard["Bean Validation + SearchPlanValidator"]
+    Plan["SearchPlan"]
+    Parser["Parser"]
+    Validator["Validator"]
     Compiler["Compiler"]
-    DSL["Elasticsearch DSL"]
+    DSL["DSL"]
     ES["Elasticsearch"]
 
-    Q --> LLM
-    LLM --> Plan
-    Plan --> Parser
-    Parser --> Guard
-    Guard --> Compiler
-    Compiler --> DSL
-    DSL --> ES
+    Q --> LLM --> Plan --> Parser --> Validator --> Compiler --> DSL --> ES
 ```
 
-**Enforced Guardrails:**
+Guardrails:
 
-- 🚫 Hard rejection of anomalous or unknown JSON fields.
-- 🚫 Denial of unsupported search modes or aggregation types.
-- 🚫 Rejection of queries targeting unsupported filter or aggregation dimensions.
-- 🚫 Active prohibition of `.keyword` modifiers, embedded scripts, wildcard expressions, or arbitrary query strings generated by the LLM.
-- 🛑 Hardcap enforcement preventing queries attempting `size > 100`.
-- ✂️ The backend unconditionally overrides pagination boundaries regardless of initial request directives.
+- LLM output must be a JSON object.
+- Markdown/prose/trailing tokens are rejected.
+- Unknown fields are rejected.
+- Unsupported filters and aggregations are rejected.
+- `script`, wildcard, query string, `.keyword`, and unsafe expressions are rejected.
+- Relative time supports `now`, `now-<n>h`, and `now-<n>d` with limits.
+- Backend overrides pagination boundaries.
+- DSL is generated only by backend code.
 
-## 🤖 7. Intelligent Summary Architecture
+## 7. Frontend Architecture
 
-![Gemini](https://img.shields.io/badge/Google_Gemini-8E75C2?style=for-the-badge&logo=googlegemini&logoColor=white)
+Main user-facing areas:
 
-AI Summarization operates strictly as a best-effort augmentation:
+- Dashboard
+- Event Search
+- Query Transparency
+- Query Result
+- Query Library
+- All Investigations
+- Recent Queries
+- System Audit Logs
+- Event Detail Drawer
 
-- 🔎 Search Mode execution may dispatch a singular bounded aggregation query to generate statistical context.
-- 📊 Aggregation Mode efficiently recycles pre-computed `aggregation_results` directly.
-- 🗜️ The outbound data payload sent to the LLM is tightly compressed and thoroughly sanitized.
-- ♻️ Should the LLM experience timeouts or generate invalid structures, the Backend gracefully returns a deterministic fallback summary, guaranteeing the search response lifecycle succeeds uninterrupted.
+Important UI flows:
 
-## 📤 8. Cryptographically Bounded CSV Export Architecture
+- Query Breakdown visualizes SearchPlan fields in a human-readable table.
+- Validated SearchPlan and Compiled DSL remain available for transparency.
+- Correct or Refine Query lets users add feedback and rerun the safe pipeline.
+- Result filter/sort reruns a validated SearchPlan without asking the LLM for a new natural language plan.
+- Query Library provides curated demo queries based on the synthetic dataset.
+- AI Follow-up Suggestions provide three LLM-generated next investigation ideas when available.
 
-The CSV export process operates on a rigid Query Replay architecture:
-
-```mermaid
-sequenceDiagram
-    autonumber
-    participant FE as Frontend
-    participant BE as Backend
-    participant PG as PostgreSQL
-    participant Compiler as SearchPlan Compiler
-    participant ES as Elasticsearch
-
-    FE->>BE: GET /api/v1/search/{query_id}/export.csv
-    BE->>PG: Load stored SearchPlan by query_id
-    PG-->>BE: StoredSearchQuery
-    BE->>BE: Validate access and SearchPlan
-    BE->>Compiler: Compile SearchPlan
-    Compiler-->>BE: DSL
-    BE->>ES: Replay query with export limit
-    ES-->>BE: Current hits/buckets
-    BE-->>FE: text/csv + Content-Disposition + X-Export-Truncated
-```
-
-*Security Mandate:* Clients are explicitly forbidden from submitting dynamic or arbitrary DSL for CSV extraction purposes.
-
-## 🚢 9. Deployment Architecture
-
-![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white) ![DigitalOcean](https://img.shields.io/badge/DigitalOcean-%230080FF.svg?style=for-the-badge&logo=DigitalOcean&logoColor=white) ![GitHub Actions](https://img.shields.io/badge/github%20actions-%232671E5.svg?style=for-the-badge&logo=githubactions&logoColor=white)
+## 8. Deployment Architecture
 
 ```mermaid
 flowchart TB
     GitHub["GitHub Actions"]
-    VPS["DigitalOcean Droplet"]
+    VPS["DigitalOcean VPS"]
     Compose["Docker Compose"]
-    Caddy["Caddy 80/443"]
+    Caddy["Caddy"]
     FE["frontend"]
     BE["backend"]
     ES["elasticsearch"]
     PG["postgres"]
     KC["keycloak"]
-    Volumes[("Named volumes")]
 
-    GitHub -->|SSH deploy after CI| VPS
+    GitHub -->|SSH deploy| VPS
     VPS --> Compose
     Compose --> Caddy
     Compose --> FE
@@ -250,15 +212,12 @@ flowchart TB
     Compose --> ES
     Compose --> PG
     Compose --> KC
-    ES --> Volumes
-    PG --> Volumes
-    KC --> Volumes
-    Caddy --> Volumes
 ```
 
-**Production Hardening Protocols:**
+Production public domains:
 
-- 🧱 The public-facing edge firewall exposes only ports `22`, `80`, and `443`.
-- 🔏 Internal telemetry and database ports (Elasticsearch, PostgreSQL, Keycloak, internal applications) are heavily isolated.
-- 🗝️ Cryptographic keys and operational secrets reside exclusively within secured VPS `.env` boundaries or GitHub Actions encrypted secrets.
-- ⚠️ *Operational Warning:* Administrators must strictly avoid executing `docker compose down -v` unless executing a planned data purge.
+- `https://soc-ai-search.app`
+- `https://api.soc-ai-search.app`
+- `https://auth.soc-ai-search.app`
+
+Only ports `22`, `80`, and `443` should be publicly reachable.
