@@ -123,7 +123,7 @@ Show:
 - search input
 - copy button
 - use query button
-- 2-query pagination
+- 5-query pagination
 
 Say:
 

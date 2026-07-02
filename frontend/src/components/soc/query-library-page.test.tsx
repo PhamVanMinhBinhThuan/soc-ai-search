@@ -31,16 +31,17 @@ describe('QueryLibraryPage', () => {
     expect(screen.getByText(/Show critical events in the last 7 days/i)).toBeInTheDocument()
   })
 
-  it('paginates query cards two per page', () => {
+  it('paginates query cards five per page', () => {
     render(<QueryLibraryPage onUseQuery={vi.fn()} />)
 
     expect(screen.getByText(/Show me failed login attempts from China/i)).toBeInTheDocument()
     expect(screen.getByText(/Show critical events in the last 7 days/i)).toBeInTheDocument()
-    expect(screen.queryByText(/Show account lockout events in the last 7 days/i)).not.toBeInTheDocument()
+    expect(screen.getByText(/Show account lockout events in the last 7 days/i)).toBeInTheDocument()
+    expect(screen.queryByText(/Show firewall block events from China/i)).not.toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: /Next page/i }))
 
-    expect(screen.getByText(/Show account lockout events in the last 7 days/i)).toBeInTheDocument()
+    expect(screen.getByText(/Show firewall block events from China/i)).toBeInTheDocument()
   })
 
   it('filters by search input', () => {

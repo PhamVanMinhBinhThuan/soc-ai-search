@@ -19,7 +19,7 @@ import {
   type QueryLibraryItem,
 } from '@/lib/query-library'
 
-const ITEMS_PER_PAGE = 2
+const ITEMS_PER_PAGE = 5
 
 const ALL_CATEGORIES: QueryLibraryCategory[] = [
   'search',

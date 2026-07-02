@@ -183,7 +183,7 @@ Requirements:
 - copy query
 - use query by filling and focusing the search input
 - do not auto-run the query
-- pagination with 2 questions per page
+- pagination with 5 questions per page
 
 ## 10. Dashboard
 
