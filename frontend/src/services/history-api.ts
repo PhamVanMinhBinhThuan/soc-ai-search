@@ -216,9 +216,9 @@ function appendAuditFilters(search: URLSearchParams, filters?: AuditLogFiltersDt
 
 function appendCommonFilters(
   search: URLSearchParams,
-  filters?: Pick<SearchHistoryFiltersDto, 'q' | 'status' | 'mode' | 'from' | 'to' | 'sort'>,
+  filters?: Pick<SearchHistoryFiltersDto, 'question' | 'status' | 'mode' | 'from' | 'to' | 'sort'>,
 ) {
-  if (filters?.q?.trim()) search.set('q', filters.q.trim())
+  if (filters?.question?.trim()) search.set('question', filters.question.trim())
   if (filters?.status && filters.status !== 'all') search.set('status', filters.status)
   if (filters?.mode && filters.mode !== 'all') search.set('mode', filters.mode)
   if (filters?.from) search.set('from', filters.from)

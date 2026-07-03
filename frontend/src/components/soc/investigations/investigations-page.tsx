@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react"
 import { ShieldAlert } from "lucide-react"
-import { InvestigationsMasterList, type FilterKey } from "./investigations-master-list"
+import { InvestigationsMasterList } from "./investigations-master-list"
 import { InvestigationDetailPanel } from "./investigation-detail-panel"
 import { getSearchHistory, getSearchHistoryDetail, togglePinHistory } from "@/services/history-api"
-import type { SearchHistoryItemDto, SearchHistoryDetailDto } from "@/types/soc"
+import type { AuditStatus, SearchHistoryItemDto, SearchHistoryDetailDto, SearchMode } from "@/types/soc"
 
 const PAGE_SIZE = 5
 
@@ -16,8 +16,10 @@ export function InvestigationsPage({
   onExport?: (queryId: string) => void
   canExport?: boolean
 }) {
-  const [query, setQuery] = useState("")
-  const [filter, setFilter] = useState<FilterKey>("all")
+  const [questionQuery, setQuestionQuery] = useState("")
+  const [pinnedOnly, setPinnedOnly] = useState(false)
+  const [modeFilter, setModeFilter] = useState<SearchMode | "all">("all")
+  const [statusFilter, setStatusFilter] = useState<AuditStatus | "all">("all")
   const [page, setPage] = useState(0)
   const [total, setTotal] = useState(0)
   const [totalPages, setTotalPages] = useState(0)
@@ -32,7 +34,12 @@ export function InvestigationsPage({
     const timer = window.setTimeout(() => {
       setLoading(true)
     
-      getSearchHistory(page, PAGE_SIZE, filtersForRequest(filter, query), abortController.signal)
+      getSearchHistory(
+        page,
+        PAGE_SIZE,
+        filtersForRequest(questionQuery, pinnedOnly, modeFilter, statusFilter),
+        abortController.signal,
+      )
         .then(res => {
           setItems(res.items)
           setPage(res.page)
@@ -47,13 +54,13 @@ export function InvestigationsPage({
         .finally(() => {
           setLoading(false)
         })
-    }, query.trim() ? 250 : 0)
+    }, questionQuery.trim() ? 250 : 0)
 
     return () => {
       window.clearTimeout(timer)
       abortController.abort()
     }
-  }, [filter, page, query])
+  }, [modeFilter, page, pinnedOnly, questionQuery, statusFilter])
 
   // Fetch details when an item is selected
   useEffect(() => {
@@ -124,15 +131,25 @@ export function InvestigationsPage({
             items={items}
             activeId={selectedId}
             onSelect={setSelectedId}
-            query={query}
-            onQueryChange={(value) => {
+            questionQuery={questionQuery}
+            onQuestionQueryChange={(value) => {
               setPage(0)
-              setQuery(value)
+              setQuestionQuery(value)
             }}
-            filter={filter}
-            onFilterChange={(value) => {
+            pinnedOnly={pinnedOnly}
+            onPinnedOnlyChange={(value) => {
               setPage(0)
-              setFilter(value)
+              setPinnedOnly(value)
+            }}
+            modeFilter={modeFilter}
+            onModeFilterChange={(value) => {
+              setPage(0)
+              setModeFilter(value)
+            }}
+            statusFilter={statusFilter}
+            onStatusFilterChange={(value) => {
+              setPage(0)
+              setStatusFilter(value)
             }}
             page={page}
             total={total}
@@ -167,11 +184,16 @@ export function InvestigationsPage({
   )
 }
 
-function filtersForRequest(filter: FilterKey, query: string) {
+function filtersForRequest(
+  questionQuery: string,
+  pinnedOnly: boolean,
+  modeFilter: SearchMode | "all",
+  statusFilter: AuditStatus | "all",
+) {
   return {
-    q: query.trim() || undefined,
-    pinned: filter === "pinned" ? true : undefined,
-    status: filter === "SUCCESS" || filter === "FAILED" ? filter : "all",
-    mode: filter === "search" || filter === "aggregation" ? filter : "all",
+    question: questionQuery.trim() || undefined,
+    pinned: pinnedOnly ? true : undefined,
+    status: statusFilter,
+    mode: modeFilter,
   } as const
 }

@@ -5,7 +5,7 @@ import java.time.Instant;
 import com.soc.ai.search.search.plan.SearchMode;
 
 public record AuditLogFilters(
-        String q,
+        String question,
         AuditStatus status,
         SearchMode mode,
         Boolean pinned,

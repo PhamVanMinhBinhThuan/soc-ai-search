@@ -47,11 +47,20 @@ public class AuditQueryController {
             @RequestParam(required = false) Boolean pinned,
             @RequestParam(required = false) AuditStatus status,
             @RequestParam(required = false) String mode,
+            @RequestParam(required = false) String question,
             @RequestParam(required = false) String q,
             @RequestParam(required = false) Instant from,
             @RequestParam(required = false) Instant to,
             @RequestParam(required = false) String sort) {
-        return queryService.history(page, size, new AuditLogFilters(q, status, parseMode(mode), pinned, null, from, to, sort));
+        return queryService.history(page, size, new AuditLogFilters(
+                firstText(question, q),
+                status,
+                parseMode(mode),
+                pinned,
+                null,
+                from,
+                to,
+                sort));
     }
 
     @GetMapping("/api/v1/search/history/{queryId}")
@@ -78,12 +87,21 @@ public class AuditQueryController {
             @RequestParam(defaultValue = "50") int size,
             @RequestParam(required = false) AuditStatus status,
             @RequestParam(required = false) String mode,
+            @RequestParam(required = false) String question,
             @RequestParam(required = false) String q,
             @RequestParam(required = false) String identity,
             @RequestParam(required = false) Instant from,
             @RequestParam(required = false) Instant to,
             @RequestParam(required = false) String sort) {
-        return queryService.auditLogs(page, size, new AuditLogFilters(q, status, parseMode(mode), null, identity, from, to, sort));
+        return queryService.auditLogs(page, size, new AuditLogFilters(
+                firstText(question, q),
+                status,
+                parseMode(mode),
+                null,
+                identity,
+                from,
+                to,
+                sort));
     }
 
     @GetMapping(value = "/api/v1/audit-logs/export", produces = "text/csv")
@@ -92,12 +110,13 @@ public class AuditQueryController {
     public ResponseEntity<StreamingResponseBody> exportAuditLogs(
             @RequestParam(required = false) AuditStatus status,
             @RequestParam(required = false) String mode,
+            @RequestParam(required = false) String question,
             @RequestParam(required = false) String q,
             @RequestParam(required = false) String identity,
             @RequestParam(required = false) Instant from,
             @RequestParam(required = false) Instant to,
             @RequestParam(required = false) String sort) {
-        var filters = new AuditLogFilters(q, status, parseMode(mode), null, identity, from, to, sort);
+        var filters = new AuditLogFilters(firstText(question, q), status, parseMode(mode), null, identity, from, to, sort);
         var prepared = queryService.prepareAuditExport(filters);
 
         return ResponseEntity.ok()
@@ -133,5 +152,12 @@ public class AuditQueryController {
             return null;
         }
         return SearchMode.fromJson(value);
+    }
+
+    private String firstText(String primary, String fallback) {
+        if (primary != null && !primary.isBlank()) {
+            return primary;
+        }
+        return fallback;
     }
 }

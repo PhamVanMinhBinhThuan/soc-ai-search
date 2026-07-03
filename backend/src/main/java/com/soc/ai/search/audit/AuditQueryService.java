@@ -5,7 +5,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.UUID;
 
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.domain.PageRequest;
@@ -266,15 +265,10 @@ public class AuditQueryService {
                         criteriaBuilder.lower(root.get("userIdentity")),
                         contains(filters.identity())));
             }
-            if (hasText(filters.q())) {
-                var search = contains(filters.q());
-                var textPredicates = new ArrayList<Predicate>();
-                textPredicates.add(criteriaBuilder.like(criteriaBuilder.lower(root.get("question")), search));
-                textPredicates.add(criteriaBuilder.like(criteriaBuilder.lower(root.get("userIdentity")), search));
-                textPredicates.add(criteriaBuilder.like(criteriaBuilder.lower(root.get("errorMessage")), search));
-                parseUuid(filters.q()).ifPresent(uuid ->
-                        textPredicates.add(criteriaBuilder.equal(root.get("id"), uuid)));
-                predicates.add(criteriaBuilder.or(textPredicates.toArray(Predicate[]::new)));
+            if (hasText(filters.question())) {
+                predicates.add(criteriaBuilder.like(
+                        criteriaBuilder.lower(root.get("question")),
+                        contains(filters.question())));
             }
 
             return criteriaBuilder.and(predicates.toArray(Predicate[]::new));
@@ -289,11 +283,4 @@ public class AuditQueryService {
         return "%" + value.strip().toLowerCase(Locale.ROOT) + "%";
     }
 
-    private java.util.Optional<UUID> parseUuid(String value) {
-        try {
-            return java.util.Optional.of(UUID.fromString(value.strip()));
-        } catch (RuntimeException exception) {
-            return java.util.Optional.empty();
-        }
-    }
 }

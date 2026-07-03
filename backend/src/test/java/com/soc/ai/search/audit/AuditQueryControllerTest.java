@@ -105,6 +105,32 @@ class AuditQueryControllerTest {
     }
 
     @Test
+    void parsesSeparatedAuditQuestionAndIdentityFilters() throws Exception {
+        var filtersCaptor = ArgumentCaptor.forClass(AuditLogFilters.class);
+        when(queryService.auditLogs(
+                org.mockito.ArgumentMatchers.eq(0),
+                org.mockito.ArgumentMatchers.eq(50),
+                filtersCaptor.capture()))
+                .thenReturn(new PagedResponse<>(List.of(), 0, 50, 0, 0));
+
+        mockMvc.perform(get("/api/v1/audit-logs")
+                        .param("question", "failed login")
+                        .param("identity", "analyst.demo")
+                        .param("status", "SUCCESS")
+                        .param("mode", "search"))
+                .andExpect(status().isOk());
+
+        org.assertj.core.api.Assertions.assertThat(filtersCaptor.getValue().question())
+                .isEqualTo("failed login");
+        org.assertj.core.api.Assertions.assertThat(filtersCaptor.getValue().identity())
+                .isEqualTo("analyst.demo");
+        org.assertj.core.api.Assertions.assertThat(filtersCaptor.getValue().status())
+                .isEqualTo(AuditStatus.SUCCESS);
+        org.assertj.core.api.Assertions.assertThat(filtersCaptor.getValue().mode())
+                .isEqualTo(SearchMode.SEARCH);
+    }
+
+    @Test
     void returnsBadRequestForInvalidPagination() throws Exception {
         when(queryService.history(org.mockito.ArgumentMatchers.eq(-1), org.mockito.ArgumentMatchers.eq(20), org.mockito.ArgumentMatchers.any(com.soc.ai.search.audit.AuditLogFilters.class)))
                 .thenThrow(new IllegalArgumentException("page must be greater than or equal to 0"));

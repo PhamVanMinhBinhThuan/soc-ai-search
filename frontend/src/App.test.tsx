@@ -100,7 +100,7 @@ describe('App history UX', () => {
       {
         mode: "all",
         pinned: undefined,
-        q: undefined,
+        question: undefined,
         status: "all",
       },
       expect.any(AbortSignal),

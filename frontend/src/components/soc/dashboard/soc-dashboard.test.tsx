@@ -107,6 +107,11 @@ describe('SocDashboard auth readiness', () => {
     await waitFor(() => {
       expect(mockState.executeSearchPlan).toHaveBeenCalledTimes(5)
     })
+    expect(mockState.executeSearchPlan).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.any(AbortSignal),
+      { audit: false },
+    )
     expect(screen.getByRole('button', { name: /refresh/i })).toBeEnabled()
     expect(
       screen.getByText(/auto refresh every 3 minutes/i),

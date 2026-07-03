@@ -102,6 +102,7 @@ export async function searchEvents(
 export async function executeSearchPlan(
   plan: SearchPlanDto,
   signal?: AbortSignal,
+  options: { audit?: boolean } = {},
 ): Promise<SearchPlanResponseDto> {
   if (isMockMode) {
     // We can reuse the mock service by adding an executeMockSearchPlan function,
@@ -110,7 +111,14 @@ export async function executeSearchPlan(
     return executeMockSearchPlan(plan, signal)
   }
 
-  const payload = await requestJson('/api/v1/search/plan', {
+  const params = new URLSearchParams()
+  if (options.audit === false) {
+    params.set('audit', 'false')
+  }
+  const query = params.toString()
+  const url = query ? `/api/v1/search/plan?${query}` : '/api/v1/search/plan'
+
+  const payload = await requestJson(url, {
     method: 'POST',
     signal,
     headers: {

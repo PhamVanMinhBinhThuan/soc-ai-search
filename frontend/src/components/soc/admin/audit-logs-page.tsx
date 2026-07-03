@@ -5,11 +5,10 @@ import { cn } from "@/lib/utils"
 import { formatQuestionForList } from "@/lib/audit-question-format"
 import { downloadCsvBlob } from "@/services/csv-export-api"
 import { exportAuditLogs, getAuditLogs, getSearchHistoryDetail } from "@/services/history-api"
-import type { AuditLogItem, SearchHistoryDetailDto } from "@/types/soc"
+import type { AuditLogItem, AuditStatus, SearchHistoryDetailDto, SearchMode } from "@/types/soc"
 import { ModeBadge, StatusBadge } from "../investigations/investigation-badges"
 import { InvestigationDetailPanel } from "../investigations/investigation-detail-panel"
 
-const FILTERS = ["All", "Success", "Failed", "Search", "Aggregation"] as const
 const PAGE_SIZE = 5
 
 export function AuditLogsPage() {
@@ -23,8 +22,10 @@ export function AuditLogsPage() {
   const [detailLoading, setDetailLoading] = useState(false)
   const [detailError, setDetailError] = useState<string | null>(null)
   const [exporting, setExporting] = useState(false)
-  const [searchQuery, setSearchQuery] = useState("")
-  const [activeFilter, setActiveFilter] = useState<(typeof FILTERS)[number]>("All")
+  const [questionQuery, setQuestionQuery] = useState("")
+  const [identityQuery, setIdentityQuery] = useState("")
+  const [modeFilter, setModeFilter] = useState<SearchMode | "all">("all")
+  const [statusFilter, setStatusFilter] = useState<AuditStatus | "all">("all")
 
   const fetchLogs = useCallback(
     async (targetPage: number, signal?: AbortSignal) => {
@@ -33,7 +34,7 @@ export function AuditLogsPage() {
         const res = await getAuditLogs(
           targetPage,
           PAGE_SIZE,
-          filtersForRequest(activeFilter, searchQuery),
+          filtersForRequest(questionQuery, identityQuery, modeFilter, statusFilter),
           signal,
         )
         setItems(res.items)
@@ -48,20 +49,20 @@ export function AuditLogsPage() {
         setLoading(false)
       }
     },
-    [activeFilter, searchQuery],
+    [identityQuery, modeFilter, questionQuery, statusFilter],
   )
 
   useEffect(() => {
     const abortController = new AbortController()
     const timer = window.setTimeout(() => {
       void fetchLogs(page, abortController.signal)
-    }, searchQuery.trim() ? 250 : 0)
+    }, questionQuery.trim() || identityQuery.trim() ? 250 : 0)
 
     return () => {
       window.clearTimeout(timer)
       abortController.abort()
     }
-  }, [fetchLogs, page, searchQuery])
+  }, [fetchLogs, identityQuery, page, questionQuery])
 
   useEffect(() => {
     if (!selectedId) {
@@ -91,7 +92,9 @@ export function AuditLogsPage() {
   async function handleExportAudit() {
     setExporting(true)
     try {
-      const result = await exportAuditLogs(filtersForRequest(activeFilter, searchQuery))
+      const result = await exportAuditLogs(
+        filtersForRequest(questionQuery, identityQuery, modeFilter, statusFilter),
+      )
       downloadCsvBlob(result.blob, result.filename)
     } catch (err) {
       console.error("Failed to export audit logs", err)
@@ -130,39 +133,54 @@ export function AuditLogsPage() {
         >
           {/* SEARCH AND FILTERS */}
           <div className="flex flex-col gap-3 border-b border-zinc-800 p-3">
-            <div className="relative">
-              <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-zinc-500" />
-              <input
-                type="text"
-                placeholder="Search audit logs..."
-                value={searchQuery}
-                onChange={(e) => {
+            <div className="grid gap-2 xl:grid-cols-[minmax(220px,1fr)_minmax(180px,0.65fr)_160px_160px]">
+              <SearchInput
+                value={questionQuery}
+                onChange={(value) => {
                   setPage(0)
-                  setSearchQuery(e.target.value)
+                  setQuestionQuery(value)
                 }}
-                className="w-full rounded-md border border-zinc-800 bg-zinc-900/60 py-2 pl-8 pr-3 text-sm text-zinc-200 placeholder:text-zinc-500 outline-none transition focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/30"
+                placeholder="Search questions..."
+              />
+              <SearchInput
+                value={identityQuery}
+                onChange={(value) => {
+                  setPage(0)
+                  setIdentityQuery(value)
+                }}
+                placeholder="Search users..."
+              />
+              <FilterSelect
+                label="Mode"
+                value={modeFilter}
+                onChange={(value) => {
+                  setPage(0)
+                  setModeFilter(value as SearchMode | "all")
+                }}
+                options={[
+                  { label: "All modes", value: "all" },
+                  { label: "SEARCH", value: "search" },
+                  { label: "AGGREGATION", value: "aggregation" },
+                ]}
+              />
+              <FilterSelect
+                label="Status"
+                value={statusFilter}
+                onChange={(value) => {
+                  setPage(0)
+                  setStatusFilter(value as AuditStatus | "all")
+                }}
+                options={[
+                  { label: "All statuses", value: "all" },
+                  { label: "SUCCESS", value: "SUCCESS" },
+                  { label: "FAILED", value: "FAILED" },
+                ]}
               />
             </div>
             <div className="flex items-center justify-between">
-              <div className="flex flex-wrap items-center gap-1.5">
-                {FILTERS.map(f => (
-                  <button
-                    key={f}
-                    onClick={() => {
-                      setPage(0)
-                      setActiveFilter(f)
-                    }}
-                    className={cn(
-                      "rounded-md border px-2.5 py-1 text-xs font-medium transition",
-                      activeFilter === f
-                        ? "border-cyan-500/40 bg-cyan-500/10 text-cyan-300"
-                        : "border-zinc-800 bg-zinc-900/40 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200",
-                    )}
-                  >
-                    {f}
-                  </button>
-                ))}
-              </div>
+              <span className="text-xs text-zinc-500">
+                Combine question, user, mode, and status filters.
+              </span>
               {!selectedId && items.length > 0 && (
                 <span className="hidden text-xs text-zinc-500 sm:inline-block">
                   <Lightbulb className="mr-1 inline-block size-3.5 text-amber-400" />
@@ -334,20 +352,72 @@ export function AuditLogsPage() {
   )
 }
 
-function filtersForRequest(activeFilter: string, searchQuery: string) {
+function filtersForRequest(
+  questionQuery: string,
+  identityQuery: string,
+  modeFilter: SearchMode | "all",
+  statusFilter: AuditStatus | "all",
+) {
   return {
-    q: searchQuery.trim() || undefined,
-    status:
-      activeFilter === "Success"
-        ? "SUCCESS"
-        : activeFilter === "Failed"
-          ? "FAILED"
-          : "all",
-    mode:
-      activeFilter === "Search"
-        ? "search"
-        : activeFilter === "Aggregation"
-          ? "aggregation"
-          : "all",
+    question: questionQuery.trim() || undefined,
+    identity: identityQuery.trim() || undefined,
+    status: statusFilter,
+    mode: modeFilter,
   } as const
+}
+
+function SearchInput({
+  value,
+  onChange,
+  placeholder,
+}: {
+  value: string
+  onChange: (value: string) => void
+  placeholder: string
+}) {
+  return (
+    <div className="relative">
+      <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-zinc-500" />
+      <input
+        type="text"
+        placeholder={placeholder}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="h-10 w-full rounded-lg border border-zinc-800 bg-zinc-900/60 py-2 pl-8 pr-3 text-sm text-zinc-200 placeholder:text-zinc-500 outline-none transition focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/30"
+      />
+    </div>
+  )
+}
+
+function FilterSelect({
+  label,
+  value,
+  onChange,
+  options,
+}: {
+  label: string
+  value: string
+  onChange: (value: string) => void
+  options: { label: string; value: string }[]
+}) {
+  return (
+    <label className="group relative">
+      <span className="sr-only">{label}</span>
+      <select
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="h-10 w-full appearance-none rounded-lg border border-zinc-800 bg-zinc-900/60 px-3 pr-8 text-sm font-medium text-zinc-200 outline-none transition hover:border-zinc-700 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/30"
+      >
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+      <ChevronRight
+        className="pointer-events-none absolute right-2.5 top-1/2 size-4 -translate-y-1/2 rotate-90 text-zinc-500 transition group-focus-within:text-cyan-300"
+        aria-hidden
+      />
+    </label>
+  )
 }

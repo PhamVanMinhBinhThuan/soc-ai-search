@@ -94,12 +94,13 @@ export function SocDashboard({
     }
 
     try {
+      const dashboardQueryOptions = { audit: false }
       const [failedRes, critRes, timeRes, sevRes, topIpRes] = await Promise.allSettled([
-        executeSearchPlan(failedLoginsPlan, signal),
-        executeSearchPlan(criticalPlan, signal),
-        executeSearchPlan(timePlan, signal),
-        executeSearchPlan(severityPlan, signal),
-        executeSearchPlan(topIpPlan, signal),
+        executeSearchPlan(failedLoginsPlan, signal, dashboardQueryOptions),
+        executeSearchPlan(criticalPlan, signal, dashboardQueryOptions),
+        executeSearchPlan(timePlan, signal, dashboardQueryOptions),
+        executeSearchPlan(severityPlan, signal, dashboardQueryOptions),
+        executeSearchPlan(topIpPlan, signal, dashboardQueryOptions),
       ])
 
       if (signal?.aborted) return

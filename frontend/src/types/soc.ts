@@ -9,7 +9,7 @@ export type AuditStatus = "SUCCESS" | "FAILED";
 export type AuditLogSort = "created_at,desc" | "created_at,asc";
 
 export type SearchHistoryFiltersDto = {
-  q?: string;
+  question?: string;
   pinned?: boolean;
   status?: AuditStatus | "all";
   mode?: SearchMode | "all";
@@ -19,7 +19,7 @@ export type SearchHistoryFiltersDto = {
 };
 
 export type AuditLogFiltersDto = {
-  q?: string;
+  question?: string;
   status?: AuditStatus | "all";
   mode?: SearchMode | "all";
   identity?: string;
