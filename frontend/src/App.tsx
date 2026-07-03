@@ -656,7 +656,12 @@ function App() {
           path="/dashboard"
           element={
             <div className="flex-1 w-full relative min-w-0 flex flex-col h-svh">
-              <SocDashboard />
+              <SocDashboard
+                authEnabled={auth.enabled}
+                authLoading={auth.loading}
+                authenticated={auth.authenticated}
+                accessTokenReady={Boolean(auth.accessToken)}
+              />
             </div>
           }
         />

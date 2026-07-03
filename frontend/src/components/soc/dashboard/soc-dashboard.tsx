@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { RefreshCcw, LayoutDashboard } from "lucide-react"
 import { KpiCards } from "./kpi-cards"
 import { EventsOverTime } from "./events-over-time"
@@ -6,18 +6,43 @@ import { SeverityDistribution } from "./severity-distribution"
 import { TopSourceIps } from "./top-source-ips"
 import type { DashboardMetricsDto, SearchPlanDto, SearchPlanResponseDto } from "@/types/soc"
 import { executeSearchPlan } from "@/services/search-api"
+import { ApiError } from "@/services/api-client"
 
 // Mock data to simulate API response
 
 
-export function SocDashboard() {
+type SocDashboardProps = {
+  authEnabled?: boolean
+  authLoading?: boolean
+  authenticated?: boolean
+  accessTokenReady?: boolean
+}
+
+export function SocDashboard({
+  authEnabled = false,
+  authLoading = false,
+  authenticated = true,
+  accessTokenReady = true,
+}: SocDashboardProps) {
   const [data, setData] = useState<DashboardMetricsDto | null>(null)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+  const [dashboardError, setDashboardError] = useState<string | null>(null)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
+  const canFetchDashboard =
+    !authEnabled || (!authLoading && authenticated && accessTokenReady)
+  const authUnavailableMessage =
+    authEnabled && !authLoading && !authenticated
+      ? 'Please sign in to view dashboard metrics.'
+      : null
+  const visibleError = authUnavailableMessage ?? dashboardError
 
-  const fetchData = async (signal?: AbortSignal) => {
+  const fetchData = useCallback(async (signal?: AbortSignal) => {
+    await Promise.resolve()
+    if (signal?.aborted) return
+
     setRefreshing(true)
+    setDashboardError(null)
     
     // We run 5 queries
     const failedLoginsPlan: SearchPlanDto = {
@@ -61,61 +86,85 @@ export function SocDashboard() {
       aggregation: { type: 'top_n', field: 'ip', top_n: 5 },
     }
 
-    const [failedRes, critRes, timeRes, sevRes, topIpRes] = await Promise.allSettled([
-      executeSearchPlan(failedLoginsPlan, signal),
-      executeSearchPlan(criticalPlan, signal),
-      executeSearchPlan(timePlan, signal),
-      executeSearchPlan(severityPlan, signal),
-      executeSearchPlan(topIpPlan, signal),
-    ])
+    try {
+      const [failedRes, critRes, timeRes, sevRes, topIpRes] = await Promise.allSettled([
+        executeSearchPlan(failedLoginsPlan, signal),
+        executeSearchPlan(criticalPlan, signal),
+        executeSearchPlan(timePlan, signal),
+        executeSearchPlan(severityPlan, signal),
+        executeSearchPlan(topIpPlan, signal),
+      ])
 
-    if (signal?.aborted) return
+      if (signal?.aborted) return
 
-    const safeTotal = (res: PromiseSettledResult<SearchPlanResponseDto>) => 
-      res.status === 'fulfilled' ? res.value.total : 0
+      const results = [failedRes, critRes, timeRes, sevRes, topIpRes]
+      const hasUnauthorizedRequest = results.some(
+        (result) =>
+          result.status === 'rejected' &&
+          result.reason instanceof ApiError &&
+          result.reason.status === 401,
+      )
+
+      if (hasUnauthorizedRequest) {
+        setData(null)
+        setDashboardError('Dashboard request is unauthorized. Please sign in again.')
+        setLoading(false)
+        return
+      }
+
+      const safeTotal = (res: PromiseSettledResult<SearchPlanResponseDto>) => 
+        res.status === 'fulfilled' ? res.value.total : 0
     
-    const eventsOverTime = timeRes.status === 'fulfilled' 
-      ? (timeRes.value.aggregation_results || []).map((b: { key: string; value: number }) => ({ timestamp: b.key, events: b.value }))
-      : []
+      const eventsOverTime = timeRes.status === 'fulfilled' 
+        ? (timeRes.value.aggregation_results || []).map((b: { key: string; value: number }) => ({ timestamp: b.key, events: b.value }))
+        : []
 
-    const severityDist = sevRes.status === 'fulfilled'
-      ? (sevRes.value.aggregation_results || []).map((b: { key: string; value: number }) => ({ 
-          severity: b.key as 'Critical' | 'High' | 'Medium' | 'Low', 
-          count: b.value 
-        }))
-      : []
+      const severityDist = sevRes.status === 'fulfilled'
+        ? (sevRes.value.aggregation_results || []).map((b: { key: string; value: number }) => ({ 
+            severity: b.key as 'Critical' | 'High' | 'Medium' | 'Low', 
+            count: b.value 
+          }))
+        : []
 
-    const topIps = topIpRes.status === 'fulfilled'
-      ? (topIpRes.value.aggregation_results || []).map((b: { key: string; value: number }, _i: number, arr: { value: number }[]) => {
-          const max = Math.max(...arr.map(x => x.value))
-          return { ip: b.key, events: b.value, percentage: max > 0 ? Math.round((b.value / max) * 100) : 0 }
-        })
-      : []
+      const topIps = topIpRes.status === 'fulfilled'
+        ? (topIpRes.value.aggregation_results || []).map((b: { key: string; value: number }, _i: number, arr: { value: number }[]) => {
+            const max = Math.max(...arr.map(x => x.value))
+            return { ip: b.key, events: b.value, percentage: max > 0 ? Math.round((b.value / max) * 100) : 0 }
+          })
+        : []
 
-    setData({
-      kpis: {
-        total_events: safeTotal(timeRes), // timeRes total is all events
-        failed_logins: safeTotal(failedRes),
-        critical_high_alerts: safeTotal(critRes),
-        top_source_ip: topIps.length > 0 ? topIps[0].ip : 'N/A',
-      },
-      events_over_time: eventsOverTime,
-      severity_distribution: severityDist,
-      top_source_ips: topIps,
-    })
+      setData({
+        kpis: {
+          total_events: safeTotal(timeRes), // timeRes total is all events
+          failed_logins: safeTotal(failedRes),
+          critical_high_alerts: safeTotal(critRes),
+          top_source_ip: topIps.length > 0 ? topIps[0].ip : 'N/A',
+        },
+        events_over_time: eventsOverTime,
+        severity_distribution: severityDist,
+        top_source_ips: topIps,
+      })
     
-    setLastUpdated(new Date())
-    setLoading(false)
-    setRefreshing(false)
-  }
+      setLastUpdated(new Date())
+      setLoading(false)
+    } finally {
+      if (!signal?.aborted) {
+        setRefreshing(false)
+      }
+    }
+  }, [])
 
   useEffect(() => {
+    if (!canFetchDashboard) {
+      return
+    }
+
     const controller = new AbortController()
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void fetchData(controller.signal)
 
     return () => controller.abort()
-  }, [])
+  }, [canFetchDashboard, fetchData])
 
   return (
     <main className="flex h-full min-h-0 flex-col bg-zinc-950 text-zinc-100 overflow-y-auto">
@@ -142,8 +191,10 @@ export function SocDashboard() {
               </span>
             )}
             <button
-              onClick={() => fetchData()}
-              disabled={refreshing}
+              onClick={() => {
+                if (canFetchDashboard) void fetchData()
+              }}
+              disabled={refreshing || !canFetchDashboard}
               className="inline-flex items-center justify-center gap-2 rounded-md border border-zinc-800 bg-zinc-900 px-4 py-2 text-sm font-medium text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-zinc-50 disabled:opacity-50"
             >
               <RefreshCcw className={`h-4 w-4 ${refreshing ? "animate-spin text-cyan-400" : ""}`} />
@@ -152,7 +203,11 @@ export function SocDashboard() {
           </div>
         </header>
 
-        {loading || !data ? (
+        {visibleError ? (
+          <div className="rounded-2xl border border-rose-500/30 bg-rose-950/20 px-5 py-4 text-sm text-rose-200">
+            {visibleError}
+          </div>
+        ) : loading || !data ? (
           <div className="flex items-center justify-center h-64">
             <p className="text-zinc-500 animate-pulse">Loading dashboard metrics...</p>
           </div>
