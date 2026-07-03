@@ -4,11 +4,11 @@ export function TopSourceIps({ data }: { data: TopSourceIpItem[] }) {
   // Use colors based on rank for visual hierarchy (from intense to light)
   const getBarColor = (index: number) => {
     const colors = [
-      "bg-rose-600",
-      "bg-rose-500",
-      "bg-orange-500",
-      "bg-amber-500",
-      "bg-yellow-500",
+      "bg-rose-600",     // Top 1: Critical (Đỏ đậm)
+      "bg-orange-500",   // Top 2: High (Cam)
+      "bg-amber-400",    // Top 3: Medium (Vàng)
+      "bg-cyan-500",     // Top 4: Info (Xanh dương)
+      "bg-zinc-600",     // Top 5: Baseline (Xám chìm)
     ]
     return colors[Math.min(index, colors.length - 1)]
   }
