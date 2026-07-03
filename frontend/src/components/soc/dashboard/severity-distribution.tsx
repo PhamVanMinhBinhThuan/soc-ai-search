@@ -33,18 +33,24 @@ export function SeverityDistribution({ data }: { data: SeverityDistributionItem[
   }, [data])
 
   return (
-    <div className="rounded-md border border-zinc-800 bg-zinc-900 flex flex-col h-full">
+    <div className="flex h-full min-w-0 flex-col rounded-md border border-zinc-800 bg-zinc-900">
       <div className="border-b border-zinc-800 px-5 py-3.5 shrink-0">
         <h2 className="text-sm font-semibold text-zinc-100">Severity Distribution</h2>
       </div>
 
-      <div className="flex flex-col items-center p-5 flex-1 min-h-0 justify-center">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col items-center justify-center p-5">
         {data.length === 0 ? (
           <p className="text-sm text-zinc-500">No data available</p>
         ) : (
           <>
-            <div className="relative flex h-40 w-full items-center justify-center shrink-0">
-              <ResponsiveContainer width="100%" height="100%">
+            <div className="relative flex h-40 min-h-40 w-full min-w-0 shrink-0 items-center justify-center">
+              <ResponsiveContainer
+                width="100%"
+                height="100%"
+                minWidth={0}
+                minHeight={160}
+                initialDimension={{ width: 320, height: 160 }}
+              >
                 <PieChart>
                   <Pie
                     data={data}

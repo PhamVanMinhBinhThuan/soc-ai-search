@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from "react"
-import { RefreshCcw, LayoutDashboard } from "lucide-react"
+import { useCallback, useEffect, useRef, useState } from "react"
+import { Clock3, RefreshCcw, LayoutDashboard } from "lucide-react"
 import { KpiCards } from "./kpi-cards"
 import { EventsOverTime } from "./events-over-time"
 import { SeverityDistribution } from "./severity-distribution"
@@ -10,6 +10,7 @@ import { ApiError } from "@/services/api-client"
 
 // Mock data to simulate API response
 
+const DASHBOARD_REFRESH_INTERVAL_MS = 3 * 60 * 1000
 
 type SocDashboardProps = {
   authEnabled?: boolean
@@ -29,6 +30,8 @@ export function SocDashboard({
   const [refreshing, setRefreshing] = useState(false)
   const [dashboardError, setDashboardError] = useState<string | null>(null)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
+  const refreshingRef = useRef(false)
+  const intervalAbortRef = useRef<AbortController | null>(null)
   const canFetchDashboard =
     !authEnabled || (!authLoading && authenticated && accessTokenReady)
   const authUnavailableMessage =
@@ -36,6 +39,10 @@ export function SocDashboard({
       ? 'Please sign in to view dashboard metrics.'
       : null
   const visibleError = authUnavailableMessage ?? dashboardError
+
+  useEffect(() => {
+    refreshingRef.current = refreshing
+  }, [refreshing])
 
   const fetchData = useCallback(async (signal?: AbortSignal) => {
     await Promise.resolve()
@@ -166,6 +173,29 @@ export function SocDashboard({
     return () => controller.abort()
   }, [canFetchDashboard, fetchData])
 
+  useEffect(() => {
+    if (!canFetchDashboard) {
+      return
+    }
+
+    const intervalId = window.setInterval(() => {
+      if (refreshingRef.current) {
+        return
+      }
+
+      intervalAbortRef.current?.abort()
+      const controller = new AbortController()
+      intervalAbortRef.current = controller
+      void fetchData(controller.signal)
+    }, DASHBOARD_REFRESH_INTERVAL_MS)
+
+    return () => {
+      window.clearInterval(intervalId)
+      intervalAbortRef.current?.abort()
+      intervalAbortRef.current = null
+    }
+  }, [canFetchDashboard, fetchData])
+
   return (
     <main className="flex h-full min-h-0 flex-col bg-zinc-950 text-zinc-100 overflow-y-auto">
       <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
@@ -184,7 +214,11 @@ export function SocDashboard({
               </span>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="hidden items-center gap-1.5 text-xs text-zinc-500 sm:inline-flex">
+              <Clock3 className="size-3.5 text-cyan-400/70" />
+              Auto refresh every 3 minutes
+            </span>
             {lastUpdated && (
               <span className="text-xs text-zinc-500 hidden sm:inline">
                 Last updated: {lastUpdated.toLocaleTimeString()}
@@ -213,26 +247,23 @@ export function SocDashboard({
           </div>
         ) : (
           <>
-            {/* KPI Cards */}
-            <div className="mb-4">
-              <KpiCards data={data.kpis} />
-            </div>
-
-            {/* Main Charts */}
-            <div className="mb-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
-              <div className="lg:col-span-2">
-                <EventsOverTime data={data.events_over_time} />
+            {/* Overview */}
+            <section className="mb-4 grid min-w-0 grid-cols-1 gap-4 xl:grid-cols-3">
+              <div className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 xl:col-span-2">
+                <KpiCards data={data.kpis} />
               </div>
-              <div className="lg:col-span-1">
+              <div className="min-w-0 xl:col-span-1">
                 <SeverityDistribution data={data.severity_distribution} />
               </div>
+            </section>
+
+            {/* Full-width widgets */}
+            <div className="mb-4 min-w-0">
+              <EventsOverTime data={data.events_over_time} />
             </div>
 
-            {/* Bottom Widgets */}
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-              <div className="lg:col-span-2">
-                <TopSourceIps data={data.top_source_ips} />
-              </div>
+            <div className="min-w-0">
+              <TopSourceIps data={data.top_source_ips} />
             </div>
           </>
         )}

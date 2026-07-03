@@ -1,6 +1,6 @@
 import '@testing-library/jest-dom/vitest'
 
-import { cleanup, render, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { SocDashboard } from './soc-dashboard'
@@ -46,12 +46,21 @@ function searchPlanResponse(
   } as SearchPlanResponseDto
 }
 
+async function flushDashboardWork() {
+  await act(async () => {
+    await Promise.resolve()
+    await Promise.resolve()
+    await Promise.resolve()
+  })
+}
+
 beforeEach(() => {
   mockState.executeSearchPlan.mockResolvedValue(searchPlanResponse())
 })
 
 afterEach(() => {
   cleanup()
+  vi.useRealTimers()
   vi.clearAllMocks()
 })
 
@@ -99,6 +108,9 @@ describe('SocDashboard auth readiness', () => {
       expect(mockState.executeSearchPlan).toHaveBeenCalledTimes(5)
     })
     expect(screen.getByRole('button', { name: /refresh/i })).toBeEnabled()
+    expect(
+      screen.getByText(/auto refresh every 3 minutes/i),
+    ).toBeInTheDocument()
   })
 
   it('keeps auth-disabled local mode fetchable without a token', async () => {
@@ -107,5 +119,71 @@ describe('SocDashboard auth readiness', () => {
     await waitFor(() => {
       expect(mockState.executeSearchPlan).toHaveBeenCalledTimes(5)
     })
+  })
+
+  it('auto-refreshes metrics every 3 minutes while dashboard is mounted', async () => {
+    vi.useFakeTimers()
+
+    render(
+      <SocDashboard
+        authEnabled
+        authLoading={false}
+        authenticated
+        accessTokenReady
+      />,
+    )
+
+    await flushDashboardWork()
+    expect(mockState.executeSearchPlan).toHaveBeenCalledTimes(5)
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(3 * 60 * 1000)
+    })
+    await flushDashboardWork()
+
+    expect(mockState.executeSearchPlan).toHaveBeenCalledTimes(10)
+  })
+
+  it('does not auto-refresh before auth and token are ready', async () => {
+    vi.useFakeTimers()
+
+    render(
+      <SocDashboard
+        authEnabled
+        authLoading={false}
+        authenticated
+        accessTokenReady={false}
+      />,
+    )
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(3 * 60 * 1000)
+    })
+
+    expect(mockState.executeSearchPlan).not.toHaveBeenCalled()
+  })
+
+  it('cleans up the auto-refresh interval after unmount', async () => {
+    vi.useFakeTimers()
+
+    const { unmount } = render(
+      <SocDashboard
+        authEnabled
+        authLoading={false}
+        authenticated
+        accessTokenReady
+      />,
+    )
+
+    await flushDashboardWork()
+    expect(mockState.executeSearchPlan).toHaveBeenCalledTimes(5)
+
+    unmount()
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(3 * 60 * 1000)
+    })
+
+    expect(mockState.executeSearchPlan).toHaveBeenCalledTimes(5)
   })
 })

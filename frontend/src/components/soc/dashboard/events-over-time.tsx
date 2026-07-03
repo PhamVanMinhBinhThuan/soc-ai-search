@@ -11,20 +11,26 @@ import type { EventsOverTimePoint } from "@/types/soc"
 
 export function EventsOverTime({ data }: { data: EventsOverTimePoint[] }) {
   return (
-    <div className="rounded-md border border-zinc-800 bg-zinc-900 flex flex-col h-full">
+    <div className="flex h-full min-w-0 flex-col rounded-md border border-zinc-800 bg-zinc-900">
       <div className="flex items-center justify-between border-b border-zinc-800 px-5 py-3.5 shrink-0">
         <div>
           <h2 className="text-sm font-semibold text-zinc-100">Events Over Time</h2>
         </div>
       </div>
 
-      <div className="p-5 flex-1 min-h-[300px]">
+      <div className="min-h-[300px] min-w-0 flex-1 p-5">
         {data.length === 0 ? (
           <div className="flex h-full items-center justify-center rounded-md border border-dashed border-zinc-800 bg-gradient-to-b from-cyan-500/5 via-zinc-950/40 to-transparent">
             <p className="text-sm text-zinc-500">No data available</p>
           </div>
         ) : (
-          <ResponsiveContainer width="100%" height="100%">
+          <ResponsiveContainer
+            width="100%"
+            height="100%"
+            minWidth={0}
+            minHeight={280}
+            initialDimension={{ width: 900, height: 280 }}
+          >
             <LineChart
               data={data}
               margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
