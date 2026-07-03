@@ -1,7 +1,7 @@
 import '@testing-library/jest-dom/vitest'
 
-import { cleanup, render, screen } from '@testing-library/react'
-import { afterEach, describe, expect, it } from 'vitest'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { SocSidebar } from '@/components/soc/soc-sidebar'
 
@@ -95,5 +95,35 @@ describe('SocSidebar RBAC navigation', () => {
       screen.queryByRole('button', { name: /admin tools/i }),
     ).not.toBeInTheDocument()
     expectRemovedNavigationItems()
+  })
+})
+
+describe('SocSidebar Query Library navigation', () => {
+  it('renders Query Library as a single item and not under a Guide dropdown', () => {
+    renderSidebar(['SOC_VIEWER'])
+
+    // Query Library should always be visible
+    expect(screen.getByRole('button', { name: /query library/i })).toBeInTheDocument()
+
+    // Guide group should no longer exist
+    expect(screen.queryByRole('button', { name: /^guide$/i })).not.toBeInTheDocument()
+  })
+
+  it('calls onPageChange when Query Library is clicked', () => {
+    const onPageChange = vi.fn()
+    render(
+      <SocSidebar
+        identity="demo-user"
+        roles={['SOC_VIEWER']}
+        authLoading={false}
+        authEnabled
+        onPageChange={onPageChange}
+      />
+    )
+
+    const btn = screen.getByRole('button', { name: /query library/i })
+    fireEvent.click(btn)
+
+    expect(onPageChange).toHaveBeenCalledWith('query-library')
   })
 })
