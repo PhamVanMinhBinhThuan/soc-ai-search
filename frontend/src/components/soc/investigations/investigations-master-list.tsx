@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, Search, Star } from "lucide-react"
+import { ChevronLeft, ChevronRight, Lightbulb, Search, Star } from "lucide-react"
 import { formatQuestionForList } from "@/lib/audit-question-format"
 import { cn } from "@/lib/utils"
 import type { AuditStatus, SearchHistoryItemDto, SearchMode } from "@/types/soc"
@@ -93,12 +93,10 @@ export function InvestigationsMasterList({
             Pinned only
           </button>
         </div>
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-zinc-500">
-            Combine question, pinned, mode, and status filters.
-          </span>
+        <div className="flex items-center justify-end">
           {expanded && items.length > 0 && (
             <span className="hidden text-xs text-zinc-500 sm:inline-block">
+              <Lightbulb className="mr-1 inline-block size-3.5 text-amber-400" />
               Tip: Click on any row to view full details
             </span>
           )}
