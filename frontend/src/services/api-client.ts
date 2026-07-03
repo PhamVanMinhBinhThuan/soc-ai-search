@@ -26,11 +26,29 @@ const configuredBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim() ?? ''
 const apiBaseUrl = configuredBaseUrl.replace(/\/+$/, '')
 
 let accessTokenProvider: (() => string | null) | null = null
+let refreshAccessTokenProvider: (() => Promise<string | null>) | null = null
+let tokenRefreshPromise: Promise<string | null> | null = null
+
+type AuthTokenHandlers = {
+  getAccessToken: () => string | null
+  refreshAccessToken?: () => Promise<string | null>
+}
 
 export function setAccessTokenProvider(
   provider: (() => string | null) | null,
 ) {
   accessTokenProvider = provider
+}
+
+export function setAccessTokenRefreshProvider(
+  provider: (() => Promise<string | null>) | null,
+) {
+  refreshAccessTokenProvider = provider
+}
+
+export function setAuthTokenHandlers(handlers: AuthTokenHandlers | null) {
+  accessTokenProvider = handlers?.getAccessToken ?? null
+  refreshAccessTokenProvider = handlers?.refreshAccessToken ?? null
 }
 
 export function apiUrl(path: string) {
@@ -40,6 +58,42 @@ export function apiUrl(path: string) {
 export function authHeaders(): HeadersInit {
   const token = accessTokenProvider?.()
   return token ? { Authorization: `Bearer ${token}` } : {}
+}
+
+function requestHeaders(init: RequestInit, tokenOverride?: string | null) {
+  const token = tokenOverride ?? accessTokenProvider?.()
+
+  return {
+    Accept: 'application/json',
+    ...(init.body != null ? { 'Content-Type': 'application/json' } : {}),
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...init.headers,
+  }
+}
+
+async function fetchWithAuth(
+  path: string,
+  init: RequestInit,
+  tokenOverride?: string | null,
+) {
+  return fetch(apiUrl(path), {
+    ...init,
+    headers: requestHeaders(init, tokenOverride),
+  })
+}
+
+async function refreshTokenOnce() {
+  if (!refreshAccessTokenProvider) return null
+
+  if (!tokenRefreshPromise) {
+    tokenRefreshPromise = refreshAccessTokenProvider()
+      .catch(() => null)
+      .finally(() => {
+        tokenRefreshPromise = null
+      })
+  }
+
+  return tokenRefreshPromise
 }
 
 export function isRecord(
@@ -76,15 +130,14 @@ export async function requestJson(
   let response: Response
 
   try {
-    response = await fetch(apiUrl(path), {
-      ...init,
-      headers: {
-        Accept: 'application/json',
-        ...(init.body != null ? { 'Content-Type': 'application/json' } : {}),
-        ...authHeaders(),
-        ...init.headers,
-      },
-    })
+    response = await fetchWithAuth(path, init)
+
+    if (response.status === 401 && !init.signal?.aborted) {
+      const freshToken = await refreshTokenOnce()
+      if (freshToken && !init.signal?.aborted) {
+        response = await fetchWithAuth(path, init, freshToken)
+      }
+    }
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') {
       throw error

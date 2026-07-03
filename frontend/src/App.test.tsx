@@ -61,6 +61,7 @@ function authState(overrides: Partial<SocAuthState> = {}): SocAuthState {
     roles: ['SOC_ANALYST'],
     accessToken: 'access-token',
     errorMessage: null,
+    refreshAccessToken: vi.fn(async () => 'access-token'),
     signIn: vi.fn(),
     signOut: vi.fn(),
     ...overrides,

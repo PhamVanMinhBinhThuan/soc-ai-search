@@ -40,7 +40,7 @@ import {
 } from "@/lib/audit-question-format";
 import { initialScenario, mockScenarios } from "@/lib/mock-data";
 import { downloadMockCsv } from "@/lib/mock-presentation";
-import { setAccessTokenProvider } from "@/services/api-client";
+import { setAuthTokenHandlers } from "@/services/api-client";
 import { toUiError } from "@/services/api-error-messages";
 import { downloadCsvBlob, exportSearchCsv } from "@/services/csv-export-api";
 import { getSearchHistory, togglePinHistory } from "@/services/history-api";
@@ -169,9 +169,12 @@ function App() {
   const historyPageRef = useRef(0);
 
   useEffect(() => {
-    setAccessTokenProvider(() => auth.accessToken);
-    return () => setAccessTokenProvider(null);
-  }, [auth.accessToken]);
+    setAuthTokenHandlers({
+      getAccessToken: () => auth.accessToken,
+      refreshAccessToken: auth.refreshAccessToken,
+    });
+    return () => setAuthTokenHandlers(null);
+  }, [auth.accessToken, auth.refreshAccessToken]);
 
   useEffect(
     () => () => {

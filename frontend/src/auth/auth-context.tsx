@@ -30,6 +30,7 @@ export type SocAuthState = {
   roles: string[]
   accessToken: string | null
   errorMessage: string | null
+  refreshAccessToken: () => Promise<string | null>
   signIn: () => void
   signOut: () => void
 }
@@ -44,6 +45,7 @@ const demoAuthState: SocAuthState = {
   roles: ['SOC_ANALYST'],
   accessToken: null,
   errorMessage: null,
+  refreshAccessToken: async () => null,
   signIn: () => undefined,
   signOut: () => undefined,
 }
@@ -216,6 +218,10 @@ function OidcAuthBridge({ children }: { children: ReactNode }) {
       roles: backendUser?.roles ?? tokenRoles,
       accessToken,
       errorMessage: oidc.error?.message ?? backendUserError,
+      refreshAccessToken: async () => {
+        const refreshedUser = await oidc.signinSilent()
+        return refreshedUser?.access_token ?? oidc.user?.access_token ?? null
+      },
       signIn: () => {
         void oidc.signinRedirect()
       },
