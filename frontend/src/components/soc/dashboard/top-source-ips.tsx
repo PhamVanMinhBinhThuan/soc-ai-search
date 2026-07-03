@@ -1,12 +1,16 @@
 import type { TopSourceIpItem } from "@/types/soc"
 
 export function TopSourceIps({ data }: { data: TopSourceIpItem[] }) {
-  // Use colors based on percentage thresholds for visual hierarchy
-  const getBarColor = (pct: number) => {
-    if (pct > 75) return "bg-rose-500"
-    if (pct > 50) return "bg-amber-500"
-    if (pct > 25) return "bg-cyan-400"
-    return "bg-zinc-500"
+  // Use colors based on rank for visual hierarchy (from intense to light)
+  const getBarColor = (index: number) => {
+    const colors = [
+      "bg-rose-600",
+      "bg-rose-500",
+      "bg-orange-500",
+      "bg-amber-500",
+      "bg-yellow-500",
+    ]
+    return colors[Math.min(index, colors.length - 1)]
   }
 
   return (
@@ -26,7 +30,7 @@ export function TopSourceIps({ data }: { data: TopSourceIpItem[] }) {
             <p className="text-sm text-zinc-500">No data available</p>
           </div>
         ) : (
-          data.map((row) => (
+          data.map((row, index) => (
             <div key={row.ip}>
               <div className="mb-1.5 flex items-center justify-between">
                 <span className="font-mono text-xs text-zinc-200">{row.ip}</span>
@@ -36,7 +40,7 @@ export function TopSourceIps({ data }: { data: TopSourceIpItem[] }) {
               </div>
               <div className="h-1.5 w-full overflow-hidden rounded-full bg-zinc-800">
                 <div
-                  className={`h-full rounded-full ${getBarColor(row.percentage)}`}
+                  className={`h-full rounded-full ${getBarColor(index)}`}
                   style={{ width: `${row.percentage}%` }}
                 />
               </div>
