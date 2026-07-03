@@ -80,3 +80,35 @@ describe("SearchSection suggestions", () => {
     expect(onSubmit).not.toHaveBeenCalled();
   });
 });
+
+describe("SearchSection additional buttons", () => {
+  it("renders View queries and Recent Queries when handlers are provided", () => {
+    const onOpenLibrary = vi.fn();
+    const onOpenRecent = vi.fn();
+    render(
+      <SearchSection
+        question=""
+        scenarios={[]}
+        isLoading={false}
+        isMockMode={false}
+        onQuestionChange={vi.fn()}
+        onSubmitQuestion={vi.fn()}
+        onSelectSuggestion={vi.fn()}
+        onOpenQueryLibrary={onOpenLibrary}
+        onOpenRecentQueries={onOpenRecent}
+      />
+    );
+
+    const libBtn = screen.getByRole("button", { name: /view queries/i });
+    const recentBtn = screen.getByRole("button", { name: /recent queries/i });
+    
+    expect(libBtn).toBeInTheDocument();
+    expect(recentBtn).toBeInTheDocument();
+
+    fireEvent.click(libBtn);
+    expect(onOpenLibrary).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(recentBtn);
+    expect(onOpenRecent).toHaveBeenCalledTimes(1);
+  });
+});

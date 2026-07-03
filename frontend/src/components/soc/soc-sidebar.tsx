@@ -6,7 +6,6 @@ import {
   History,
   LayoutDashboard,
   Library,
-  ListFilter,
   Power,
   ScrollText,
   Search,
@@ -71,7 +70,6 @@ export function SocSidebar({
   authEnabled,
   activePage,
   onPageChange,
-  onOpenHistory,
   onOpenAuditLogs,
   onLogout,
 }: {
@@ -81,12 +79,10 @@ export function SocSidebar({
   authEnabled: boolean
   activePage?: 'dashboard' | 'search' | 'investigations' | 'audit-logs' | 'query-library'
   onPageChange?: (page: 'dashboard' | 'search' | 'investigations' | 'audit-logs' | 'query-library') => void
-  onOpenHistory?: () => void
   onOpenAuditLogs?: () => void
   onLogout?: () => void
 }) {
   const [expanded, setExpanded] = useState(false)
-  const [investigationsOpen, setInvestigationsOpen] = useState(false)
   const [adminOpen, setAdminOpen] = useState(false)
   const [guideOpen, setGuideOpen] = useState(false)
   const collapsed = !expanded
@@ -193,75 +189,36 @@ export function SocSidebar({
           ))}
 
           {historyVisible ? (
-            <div className="flex flex-col">
-              <CollapsedTooltip
-                collapsed={collapsed}
-                label={investigationsNav.label}
+            <CollapsedTooltip
+              collapsed={collapsed}
+              label={investigationsNav.label}
+            >
+              <button
+                type="button"
+                aria-label={investigationsNav.label}
+                aria-current={activePage === investigationsNav.pageId ? 'page' : undefined}
+                onClick={() => onPageChange?.(investigationsNav.pageId)}
+                className={cn(
+                  'relative flex h-10 w-full shrink-0 items-center rounded-xl transition-colors',
+                  expanded ? 'justify-start px-3' : 'justify-center',
+                  activePage === investigationsNav.pageId
+                    ? 'bg-cyan-400/10 text-cyan-300 ring-1 ring-cyan-400/25'
+                    : 'text-muted-foreground hover:bg-secondary hover:text-foreground',
+                )}
               >
-                <button
-                  type="button"
-                  aria-label={investigationsNav.label}
-                  onClick={() => {
-                    if (collapsed) {
-                      setExpanded(true)
-                      setInvestigationsOpen(true)
-                    } else {
-                      setInvestigationsOpen(!investigationsOpen)
-                    }
-                  }}
+                <investigationsNav.icon className="size-5 shrink-0" />
+                <span
                   className={cn(
-                    'relative flex h-10 w-full shrink-0 items-center rounded-xl transition-colors',
-                    expanded ? 'justify-start px-3' : 'justify-center',
-                    activePage === investigationsNav.pageId
-                      ? 'bg-cyan-400/10 text-cyan-300 ring-1 ring-cyan-400/25'
-                      : 'text-muted-foreground hover:bg-secondary hover:text-foreground',
+                    'overflow-hidden whitespace-nowrap text-left text-sm transition-[width,opacity,margin] duration-300',
+                    expanded
+                      ? 'ml-3 w-36 opacity-100'
+                      : 'ml-0 w-0 opacity-0',
                   )}
                 >
-                  <investigationsNav.icon className="size-5 shrink-0" />
-                  <span
-                    className={cn(
-                      'overflow-hidden whitespace-nowrap text-left text-sm transition-[width,opacity,margin] duration-300',
-                      expanded
-                        ? 'ml-3 w-36 opacity-100'
-                        : 'ml-0 w-0 opacity-0',
-                    )}
-                  >
-                    {investigationsNav.label}
-                  </span>
-                  {expanded && (
-                    <span className="ml-auto flex items-center justify-center opacity-60">
-                      {investigationsOpen ? <ChevronDown className="size-3.5" /> : <ChevronRight className="size-3.5" />}
-                    </span>
-                  )}
-                </button>
-              </CollapsedTooltip>
-
-              {expanded && investigationsOpen && (
-                <div className="ml-8 mt-1 flex flex-col gap-1">
-                  <button
-                    type="button"
-                    onClick={() => onPageChange?.('investigations')}
-                    className={cn(
-                      'flex h-8 items-center gap-2 rounded-lg px-3 text-sm transition-colors text-left w-full',
-                      activePage === 'investigations'
-                        ? 'bg-cyan-400/10 text-cyan-300'
-                        : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
-                    )}
-                  >
-                    <ListFilter className="size-3.5 shrink-0" />
-                    All Investigations
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => onOpenHistory?.()}
-                    className="flex h-8 w-full items-center gap-2 rounded-lg px-3 text-sm transition-colors text-left text-muted-foreground hover:bg-secondary hover:text-foreground"
-                  >
-                    <History className="size-3.5 shrink-0" />
-                    Recent Queries
-                  </button>
-                </div>
-              )}
-            </div>
+                  {investigationsNav.label}
+                </span>
+              </button>
+            </CollapsedTooltip>
           ) : null}
 
           {/* Guide group */}

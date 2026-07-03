@@ -85,10 +85,7 @@ describe('App history UX', () => {
     expect(mockState.getSearchHistory).not.toHaveBeenCalled()
 
     fireEvent.click(
-      screen.getByRole('button', { name: /^investigations$/i }),
-    )
-    fireEvent.click(
-      screen.getByRole('button', { name: /all investigations/i }),
+      screen.getByRole('button', { name: /recent queries/i }),
     )
 
     await waitFor(() => {
@@ -97,12 +94,7 @@ describe('App history UX', () => {
     expect(mockState.getSearchHistory).toHaveBeenCalledWith(
       0,
       5,
-      {
-        mode: "all",
-        pinned: undefined,
-        question: undefined,
-        status: "all",
-      },
+      {},
       expect.any(AbortSignal),
     )
   })

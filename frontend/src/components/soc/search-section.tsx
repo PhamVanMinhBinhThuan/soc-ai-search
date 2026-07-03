@@ -1,9 +1,10 @@
 import {
   BookOpen,
+  History,
   LoaderCircle,
+  Pin,
   Search,
   Sparkles,
-  Pin,
 } from 'lucide-react'
 import { useEffect, useRef } from 'react'
 import type { FormEvent, KeyboardEvent } from 'react'
@@ -26,6 +27,7 @@ export function SearchSection({
   canPin = true,
   focusSignal = 0,
   onOpenQueryLibrary,
+  onOpenRecentQueries,
 }: {
   question: string
   scenarios: MockScenario[]
@@ -40,6 +42,7 @@ export function SearchSection({
   canPin?: boolean
   focusSignal?: number
   onOpenQueryLibrary?: () => void
+  onOpenRecentQueries?: () => void
 }) {
   const canSubmit = question.trim().length > 0 && !isLoading
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -147,10 +150,21 @@ export function SearchSection({
             type="button"
             aria-label="View queries"
             onClick={onOpenQueryLibrary}
-            className="inline-flex items-center gap-1.5 rounded-full border border-cyan-400/30 bg-cyan-500/10 px-3 py-1.5 text-xs font-medium text-cyan-100 transition-colors hover:bg-cyan-400/15"
+            className="inline-flex items-center gap-1.5 rounded-full border border-cyan-400/35 bg-cyan-500/15 px-3 py-1.5 text-xs font-semibold text-cyan-100 shadow-[0_0_18px_-10px_#22d3ee] transition-colors hover:border-cyan-300/50 hover:bg-cyan-400/20"
           >
             <BookOpen className="size-3" />
             View queries
+          </button>
+        )}
+        {onOpenRecentQueries && (
+          <button
+            type="button"
+            aria-label="Recent Queries"
+            onClick={onOpenRecentQueries}
+            className="inline-flex items-center gap-1.5 rounded-full border border-zinc-700 bg-zinc-900/80 px-3 py-1.5 text-xs font-semibold text-zinc-200 transition-colors hover:border-cyan-400/35 hover:bg-cyan-500/10 hover:text-cyan-100"
+          >
+            <History className="size-3" />
+            Recent Queries
           </button>
         )}
       </div>

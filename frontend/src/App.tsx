@@ -631,10 +631,6 @@ function App() {
         authEnabled={auth.enabled}
         activePage={activePage}
         onPageChange={(p) => navigate(`/${p}`)}
-        onOpenHistory={() => {
-          setHistoryOpen(true);
-          void loadHistory(0);
-        }}
         onOpenAuditLogs={navigateToAuditLogs}
         onLogout={auth.signOut}
       />
@@ -712,6 +708,10 @@ function App() {
                   canPin={canUseHistory}
                   focusSignal={searchFocusSignal}
                   onOpenQueryLibrary={() => navigate('/query-library')}
+                  onOpenRecentQueries={() => {
+                    setHistoryOpen(true);
+                    void loadHistory(0);
+                  }}
                 />
 
                 {requestStatus === "idle" ? <SearchIdleState /> : null}
