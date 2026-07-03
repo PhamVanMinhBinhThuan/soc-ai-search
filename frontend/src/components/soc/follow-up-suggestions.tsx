@@ -12,6 +12,7 @@ type FollowUpSuggestionsProps = {
   response: NaturalLanguageSearchResponseDto;
   question: string;
   enabled: boolean;
+  suggestionKey: string | null;
   onSelectSuggestion: (question: string) => void;
 };
 
@@ -19,13 +20,14 @@ export function FollowUpSuggestions({
   response,
   question,
   enabled,
+  suggestionKey,
   onSelectSuggestion,
 }: FollowUpSuggestionsProps) {
   const [result, setResult] = useState<{
     key: string;
     suggestions: FollowUpSuggestionDto[];
   } | null>(null);
-  const requestKey = `${response.query_id}:${question}`;
+  const requestKey = suggestionKey ?? `${response.query_id}:${question}`;
 
   const request = useMemo(
     () => buildRequest(response, question),
@@ -34,6 +36,10 @@ export function FollowUpSuggestions({
 
   useEffect(() => {
     if (!enabled || response.total <= 0) {
+      return;
+    }
+
+    if (result?.key === requestKey) {
       return;
     }
 
@@ -58,7 +64,7 @@ export function FollowUpSuggestions({
       });
 
     return () => controller.abort();
-  }, [enabled, request, requestKey, response.total]);
+  }, [enabled, request, requestKey, response.total, result?.key]);
 
   if (!enabled || response.total <= 0) {
     return null;

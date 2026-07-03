@@ -75,6 +75,7 @@ describe("FollowUpSuggestions", () => {
         response={response}
         question={response.original_question}
         enabled
+        suggestionKey="follow-up-key"
         onSelectSuggestion={vi.fn()}
       />,
     );
@@ -110,6 +111,7 @@ describe("FollowUpSuggestions", () => {
         response={response}
         question={response.original_question}
         enabled
+        suggestionKey="follow-up-key"
         onSelectSuggestion={onSelectSuggestion}
       />,
     );
@@ -137,6 +139,7 @@ describe("FollowUpSuggestions", () => {
         response={response}
         question={response.original_question}
         enabled
+        suggestionKey="follow-up-key"
         onSelectSuggestion={vi.fn()}
       />,
     );
@@ -152,11 +155,54 @@ describe("FollowUpSuggestions", () => {
         response={response}
         question={response.original_question}
         enabled={false}
+        suggestionKey="follow-up-key"
         onSelectSuggestion={vi.fn()}
       />,
     );
 
     expect(getFollowUpSuggestions).not.toHaveBeenCalled();
     expect(screen.queryByText("Next Investigation Steps")).not.toBeInTheDocument();
+  });
+
+  it("keeps current suggestions when a rerun changes response but the stable key remains", async () => {
+    vi.mocked(getFollowUpSuggestions).mockResolvedValue({
+      source: "llm",
+      suggestions: [
+        {
+          title: "Top source IPs",
+          question:
+            "Show the top 5 source IPs for failed_login events in the last 24 hours",
+        },
+      ],
+    });
+
+    const { rerender } = render(
+      <FollowUpSuggestions
+        response={response}
+        question={response.original_question}
+        enabled
+        suggestionKey="stable-search-key"
+        onSelectSuggestion={vi.fn()}
+      />,
+    );
+
+    await screen.findByText("Top source IPs");
+
+    rerender(
+      <FollowUpSuggestions
+        response={{
+          ...response,
+          query_id: "00000000-0000-4000-8000-000000000099",
+          total: 43,
+        }}
+        question={response.original_question}
+        enabled
+        suggestionKey="stable-search-key"
+        onSelectSuggestion={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText("Top source IPs")).toBeInTheDocument();
+    expect(getFollowUpSuggestions).toHaveBeenCalledTimes(1);
   });
 });

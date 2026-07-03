@@ -116,9 +116,13 @@ function App() {
   const [summaryVisible, setSummaryVisible] = useState(
     Boolean(initialResponse),
   );
-  const [followUpEligibleQueryId, setFollowUpEligibleQueryId] = useState<
+  const [followUpSuggestionKey, setFollowUpSuggestionKey] = useState<
     string | null
-  >(initialResponse?.query_id ?? null);
+  >(
+    initialResponse
+      ? `${initialResponse.query_id}:${initialResponse.original_question}`
+      : null,
+  );
   const [searchFocusSignal, setSearchFocusSignal] = useState(0);
   const [originalAiSearchPlan, setOriginalAiSearchPlan] = useState(
     initialResponse?.search_plan,
@@ -261,7 +265,7 @@ function App() {
     if (!normalizedRequest.question) {
       setResponse(null);
       setSummaryVisible(false);
-      setFollowUpEligibleQueryId(null);
+      setFollowUpSuggestionKey(null);
       setSubmittedRequest(normalizedRequest);
       setSearchError({
         status: 400,
@@ -282,7 +286,7 @@ function App() {
     setSubmittedRequest(normalizedRequest);
     setResponse(null);
     setSummaryVisible(false);
-    setFollowUpEligibleQueryId(null);
+    setFollowUpSuggestionKey(null);
     setOriginalAiSearchPlan(undefined);
     setSearchError(null);
     setExportStatus("idle");
@@ -300,7 +304,9 @@ function App() {
 
       setResponse(nextResponse);
       setSummaryVisible(true);
-      setFollowUpEligibleQueryId(nextResponse.query_id);
+      setFollowUpSuggestionKey(
+        `${nextResponse.query_id}:${stripAuditQuestionPrefix(nextResponse.original_question)}`,
+      );
       setOriginalAiSearchPlan(nextResponse.search_plan);
       setIsCurrentQueryPinned(false);
       setActiveTab(nextResponse.mode === "aggregation" ? "analytics" : "raw");
@@ -315,7 +321,7 @@ function App() {
       }
       setResponse(null);
       setSummaryVisible(false);
-      setFollowUpEligibleQueryId(null);
+      setFollowUpSuggestionKey(null);
       setOriginalAiSearchPlan(undefined);
       setSearchError(toUiError(error));
       setRequestStatus("error");
@@ -411,13 +417,11 @@ function App() {
     setSearchError(null);
     setExportStatus("idle");
     setExportMessage(null);
-    setFollowUpEligibleQueryId(null);
     // We don't set requestStatus to 'loading' to avoid unmounting the ResultTabs
     // ResultTabs shows a spinner internally or we can just let it be.
     // Actually, setting requestStatus = 'loading' shows SearchLoadingState and hides the table.
     // executeSearch does it, so let's keep consistent for now.
     setRequestStatus("loading");
-    setFollowUpEligibleQueryId(null);
 
     try {
       const { runSearchPlan } = await import("@/services/search-plan-api");
@@ -495,7 +499,6 @@ function App() {
 
       setResponse(nextResponse);
       setSummaryVisible(false);
-      setFollowUpEligibleQueryId(null);
       setIsCurrentQueryPinned(false);
       setActiveTab(nextResponse.mode === "aggregation" ? "analytics" : "raw");
 
@@ -534,6 +537,11 @@ function App() {
     setQuestion(nextQuestion);
     setSearchFocusSignal((value) => value + 1);
     navigate("/search");
+  };
+
+  const selectDefaultSuggestion = (nextQuestion: string) => {
+    setQuestion(nextQuestion);
+    setSearchFocusSignal((value) => value + 1);
   };
 
   const retryEventDetail = () => {
@@ -697,7 +705,7 @@ function App() {
                   isMockMode={isMockMode}
                   onQuestionChange={setQuestion}
                   onSubmitQuestion={submitQuestion}
-                  onSelectSuggestion={submitQuestion}
+                  onSelectSuggestion={selectDefaultSuggestion}
                   currentQueryId={response?.query_id}
                   isPinned={isCurrentQueryPinned}
                   onTogglePin={handleTogglePinCurrentQuery}
@@ -761,7 +769,9 @@ function App() {
                           }
                           setResponse(nextResponse);
                           setSummaryVisible(true);
-                          setFollowUpEligibleQueryId(nextResponse.query_id);
+                          setFollowUpSuggestionKey(
+                            `${nextResponse.query_id}:${stripAuditQuestionPrefix(nextResponse.original_question)}`,
+                          );
                           setIsCurrentQueryPinned(false);
                           setSearchError(null);
                           setExportStatus("idle");
@@ -838,10 +848,11 @@ function App() {
                       response={response}
                       question={currentOriginalQuestion()}
                       enabled={
-                        followUpEligibleQueryId === response.query_id &&
+                        followUpSuggestionKey !== null &&
                         (requestStatus === "success" ||
                           requestStatus === "empty")
                       }
+                      suggestionKey={followUpSuggestionKey}
                       onSelectSuggestion={selectFollowUpSuggestion}
                     />
                   </>

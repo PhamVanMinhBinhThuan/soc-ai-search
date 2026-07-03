@@ -504,7 +504,6 @@ function ResultControls({
   const initialSearchSortValue = currentSearchSort
     ? `${currentSearchSort.field}:${currentSearchSort.order}`
     : "timestamp:desc";
-  const aggregation = searchPlan.aggregation;
 
   const [severity, setSeverity] = useState<Severity[]>(
     currentFilters.severity ?? [],
@@ -523,16 +522,9 @@ function ResultControls({
     searchPlan.message_query ?? "",
   );
   const [searchSort, setSearchSort] = useState(initialSearchSortValue);
-  const [aggregationSort, setAggregationSort] = useState(
-    `${aggregation?.order_by ?? "value"}:${aggregation?.order ?? "desc"}`,
-  );
   const [controlsExpanded, setControlsExpanded] = useState(false);
 
-  if (!onApply) {
-    return null;
-  }
-
-  if (mode === "aggregation" && searchPlan.aggregation?.type === "date_histogram") {
+  if (!onApply || mode !== "search") {
     return null;
   }
 
@@ -572,32 +564,6 @@ function ResultControls({
     });
   };
 
-  const applyAggregationControls = () => {
-    if (!searchPlan.aggregation) {
-      return;
-    }
-
-    const [orderBy, order] = aggregationSort.split(":") as [
-      "value" | "key",
-      SortOrder,
-    ];
-    const supportsBucketControls =
-      searchPlan.aggregation.type === "group_by" ||
-      searchPlan.aggregation.type === "top_n";
-
-    onApply({
-      ...searchPlan,
-      page: 0,
-      filters: searchPlan.filters ?? null,
-      aggregation: {
-        ...searchPlan.aggregation,
-        order_by: supportsBucketControls ? orderBy : null,
-        order: supportsBucketControls ? order : null,
-      },
-      sort: null,
-    });
-  };
-
   const ControlsToggleIcon = controlsExpanded ? ChevronUp : ChevronDown;
 
   return (
@@ -623,96 +589,80 @@ function ResultControls({
 
         {controlsExpanded ? (
           <div id="filter-sort-results-content" className="px-4 pb-4">
-            {mode === "search" ? (
-              <div className="grid gap-3 lg:grid-cols-3">
-                <MultiSelectDropdown
-                  label="Severity"
-                  placeholder="Select severities"
-                  options={SEVERITY_OPTIONS}
-                  values={severity}
-                  accentClassName="bg-cyan-500/10"
-                  onChange={setSeverity}
-                />
-                <MultiSelectDropdown
-                  label="Event Type"
-                  placeholder="Select event types"
-                  options={EVENT_TYPE_OPTIONS}
-                  values={eventTypes}
-                  accentClassName="bg-violet-500/10"
-                  onChange={setEventTypes}
-                />
-                <div>
-                  <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
-                    Sort
-                  </label>
-                  <select
-                    value={searchSort}
-                    onChange={(event) => setSearchSort(event.target.value)}
-                    className="w-full rounded-xl border border-border bg-zinc-950/70 px-3 py-2.5 text-sm text-foreground outline-none transition focus:border-cyan-400/50"
-                  >
-                    {SEARCH_SORT_OPTIONS.map((option) => (
-                      <option
-                        key={`${option.field}:${option.order}`}
-                        value={`${option.field}:${option.order}`}
-                      >
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <input
-                  value={source}
-                  onChange={(event) => setSource(event.target.value)}
-                  placeholder="Source, e.g. vpn"
-                  className="rounded-xl border border-border bg-zinc-950/70 px-3 py-2.5 text-sm outline-none transition placeholder:text-muted-foreground focus:border-cyan-400/50"
-                />
-                <input
-                  value={user}
-                  onChange={(event) => setUser(event.target.value)}
-                  placeholder="User"
-                  className="rounded-xl border border-border bg-zinc-950/70 px-3 py-2.5 text-sm outline-none transition placeholder:text-muted-foreground focus:border-cyan-400/50"
-                />
-                <input
-                  value={host}
-                  onChange={(event) => setHost(event.target.value)}
-                  placeholder="Host"
-                  className="rounded-xl border border-border bg-zinc-950/70 px-3 py-2.5 text-sm outline-none transition placeholder:text-muted-foreground focus:border-cyan-400/50"
-                />
-                <input
-                  value={ip}
-                  onChange={(event) => setIp(event.target.value)}
-                  placeholder="Source IP"
-                  className="rounded-xl border border-border bg-zinc-950/70 px-3 py-2.5 text-sm outline-none transition placeholder:text-muted-foreground focus:border-cyan-400/50"
-                />
-                <input
-                  value={countryCode}
-                  onChange={(event) => setCountryCode(event.target.value)}
-                  placeholder="Country code, e.g. CN"
-                  className="rounded-xl border border-border bg-zinc-950/70 px-3 py-2.5 text-sm outline-none transition placeholder:text-muted-foreground focus:border-cyan-400/50"
-                />
-                <input
-                  value={messageQuery}
-                  onChange={(event) => setMessageQuery(event.target.value)}
-                  placeholder="Message contains"
-                  className="rounded-xl border border-border bg-zinc-950/70 px-3 py-2.5 text-sm outline-none transition placeholder:text-muted-foreground focus:border-cyan-400/50 lg:col-span-2"
-                />
-              </div>
-            ) : (
-              <div className="max-w-xs">
+            <div className="grid gap-3 lg:grid-cols-3">
+              <MultiSelectDropdown
+                label="Severity"
+                placeholder="Select severities"
+                options={SEVERITY_OPTIONS}
+                values={severity}
+                accentClassName="bg-cyan-500/10"
+                onChange={setSeverity}
+              />
+              <MultiSelectDropdown
+                label="Event Type"
+                placeholder="Select event types"
+                options={EVENT_TYPE_OPTIONS}
+                values={eventTypes}
+                accentClassName="bg-violet-500/10"
+                onChange={setEventTypes}
+              />
+              <div>
                 <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
-                  Bucket
+                  Sort
                 </label>
                 <select
-                  value={aggregationSort}
-                  onChange={(event) => setAggregationSort(event.target.value)}
+                  value={searchSort}
+                  onChange={(event) => setSearchSort(event.target.value)}
                   className="w-full rounded-xl border border-border bg-zinc-950/70 px-3 py-2.5 text-sm text-foreground outline-none transition focus:border-cyan-400/50"
                 >
-                  <option value="value:desc">Highest first</option>
-                  <option value="value:asc">Lowest first</option>
+                  {SEARCH_SORT_OPTIONS.map((option) => (
+                    <option
+                      key={`${option.field}:${option.order}`}
+                      value={`${option.field}:${option.order}`}
+                    >
+                      {option.label}
+                    </option>
+                  ))}
                 </select>
               </div>
-            )}
+
+              <input
+                value={source}
+                onChange={(event) => setSource(event.target.value)}
+                placeholder="Source, e.g. vpn"
+                className="rounded-xl border border-border bg-zinc-950/70 px-3 py-2.5 text-sm outline-none transition placeholder:text-muted-foreground focus:border-cyan-400/50"
+              />
+              <input
+                value={user}
+                onChange={(event) => setUser(event.target.value)}
+                placeholder="User"
+                className="rounded-xl border border-border bg-zinc-950/70 px-3 py-2.5 text-sm outline-none transition placeholder:text-muted-foreground focus:border-cyan-400/50"
+              />
+              <input
+                value={host}
+                onChange={(event) => setHost(event.target.value)}
+                placeholder="Host"
+                className="rounded-xl border border-border bg-zinc-950/70 px-3 py-2.5 text-sm outline-none transition placeholder:text-muted-foreground focus:border-cyan-400/50"
+              />
+              <input
+                value={ip}
+                onChange={(event) => setIp(event.target.value)}
+                placeholder="Source IP"
+                className="rounded-xl border border-border bg-zinc-950/70 px-3 py-2.5 text-sm outline-none transition placeholder:text-muted-foreground focus:border-cyan-400/50"
+              />
+              <input
+                value={countryCode}
+                onChange={(event) => setCountryCode(event.target.value)}
+                placeholder="Country code, e.g. CN"
+                className="rounded-xl border border-border bg-zinc-950/70 px-3 py-2.5 text-sm outline-none transition placeholder:text-muted-foreground focus:border-cyan-400/50"
+              />
+              <input
+                value={messageQuery}
+                onChange={(event) => setMessageQuery(event.target.value)}
+                placeholder="Message contains"
+                className="rounded-xl border border-border bg-zinc-950/70 px-3 py-2.5 text-sm outline-none transition placeholder:text-muted-foreground focus:border-cyan-400/50 lg:col-span-2"
+              />
+            </div>
 
             <div className="mt-4 flex justify-end gap-2">
               <Button
@@ -728,7 +678,6 @@ function ResultControls({
                   setCountryCode("");
                   setMessageQuery("");
                   setSearchSort("timestamp:desc");
-                  setAggregationSort("value:desc");
                 }}
               >
                 Clear
@@ -736,11 +685,7 @@ function ResultControls({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={
-                  mode === "search"
-                    ? applySearchControls
-                    : applyAggregationControls
-                }
+                onClick={applySearchControls}
               >
                 Apply Filters
               </Button>

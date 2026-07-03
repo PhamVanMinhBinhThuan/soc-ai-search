@@ -335,7 +335,7 @@ describe("ResultTabs filter and sort controls", () => {
     );
   });
 
-  it("shows only bucket ordering for top_n aggregation controls", () => {
+  it("does not render filter controls for top_n aggregation results", () => {
     render(
       <ResultTabs
         {...baseProps}
@@ -349,13 +349,47 @@ describe("ResultTabs filter and sort controls", () => {
       />,
     );
 
-    expect(screen.getByText(/filter & sort results/i)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /filter & sort results/i }));
-    expect(screen.getByText("Bucket")).toBeInTheDocument();
-    expect(screen.getByDisplayValue("Highest first")).toBeInTheDocument();
+    expect(screen.queryByText(/filter & sort results/i)).not.toBeInTheDocument();
     expect(screen.queryByText("Severity")).not.toBeInTheDocument();
     expect(screen.queryByText("Event Type")).not.toBeInTheDocument();
     expect(screen.queryByPlaceholderText("User")).not.toBeInTheDocument();
+  });
+
+  it("does not render filter controls for count aggregation results", () => {
+    render(
+      <ResultTabs
+        {...baseProps}
+        mode="aggregation"
+        activeTab="analytics"
+        canExportCsv
+        aggregationResults={[{ key: "count", value: 137 }]}
+        chartMetadata={{
+          chart_type: "NUMBER",
+          x_axis_label: "Metric",
+          y_axis_label: "Events",
+        }}
+        response={{
+          ...aggregationResponse,
+          search_plan: {
+            ...aggregationResponse.search_plan,
+            aggregation: {
+              type: "count",
+              field: null,
+              top_n: null,
+              interval: null,
+              order_by: null,
+              order: null,
+            },
+          },
+        }}
+        onApplyResultPlan={vi.fn()}
+      />,
+    );
+
+    expect(screen.queryByText(/filter & sort results/i)).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /apply filters/i }),
+    ).not.toBeInTheDocument();
   });
 
   it("keeps date histogram aggregations time ordered without bucket value sort", () => {
