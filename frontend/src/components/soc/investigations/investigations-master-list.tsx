@@ -41,57 +41,88 @@ export function InvestigationsMasterList({
   expanded?: boolean
   onTogglePin?: (queryId: string, pinned: boolean) => void
 }) {
+  const searchEl = (
+    <div className="relative w-full">
+      <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-zinc-500" />
+      <input
+        value={questionQuery}
+        onChange={(event) => onQuestionQueryChange(event.target.value)}
+        placeholder="Search questions..."
+        className="h-10 w-full rounded-lg border border-zinc-800 bg-zinc-900/60 py-2 pl-8 pr-3 text-sm text-zinc-200 placeholder:text-zinc-500 outline-none transition focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/30"
+      />
+    </div>
+  )
+
+  const modeEl = (
+    <FilterSelect
+      label="Mode"
+      value={modeFilter}
+      onChange={(value) => onModeFilterChange(value as SearchMode | "all")}
+      options={[
+        { label: "All modes", value: "all" },
+        { label: "SEARCH", value: "search" },
+        { label: "AGGREGATION", value: "aggregation" },
+      ]}
+    />
+  )
+
+  const statusEl = (
+    <FilterSelect
+      label="Status"
+      value={statusFilter}
+      onChange={(value) => onStatusFilterChange(value as AuditStatus | "all")}
+      options={[
+        { label: "All statuses", value: "all" },
+        { label: "SUCCESS", value: "SUCCESS" },
+        { label: "FAILED", value: "FAILED" },
+      ]}
+    />
+  )
+
+  const pinnedEl = (
+    <button
+      type="button"
+      onClick={() => onPinnedOnlyChange(!pinnedOnly)}
+      className={cn(
+        "inline-flex h-10 items-center justify-center gap-2 rounded-lg border px-3 text-xs font-semibold transition whitespace-nowrap shrink-0",
+        pinnedOnly
+          ? "border-amber-500/40 bg-amber-500/10 text-amber-200"
+          : "border-zinc-800 bg-zinc-900/50 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200",
+      )}
+    >
+      <Star
+        className={cn(
+          "size-3.5",
+          pinnedOnly ? "fill-amber-400 text-amber-400" : "text-zinc-500",
+        )}
+      />
+      Pinned only
+    </button>
+  )
+
   return (
     <div className="flex h-full min-h-0 flex-col border-r border-zinc-800">
       <div className="flex flex-col gap-3 border-b border-zinc-800 p-3">
-        <div className="grid gap-2 xl:grid-cols-[minmax(220px,1fr)_160px_160px_auto]">
-          <div className="relative">
-            <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-zinc-500" />
-            <input
-              value={questionQuery}
-              onChange={(event) => onQuestionQueryChange(event.target.value)}
-              placeholder="Search questions..."
-              className="h-10 w-full rounded-lg border border-zinc-800 bg-zinc-900/60 py-2 pl-8 pr-3 text-sm text-zinc-200 placeholder:text-zinc-500 outline-none transition focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/30"
-            />
+        {/* Layout cho màn hình Full (chưa click) */}
+        <div className={cn("gap-2 xl:grid-cols-[minmax(220px,1fr)_160px_160px_auto]", expanded ? "grid" : "hidden")}>
+          {searchEl}
+          {modeEl}
+          {statusEl}
+          {pinnedEl}
+        </div>
+
+        {/* Layout cho màn hình thu nhỏ (khi đã click xem chi tiết) */}
+        <div className={cn("flex-col gap-2", !expanded ? "flex" : "hidden")}>
+          <div className="flex items-center gap-2">
+            <div className="flex-1 min-w-0">
+              {searchEl}
+            </div>
+            {pinnedEl}
           </div>
-          <FilterSelect
-            label="Mode"
-            value={modeFilter}
-            onChange={(value) => onModeFilterChange(value as SearchMode | "all")}
-            options={[
-              { label: "All modes", value: "all" },
-              { label: "SEARCH", value: "search" },
-              { label: "AGGREGATION", value: "aggregation" },
-            ]}
-          />
-          <FilterSelect
-            label="Status"
-            value={statusFilter}
-            onChange={(value) => onStatusFilterChange(value as AuditStatus | "all")}
-            options={[
-              { label: "All statuses", value: "all" },
-              { label: "SUCCESS", value: "SUCCESS" },
-              { label: "FAILED", value: "FAILED" },
-            ]}
-          />
-          <button
-            type="button"
-            onClick={() => onPinnedOnlyChange(!pinnedOnly)}
-            className={cn(
-              "inline-flex h-10 items-center justify-center gap-2 rounded-lg border px-3 text-xs font-semibold transition",
-              pinnedOnly
-                ? "border-amber-500/40 bg-amber-500/10 text-amber-200"
-                : "border-zinc-800 bg-zinc-900/50 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200",
-            )}
-          >
-            <Star
-              className={cn(
-                "size-3.5",
-                pinnedOnly ? "fill-amber-400 text-amber-400" : "text-zinc-500",
-              )}
-            />
-            Pinned only
-          </button>
+          <div className="grid grid-cols-2 gap-2">
+            {modeEl}
+            {statusEl}
+          </div>
         </div>
         <div className="flex items-center justify-end">
           {expanded && items.length > 0 && (

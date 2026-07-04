@@ -103,6 +103,60 @@ export function AuditLogsPage() {
     }
   }
 
+  const searchQuestionsEl = (
+    <SearchInput
+      value={questionQuery}
+      onChange={(value) => {
+        setPage(0)
+        setQuestionQuery(value)
+      }}
+      placeholder="Search questions..."
+    />
+  )
+
+  const searchUsersEl = (
+    <SearchInput
+      value={identityQuery}
+      onChange={(value) => {
+        setPage(0)
+        setIdentityQuery(value)
+      }}
+      placeholder="Search users..."
+    />
+  )
+
+  const modeEl = (
+    <FilterSelect
+      label="Mode"
+      value={modeFilter}
+      onChange={(value) => {
+        setPage(0)
+        setModeFilter(value as SearchMode | "all")
+      }}
+      options={[
+        { label: "All modes", value: "all" },
+        { label: "SEARCH", value: "search" },
+        { label: "AGGREGATION", value: "aggregation" },
+      ]}
+    />
+  )
+
+  const statusEl = (
+    <FilterSelect
+      label="Status"
+      value={statusFilter}
+      onChange={(value) => {
+        setPage(0)
+        setStatusFilter(value as AuditStatus | "all")
+      }}
+      options={[
+        { label: "All statuses", value: "all" },
+        { label: "SUCCESS", value: "SUCCESS" },
+        { label: "FAILED", value: "FAILED" },
+      ]}
+    />
+  )
+
   return (
     <div className="flex h-full min-h-0 w-full flex-col bg-zinc-950 text-zinc-50">
       <header className="flex shrink-0 flex-col border-b border-zinc-800 bg-zinc-900/50 p-4">
@@ -133,50 +187,22 @@ export function AuditLogsPage() {
         >
           {/* SEARCH AND FILTERS */}
           <div className="flex flex-col gap-3 border-b border-zinc-800 p-3">
-            <div className="grid gap-2 xl:grid-cols-[minmax(220px,1fr)_minmax(180px,0.65fr)_160px_160px]">
-              <SearchInput
-                value={questionQuery}
-                onChange={(value) => {
-                  setPage(0)
-                  setQuestionQuery(value)
-                }}
-                placeholder="Search questions..."
-              />
-              <SearchInput
-                value={identityQuery}
-                onChange={(value) => {
-                  setPage(0)
-                  setIdentityQuery(value)
-                }}
-                placeholder="Search users..."
-              />
-              <FilterSelect
-                label="Mode"
-                value={modeFilter}
-                onChange={(value) => {
-                  setPage(0)
-                  setModeFilter(value as SearchMode | "all")
-                }}
-                options={[
-                  { label: "All modes", value: "all" },
-                  { label: "SEARCH", value: "search" },
-                  { label: "AGGREGATION", value: "aggregation" },
-                ]}
-              />
-              <FilterSelect
-                label="Status"
-                value={statusFilter}
-                onChange={(value) => {
-                  setPage(0)
-                  setStatusFilter(value as AuditStatus | "all")
-                }}
-                options={[
-                  { label: "All statuses", value: "all" },
-                  { label: "SUCCESS", value: "SUCCESS" },
-                  { label: "FAILED", value: "FAILED" },
-                ]}
-              />
+            {/* Layout Full */}
+            <div className={cn("gap-2 xl:grid-cols-[minmax(220px,1fr)_minmax(180px,0.65fr)_160px_160px]", !selectedId ? "grid" : "hidden")}>
+              {searchQuestionsEl}
+              {searchUsersEl}
+              {modeEl}
+              {statusEl}
             </div>
+
+            {/* Layout Thu nhỏ */}
+            <div className={cn("gap-2 grid-cols-2", selectedId ? "grid" : "hidden")}>
+              <div className="col-span-2 sm:col-span-1">{searchUsersEl}</div>
+              <div className="col-span-2 sm:col-span-1">{searchQuestionsEl}</div>
+              <div className="col-span-1">{modeEl}</div>
+              <div className="col-span-1">{statusEl}</div>
+            </div>
+
             <div className="flex items-center justify-end">
               {!selectedId && items.length > 0 && (
                 <span className="hidden text-xs text-zinc-500 sm:inline-block">
