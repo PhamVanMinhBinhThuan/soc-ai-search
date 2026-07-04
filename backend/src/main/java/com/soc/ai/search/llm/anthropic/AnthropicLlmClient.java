@@ -200,7 +200,6 @@ public class AnthropicLlmClient implements LlmClient {
         return Map.of(
                 "model", properties.model().trim(),
                 "max_tokens", MAX_TOKENS,
-                "temperature", 0.1,
                 "system", systemPrompt,
                 "messages", List.of(Map.of(
                         "role", "user",

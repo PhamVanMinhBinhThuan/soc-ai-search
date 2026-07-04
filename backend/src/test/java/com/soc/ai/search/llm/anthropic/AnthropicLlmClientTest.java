@@ -39,6 +39,7 @@ class AnthropicLlmClientTest {
                 .andExpect(content().string(containsString("system prompt")))
                 .andExpect(content().string(containsString("user question")))
                 .andExpect(content().string(containsString("\"model\":\"" + MODEL + "\"")))
+                .andExpect(content().string(not(containsString("temperature"))))
                 .andExpect(content().string(not(containsString(API_KEY))))
                 .andRespond(withSuccess(anthropicResponse("{\\\"mode\\\":\\\"search\\\"}"), MediaType.APPLICATION_JSON));
 
