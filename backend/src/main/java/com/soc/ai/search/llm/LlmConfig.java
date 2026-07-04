@@ -2,6 +2,7 @@ package com.soc.ai.search.llm;
 
 import java.time.Duration;
 
+import com.soc.ai.search.llm.anthropic.AnthropicLlmClient;
 import com.soc.ai.search.llm.gemini.GeminiLlmClient;
 import com.soc.ai.search.llm.mock.MockLlmClient;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -34,6 +35,21 @@ public class LlmConfig {
                 .build();
 
         return new GeminiLlmClient(searchPlanClient, summaryClient, properties);
+    }
+
+    @Bean
+    @ConditionalOnProperty(prefix = "app.llm", name = "provider", havingValue = "anthropic")
+    LlmClient anthropicLlmClient(RestClient.Builder restClientBuilder, LlmProperties properties) {
+        var searchPlanClient = restClientBuilder
+                .clone()
+                .requestFactory(requestFactory(properties.timeoutMs()))
+                .build();
+        var summaryClient = restClientBuilder
+                .clone()
+                .requestFactory(requestFactory(properties.summaryTimeoutMs()))
+                .build();
+
+        return new AnthropicLlmClient(searchPlanClient, summaryClient, properties);
     }
 
     private SimpleClientHttpRequestFactory requestFactory(long timeoutMs) {

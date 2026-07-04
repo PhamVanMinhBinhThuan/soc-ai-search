@@ -1,6 +1,8 @@
 package com.soc.ai.search.llm.gemini;
 
-public class GeminiLlmException extends RuntimeException {
+import com.soc.ai.search.llm.LlmException;
+
+public class GeminiLlmException extends LlmException {
 
     public GeminiLlmException(String message) {
         super(message);

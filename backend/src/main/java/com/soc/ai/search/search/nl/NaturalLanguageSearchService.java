@@ -8,9 +8,9 @@ import com.soc.ai.search.audit.AuditPersistenceException;
 import com.soc.ai.search.audit.QueryIdGenerator;
 import com.soc.ai.search.audit.SearchAuditService;
 import com.soc.ai.search.llm.LlmClient;
+import com.soc.ai.search.llm.LlmRateLimitException;
 import com.soc.ai.search.llm.LlmResponse;
 import com.soc.ai.search.llm.LlmSearchPlanRequest;
-import com.soc.ai.search.llm.gemini.GeminiRateLimitException;
 import com.soc.ai.search.llm.prompt.SearchPlanJsonParseException;
 import com.soc.ai.search.llm.prompt.SearchPlanJsonParser;
 import com.soc.ai.search.llm.prompt.SearchPlanPromptBuilder;
@@ -254,10 +254,10 @@ public class NaturalLanguageSearchService {
     private LlmResponse callLlm(LlmSearchPlanRequest request) {
         try {
             return llmClient.generateSearchPlan(request);
-        } catch (GeminiRateLimitException exception) {
+        } catch (LlmRateLimitException exception) {
             throw new NaturalLanguageSearchRateLimitException(
                     "LLM rate limit exceeded",
-                    List.of("Gemini quota exceeded; retry later or check the Google AI Studio quota and billing settings"),
+                    List.of("LLM quota exceeded; retry later or check the provider quota and billing settings"),
                     exception);
         } catch (RuntimeException exception) {
             throw new NaturalLanguageSearchException(

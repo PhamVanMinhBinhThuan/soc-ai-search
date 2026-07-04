@@ -192,13 +192,25 @@ The frontend hides unavailable actions for UX, but the backend enforces authoriz
 
 Use `LLM_PROVIDER=mock` for deterministic local development and CI.
 
-Use `LLM_PROVIDER=gemini` for live AI integration:
+Use `LLM_PROVIDER=gemini` for Google Gemini integration:
 
 ```env
 LLM_PROVIDER=gemini
 LLM_BASE_URL=<gemini-api-base-url>
 LLM_API_KEY=<secret>
 LLM_MODEL=<model-name>
+LLM_TIMEOUT_MS=10000
+LLM_SUMMARY_TIMEOUT_MS=5000
+LLM_MAX_ATTEMPTS=2
+```
+
+Use `LLM_PROVIDER=anthropic` for Anthropic Claude integration:
+
+```env
+LLM_PROVIDER=anthropic
+LLM_BASE_URL=https://api.anthropic.com
+LLM_API_KEY=<anthropic-api-key>
+LLM_MODEL=<anthropic-model-id>
 LLM_TIMEOUT_MS=10000
 LLM_SUMMARY_TIMEOUT_MS=5000
 LLM_MAX_ATTEMPTS=2

@@ -1,4 +1,4 @@
-package com.soc.ai.search.llm.gemini;
+package com.soc.ai.search.llm.anthropic;
 
 import java.io.IOException;
 import java.net.URI;
@@ -16,29 +16,32 @@ import com.soc.ai.search.llm.LlmQuestionRefinementRequest;
 import com.soc.ai.search.llm.LlmResponse;
 import com.soc.ai.search.llm.LlmSearchPlanRequest;
 import com.soc.ai.search.llm.LlmSummaryRequest;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.util.UriComponentsBuilder;
 
-public class GeminiLlmClient implements LlmClient {
+public class AnthropicLlmClient implements LlmClient {
 
     static final String USER_AGENT = "soc-ai-search-mvp";
-    static final String API_KEY_HEADER = "x-goog-api-key";
+    static final String API_KEY_HEADER = "x-api-key";
+    static final String VERSION_HEADER = "anthropic-version";
+    static final String API_VERSION = "2023-06-01";
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(GeminiLlmClient.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(AnthropicLlmClient.class);
     private static final ObjectMapper RESPONSE_MAPPER = new ObjectMapper();
+    private static final int MAX_TOKENS = 2048;
 
     private final RestClient searchPlanRestClient;
     private final RestClient summaryRestClient;
     private final LlmProperties properties;
 
-    public GeminiLlmClient(
+    public AnthropicLlmClient(
             RestClient searchPlanRestClient,
             RestClient summaryRestClient,
             LlmProperties properties) {
@@ -56,17 +59,17 @@ public class GeminiLlmClient implements LlmClient {
 
         for (var attempt = 1; attempt <= maxAttempts; attempt++) {
             try {
-                var responseJson = callGemini(
+                var responseJson = callAnthropic(
                         searchPlanRestClient,
                         request.systemPrompt(),
-                        request.userQuestion(),
-                        true);
-                var content = extractText(responseJson);
-                var model = extractModel(responseJson);
-                return new LlmResponse(content, model, elapsedMs(startedAt));
+                        request.userQuestion());
+                return new LlmResponse(
+                        extractText(responseJson),
+                        extractModel(responseJson),
+                        elapsedMs(startedAt));
             } catch (RestClientResponseException exception) {
                 LOGGER.warn(
-                        "Gemini request attempt {}/{} returned HTTP {}: {}",
+                        "Anthropic request attempt {}/{} returned HTTP {}: {}",
                         attempt,
                         maxAttempts,
                         exception.getStatusCode().value(),
@@ -76,26 +79,26 @@ public class GeminiLlmClient implements LlmClient {
                 }
             } catch (ResourceAccessException exception) {
                 LOGGER.warn(
-                        "Gemini request attempt {}/{} timed out or could not connect: {}",
+                        "Anthropic request attempt {}/{} timed out or could not connect: {}",
                         attempt,
                         maxAttempts,
                         exception.getMessage());
                 if (attempt == maxAttempts) {
-                    throw new GeminiLlmException("Gemini provider is unavailable", exception);
+                    throw new AnthropicLlmException("Anthropic provider is unavailable", exception);
                 }
             } catch (RestClientException exception) {
                 LOGGER.warn(
-                        "Gemini request attempt {}/{} failed: {}",
+                        "Anthropic request attempt {}/{} failed: {}",
                         attempt,
                         maxAttempts,
                         exception.getMessage());
                 if (attempt == maxAttempts) {
-                    throw new GeminiLlmException("Gemini request failed", exception);
+                    throw new AnthropicLlmException("Anthropic request failed", exception);
                 }
             }
         }
 
-        throw new GeminiLlmException("Gemini provider is unavailable");
+        throw new AnthropicLlmException("Anthropic provider is unavailable");
     }
 
     @Override
@@ -104,11 +107,10 @@ public class GeminiLlmClient implements LlmClient {
         var startedAt = System.nanoTime();
 
         try {
-            var responseJson = callGemini(
+            var responseJson = callAnthropic(
                     summaryRestClient,
                     request.systemPrompt(),
-                    request.userContent(),
-                    false);
+                    request.userContent());
             return new LlmResponse(
                     extractText(responseJson),
                     extractModel(responseJson),
@@ -116,9 +118,9 @@ public class GeminiLlmClient implements LlmClient {
         } catch (RestClientResponseException exception) {
             throw mapResponseException(exception);
         } catch (ResourceAccessException exception) {
-            throw new GeminiLlmException("Gemini summary request timed out or is unavailable", exception);
+            throw new AnthropicLlmException("Anthropic summary request timed out or is unavailable", exception);
         } catch (RestClientException exception) {
-            throw new GeminiLlmException("Gemini summary request failed", exception);
+            throw new AnthropicLlmException("Anthropic summary request failed", exception);
         }
     }
 
@@ -128,11 +130,10 @@ public class GeminiLlmClient implements LlmClient {
         var startedAt = System.nanoTime();
 
         try {
-            var responseJson = callGemini(
+            var responseJson = callAnthropic(
                     summaryRestClient,
                     request.systemPrompt(),
-                    request.userContent(),
-                    false);
+                    request.userContent());
             return new LlmResponse(
                     extractText(responseJson),
                     extractModel(responseJson),
@@ -140,9 +141,9 @@ public class GeminiLlmClient implements LlmClient {
         } catch (RestClientResponseException exception) {
             throw mapResponseException(exception);
         } catch (ResourceAccessException exception) {
-            throw new GeminiLlmException("Gemini query refinement request timed out or is unavailable", exception);
+            throw new AnthropicLlmException("Anthropic query refinement request timed out or is unavailable", exception);
         } catch (RestClientException exception) {
-            throw new GeminiLlmException("Gemini query refinement request failed", exception);
+            throw new AnthropicLlmException("Anthropic query refinement request failed", exception);
         }
     }
 
@@ -152,11 +153,10 @@ public class GeminiLlmClient implements LlmClient {
         var startedAt = System.nanoTime();
 
         try {
-            var responseJson = callGemini(
+            var responseJson = callAnthropic(
                     summaryRestClient,
                     request.systemPrompt(),
-                    request.userContent(),
-                    true);
+                    request.userContent());
             return new LlmResponse(
                     extractText(responseJson),
                     extractModel(responseJson),
@@ -164,84 +164,78 @@ public class GeminiLlmClient implements LlmClient {
         } catch (RestClientResponseException exception) {
             throw mapResponseException(exception);
         } catch (ResourceAccessException exception) {
-            throw new GeminiLlmException("Gemini follow-up suggestion request timed out or is unavailable", exception);
+            throw new AnthropicLlmException("Anthropic follow-up suggestion request timed out or is unavailable", exception);
         } catch (RestClientException exception) {
-            throw new GeminiLlmException("Gemini follow-up suggestion request failed", exception);
+            throw new AnthropicLlmException("Anthropic follow-up suggestion request failed", exception);
         }
     }
 
-    private JsonNode callGemini(
+    private JsonNode callAnthropic(
             RestClient restClient,
             String systemPrompt,
-            String userContent,
-            boolean jsonOutput) {
+            String userContent) {
         var responseBytes = restClient.post()
-                .uri(generateContentUri())
+                .uri(messagesUri())
                 .header(HttpHeaders.USER_AGENT, USER_AGENT)
                 .header(API_KEY_HEADER, properties.apiKey())
+                .header(VERSION_HEADER, API_VERSION)
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(buildRequestBody(systemPrompt, userContent, jsonOutput))
+                .body(buildRequestBody(systemPrompt, userContent))
                 .retrieve()
                 .body(byte[].class);
 
         if (responseBytes == null || responseBytes.length == 0) {
-            throw new GeminiLlmException("Gemini response is empty");
+            throw new AnthropicLlmException("Anthropic response is empty");
         }
 
         try {
             var responseBody = new String(responseBytes, StandardCharsets.UTF_8);
             return RESPONSE_MAPPER.readTree(responseBody);
         } catch (IOException exception) {
-            throw new GeminiLlmException("Gemini response is not valid JSON", exception);
+            throw new AnthropicLlmException("Anthropic response is not valid JSON", exception);
         }
     }
 
-    private Map<String, Object> buildRequestBody(
-            String systemPrompt,
-            String userContent,
-            boolean jsonOutput) {
-        var generationConfig = new java.util.LinkedHashMap<String, Object>();
-        generationConfig.put("temperature", 0.1);
-        if (jsonOutput) {
-            generationConfig.put("responseMimeType", MediaType.APPLICATION_JSON_VALUE);
-        }
-
+    private Map<String, Object> buildRequestBody(String systemPrompt, String userContent) {
         return Map.of(
-                "systemInstruction", Map.of(
-                        "parts", List.of(Map.of("text", systemPrompt))),
-                "contents", List.of(Map.of(
+                "model", properties.model().trim(),
+                "max_tokens", MAX_TOKENS,
+                "temperature", 0.1,
+                "system", systemPrompt,
+                "messages", List.of(Map.of(
                         "role", "user",
-                        "parts", List.of(Map.of("text", userContent)))),
-                "generationConfig", generationConfig);
+                        "content", userContent)));
     }
 
-    private URI generateContentUri() {
+    private URI messagesUri() {
         return UriComponentsBuilder.fromUriString(trimTrailingSlash(properties.baseUrl()))
-                .path("/models/{model}:generateContent")
-                .build(properties.model());
+                .path("/v1/messages")
+                .build()
+                .toUri();
     }
 
     private String extractText(JsonNode responseJson) {
         if (responseJson == null) {
-            throw new GeminiLlmException("Gemini response is empty");
+            throw new AnthropicLlmException("Anthropic response is empty");
         }
 
-        var textNode = responseJson.path("candidates")
-                .path(0)
-                .path("content")
-                .path("parts")
-                .path(0)
-                .path("text");
-
-        if (!textNode.isTextual() || textNode.asText().isBlank()) {
-            throw new GeminiLlmException("Gemini response does not contain text output");
+        var content = responseJson.path("content");
+        if (!content.isArray()) {
+            throw new AnthropicLlmException("Anthropic response does not contain text output");
         }
 
-        return textNode.asText();
+        for (var item : content) {
+            var textNode = item.path("text");
+            if (textNode.isTextual() && !textNode.asText().isBlank()) {
+                return textNode.asText();
+            }
+        }
+
+        throw new AnthropicLlmException("Anthropic response does not contain text output");
     }
 
     private String extractModel(JsonNode responseJson) {
-        var responseModel = responseJson.path("modelVersion");
+        var responseModel = responseJson.path("model");
         if (responseModel.isTextual() && !responseModel.asText().isBlank()) {
             return responseModel.asText();
         }
@@ -255,18 +249,18 @@ public class GeminiLlmClient implements LlmClient {
 
     private RuntimeException mapResponseException(RestClientResponseException exception) {
         if (exception.getStatusCode().value() == 429) {
-            return new GeminiRateLimitException("Gemini rate limit exceeded", exception);
+            return new AnthropicRateLimitException("Anthropic rate limit exceeded", exception);
         }
 
         if (exception.getStatusCode().is4xxClientError()) {
-            return new GeminiLlmException("Gemini request was rejected by provider", exception);
+            return new AnthropicLlmException("Anthropic request was rejected by provider", exception);
         }
 
         if (exception.getStatusCode().is5xxServerError()) {
-            return new GeminiLlmException("Gemini provider is unavailable", exception);
+            return new AnthropicLlmException("Anthropic provider is unavailable", exception);
         }
 
-        return new GeminiLlmException("Gemini request failed", exception);
+        return new AnthropicLlmException("Anthropic request failed", exception);
     }
 
     private String providerErrorMessage(RestClientResponseException exception) {
@@ -288,13 +282,13 @@ public class GeminiLlmClient implements LlmClient {
 
     private void validateConfiguration() {
         if (!hasText(properties.baseUrl())) {
-            throw new GeminiLlmException("Gemini base URL is not configured");
+            throw new AnthropicLlmException("Anthropic base URL is not configured");
         }
         if (!hasText(properties.apiKey())) {
-            throw new GeminiLlmException("Gemini API key is not configured");
+            throw new AnthropicLlmException("Anthropic API key is not configured");
         }
         if (!hasText(properties.model())) {
-            throw new GeminiLlmException("Gemini model is not configured");
+            throw new AnthropicLlmException("Anthropic model is not configured");
         }
     }
 

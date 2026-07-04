@@ -4,8 +4,8 @@ import java.util.List;
 import java.util.Locale;
 
 import com.soc.ai.search.llm.LlmClient;
-import com.soc.ai.search.llm.gemini.GeminiLlmException;
-import com.soc.ai.search.llm.gemini.GeminiRateLimitException;
+import com.soc.ai.search.llm.LlmException;
+import com.soc.ai.search.llm.LlmRateLimitException;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -33,12 +33,12 @@ public class QueryRefinementService {
                     llmResponse.latencyMs());
         } catch (QueryRefinementException exception) {
             throw exception;
-        } catch (GeminiRateLimitException exception) {
+        } catch (LlmRateLimitException exception) {
             throw new QueryRefinementException(
                     "Unable to refine query right now. Please edit the question manually.",
                     List.of("LLM rate limit exceeded; retry later"),
                     exception);
-        } catch (GeminiLlmException exception) {
+        } catch (LlmException exception) {
             throw new QueryRefinementException(
                     "Unable to refine query right now. Please edit the question manually.",
                     List.of("LLM query refinement failed"),
