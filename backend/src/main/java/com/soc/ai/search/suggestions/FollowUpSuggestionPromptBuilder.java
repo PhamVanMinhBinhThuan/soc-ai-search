@@ -25,6 +25,7 @@ public class FollowUpSuggestionPromptBuilder {
         return """
                 You generate next-step SOC investigation questions.
                 Return JSON only.
+                The first character of the response must be [ and the last character must be ].
                 Return exactly 3 suggestions.
                 The JSON must be an array.
                 Each suggestion must contain only title and question.

@@ -31,16 +31,37 @@ public class FollowUpSuggestionParser {
     }
 
     public List<FollowUpSuggestion> parse(String content) {
-        if (content == null || content.isBlank() || looksLikeMarkdown(content)) {
+        if (content == null || content.isBlank()) {
             return List.of();
         }
 
         try {
-            var suggestions = mapper.readValue(content, SUGGESTION_LIST);
+            var suggestions = mapper.readValue(normalizeJsonPayload(content), SUGGESTION_LIST);
             return validate(suggestions);
         } catch (IOException exception) {
             return List.of();
         }
+    }
+
+    private String normalizeJsonPayload(String content) {
+        var trimmed = content.trim();
+        if (trimmed.startsWith("```")) {
+            trimmed = trimmed.replaceFirst("^```(?:json)?\\s*", "")
+                    .replaceFirst("\\s*```$", "")
+                    .trim();
+        }
+
+        if (trimmed.startsWith("[")) {
+            return trimmed;
+        }
+
+        var start = trimmed.indexOf('[');
+        var end = trimmed.lastIndexOf(']');
+        if (start >= 0 && end > start) {
+            return trimmed.substring(start, end + 1).trim();
+        }
+
+        return trimmed;
     }
 
     private List<FollowUpSuggestion> validate(List<FollowUpSuggestion> suggestions) {

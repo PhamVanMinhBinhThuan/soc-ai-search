@@ -55,16 +55,57 @@ class FollowUpSuggestionServiceTest {
     }
 
     @Test
-    void markdownReturnsEmptySuggestions() {
+    void parsesJsonCodeFenceSuggestions() {
         var llmClient = mock(LlmClient.class);
         when(llmClient.generateFollowUpSuggestions(any(LlmFollowUpSuggestionsRequest.class)))
-                .thenReturn(new LlmResponse("```json\n[]\n```", "gemini-test", 18));
+                .thenReturn(new LlmResponse("""
+                        ```json
+                        [
+                          {"title":"Top source IPs","question":"Show the top 5 source IPs for failed_login events in the last 24 hours"},
+                          {"title":"Affected users","question":"Group failed_login events by user in the last 24 hours"},
+                          {"title":"Failed login trend","question":"Show failed_login trend by hour in the last 24 hours"}
+                        ]
+                        ```
+                        """, "claude-test", 18));
+        var service = service(llmClient);
+
+        var response = service.suggest(request("Show failed login attempts from China in the last 24h"));
+
+        assertThat(response.source()).isEqualTo("llm");
+        assertThat(response.suggestions()).hasSize(3);
+    }
+
+    @Test
+    void proseWithoutJsonReturnsEmptySuggestions() {
+        var llmClient = mock(LlmClient.class);
+        when(llmClient.generateFollowUpSuggestions(any(LlmFollowUpSuggestionsRequest.class)))
+                .thenReturn(new LlmResponse("Here are three follow-up ideas.", "claude-test", 18));
         var service = service(llmClient);
 
         var response = service.suggest(request("Show failed login attempts from China in the last 24h"));
 
         assertThat(response.source()).isEqualTo("none");
         assertThat(response.suggestions()).isEmpty();
+    }
+
+    @Test
+    void proseWrappedJsonSuggestionsAreAccepted() {
+        var llmClient = mock(LlmClient.class);
+        when(llmClient.generateFollowUpSuggestions(any(LlmFollowUpSuggestionsRequest.class)))
+                .thenReturn(new LlmResponse("""
+                        Here is the JSON array:
+                        [
+                          {"title":"Top source IPs","question":"Show the top 5 source IPs for failed_login events in the last 24 hours"},
+                          {"title":"Affected users","question":"Group failed_login events by user in the last 24 hours"},
+                          {"title":"Failed login trend","question":"Show failed_login trend by hour in the last 24 hours"}
+                        ]
+                        """, "claude-test", 18));
+        var service = service(llmClient);
+
+        var response = service.suggest(request("Show failed login attempts from China in the last 24h"));
+
+        assertThat(response.source()).isEqualTo("llm");
+        assertThat(response.suggestions()).hasSize(3);
     }
 
     @Test
