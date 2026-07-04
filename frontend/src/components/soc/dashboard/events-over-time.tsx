@@ -8,8 +8,14 @@ import {
   ResponsiveContainer,
 } from "recharts"
 import type { EventsOverTimePoint } from "@/types/soc"
+import {
+  createLocalChartTickFormatter,
+  formatLocalChartTooltipLabel,
+} from "@/lib/chart-time-format"
 
 export function EventsOverTime({ data }: { data: EventsOverTimePoint[] }) {
+  const tickFormatter = createLocalChartTickFormatter(data, "timestamp")
+
   return (
     <div className="flex h-full min-w-0 flex-col rounded-md border border-zinc-800 bg-zinc-900">
       <div className="flex items-center justify-between border-b border-zinc-800 px-5 py-3.5 shrink-0">
@@ -54,9 +60,7 @@ export function EventsOverTime({ data }: { data: EventsOverTimePoint[] }) {
                 tick={{ fill: "#a1a1aa", fontSize: 12 }}
                 tickMargin={12}
                 minTickGap={30}
-                tickFormatter={(value) => {
-                  return new Date(value).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                }}
+                tickFormatter={tickFormatter}
               />
               <YAxis
                 axisLine={false}
@@ -66,9 +70,8 @@ export function EventsOverTime({ data }: { data: EventsOverTimePoint[] }) {
                 width={40}
               />
               <Tooltip
-                labelFormatter={(value) => {
-                  return new Date(value).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                }}
+                labelFormatter={formatLocalChartTooltipLabel}
+                formatter={(value) => [value, "Events"]}
                 contentStyle={{
                   backgroundColor: "#18181b",
                   border: "1px solid #27272a",

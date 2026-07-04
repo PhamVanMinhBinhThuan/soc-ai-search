@@ -15,6 +15,10 @@ import type {
   AggregationResultItemDto,
   ChartMetadataDto,
 } from '@/types/soc'
+import {
+  createLocalChartTickFormatter,
+  formatLocalChartTooltipLabel,
+} from '@/lib/chart-time-format'
 
 export function AggregationChart({
   data,
@@ -23,6 +27,8 @@ export function AggregationChart({
   data: AggregationResultItemDto[]
   metadata?: ChartMetadataDto
 }) {
+  const lineTickFormatter = createLocalChartTickFormatter(data, 'key')
+
   if (metadata?.chart_type === 'NUMBER') {
     return (
       <div className="grid h-80 place-items-center rounded-xl border border-border bg-background/25">
@@ -55,6 +61,8 @@ export function AggregationChart({
               tickLine={false}
               axisLine={false}
               tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }}
+              minTickGap={30}
+              tickFormatter={lineTickFormatter}
             />
             <YAxis
               tickLine={false}
@@ -62,6 +70,8 @@ export function AggregationChart({
               tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }}
             />
             <Tooltip
+              labelFormatter={formatLocalChartTooltipLabel}
+              formatter={(value) => [value, 'Events']}
               contentStyle={{
                 background: 'var(--card)',
                 border: '1px solid var(--border)',
