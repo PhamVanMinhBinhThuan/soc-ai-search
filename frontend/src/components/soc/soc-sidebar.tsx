@@ -1,14 +1,11 @@
 import {
-  ChevronDown,
   ChevronLeft,
-  ChevronRight,
   History,
   LayoutDashboard,
   Library,
   Power,
   ScrollText,
   Search,
-  ShieldCheck,
   ShieldHalf,
 } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
@@ -82,7 +79,6 @@ export function SocSidebar({
   onLogout?: () => void
 }) {
   const [expanded, setExpanded] = useState(false)
-  const [adminOpen, setAdminOpen] = useState(false)
   const collapsed = !expanded
   const permissionContext = { roles, loading: authLoading }
   const historyVisible = canViewHistory(permissionContext)
@@ -249,81 +245,36 @@ export function SocSidebar({
           </CollapsedTooltip>
 
           {adminVisible ? (
-            <div className="flex flex-col">
-              <CollapsedTooltip collapsed={collapsed} label="Admin Tools">
-                <button
-                  type="button"
-                  aria-label="Admin Tools"
-                  onClick={() => {
-                    if (collapsed) {
-                      setExpanded(true)
-                      setAdminOpen(true)
-                    } else {
-                      setAdminOpen(!adminOpen)
-                    }
-                  }}
+            <CollapsedTooltip collapsed={collapsed} label="System Audit Logs">
+              <button
+                type="button"
+                aria-label="System Audit Logs"
+                aria-current={activePage === 'audit-logs' ? 'page' : undefined}
+                onClick={() => {
+                  onOpenAuditLogs?.()
+                  onPageChange?.('audit-logs')
+                }}
+                className={cn(
+                  'relative flex h-10 w-full shrink-0 items-center rounded-xl transition-colors',
+                  expanded ? 'justify-start px-3' : 'justify-center',
+                  activePage === 'audit-logs'
+                    ? 'bg-cyan-400/10 text-cyan-300 ring-1 ring-cyan-400/25'
+                    : 'text-muted-foreground hover:bg-secondary hover:text-foreground',
+                )}
+              >
+                <History className="size-5 shrink-0" />
+                <span
                   className={cn(
-                    'relative flex h-10 w-full shrink-0 items-center rounded-xl transition-colors',
-                    expanded ? 'justify-start px-3' : 'justify-center',
-                    activePage === 'audit-logs'
-                      ? 'bg-cyan-400/10 text-cyan-300 ring-1 ring-cyan-400/25'
-                      : 'text-muted-foreground hover:bg-secondary hover:text-foreground',
+                    'overflow-hidden whitespace-nowrap text-left text-sm transition-[width,opacity,margin] duration-300',
+                    expanded
+                      ? 'ml-3 w-36 opacity-100'
+                      : 'ml-0 w-0 opacity-0',
                   )}
                 >
-                  <ShieldCheck className="size-5 shrink-0" />
-                  <span
-                    className={cn(
-                      'overflow-hidden whitespace-nowrap text-left text-sm transition-[width,opacity,margin] duration-300',
-                      expanded
-                        ? 'ml-3 w-36 opacity-100'
-                        : 'ml-0 w-0 opacity-0',
-                    )}
-                  >
-                    Admin Tools
-                  </span>
-                  {expanded && (
-                    <span className="ml-auto flex items-center justify-center opacity-60">
-                      {adminOpen ? <ChevronDown className="size-3.5" /> : <ChevronRight className="size-3.5" />}
-                    </span>
-                  )}
-                </button>
-              </CollapsedTooltip>
-
-              {expanded && adminOpen && (
-                <div className="ml-8 mt-1 flex flex-col gap-1">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      onOpenAuditLogs?.()
-                    }}
-                    className={cn(
-                      'flex h-8 w-full items-center gap-2 rounded-lg px-3 text-sm transition-colors text-left',
-                      activePage === 'audit-logs'
-                        ? 'bg-cyan-400/10 text-cyan-300'
-                        : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
-                    )}
-                  >
-                    <History className="size-3.5 shrink-0" />
-                    System Audit Logs
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      window.open(
-                        import.meta.env.VITE_KEYCLOAK_ADMIN_URL ??
-                          'http://localhost:8080/admin/master/console/#/soc-ai-search',
-                        '_blank',
-                        'noopener,noreferrer',
-                      )
-                    }
-                    className="flex h-8 w-full items-center gap-2 rounded-lg px-3 text-sm transition-colors text-left text-muted-foreground hover:bg-secondary hover:text-foreground"
-                  >
-                    <ShieldCheck className="size-3.5 shrink-0" />
-                    Keycloak Console
-                  </button>
-                </div>
-              )}
-            </div>
+                  System Audit Logs
+                </span>
+              </button>
+            </CollapsedTooltip>
           ) : null}
         </nav>
 

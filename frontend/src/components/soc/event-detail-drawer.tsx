@@ -202,11 +202,6 @@ export function EventDetailDrawer({
                 <AlertTitle className="inline text-amber-200">
                   Raw log locked
                 </AlertTitle>
-                <AlertDescription>
-                  This account can view event metadata, but raw log access
-                  requires SOC_ANALYST or SOC_ADMIN. The dashboard does not
-                  render placeholder raw data.
-                </AlertDescription>
               </Alert>
             ) : null}
 

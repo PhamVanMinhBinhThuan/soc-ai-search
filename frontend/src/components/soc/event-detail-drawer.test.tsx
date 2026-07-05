@@ -62,8 +62,8 @@ describe('EventDetailDrawer RBAC rendering', () => {
 
     expect(screen.getByText(/raw log locked/i)).toBeInTheDocument()
     expect(
-      screen.getByText(/requires SOC_ANALYST or SOC_ADMIN/i),
-    ).toBeInTheDocument()
+      screen.queryByText(/requires SOC_ANALYST or SOC_ADMIN/i),
+    ).not.toBeInTheDocument()
     expect(screen.queryByText(/timestamp=2026/i)).not.toBeInTheDocument()
   })
 

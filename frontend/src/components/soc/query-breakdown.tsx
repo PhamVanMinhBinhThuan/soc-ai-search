@@ -1,5 +1,7 @@
+import type { ReactNode } from "react";
 import { BarChart3, Hash, LineChart, ListTree, Table2 } from "lucide-react";
 
+import { CountryCode } from "@/components/soc/country-code";
 import { cn } from "@/lib/utils";
 import type {
   AggregationType,
@@ -16,17 +18,9 @@ type QueryBreakdownProps = {
 
 type BreakdownRow = {
   field: string;
-  value: string;
+  value: ReactNode;
+  keyValue: string;
   tone?: "default" | "time" | "severity" | "aggregation";
-};
-
-const COUNTRY_DISPLAY: Record<string, string> = {
-  CN: "🇨🇳 China",
-  DE: "🇩🇪 Germany",
-  RU: "🇷🇺 Russia",
-  SG: "🇸🇬 Singapore",
-  US: "🇺🇸 United States",
-  VN: "🇻🇳 Vietnam",
 };
 
 const FIELD_LABELS: Record<string, string> = {
@@ -80,13 +74,21 @@ function joinValue(value: string | string[] | null | undefined) {
   return value?.trim() ?? "";
 }
 
-function formatCountryValue(value: string | string[] | null | undefined) {
+function countryCodes(value: string | string[] | null | undefined) {
   const values = Array.isArray(value) ? value : value ? [value] : [];
-  return values
-    .map((item) => item.trim().toUpperCase())
-    .filter(Boolean)
-    .map((code) => COUNTRY_DISPLAY[code] ?? code)
-    .join(", ");
+  return values.map((item) => item.trim().toUpperCase()).filter(Boolean);
+}
+
+function formatCountryValue(value: string | string[] | null | undefined) {
+  const codes = countryCodes(value);
+
+  return (
+    <span className="flex flex-wrap gap-1.5">
+      {codes.map((code) => (
+        <CountryCode key={code} code={code} showName />
+      ))}
+    </span>
+  );
 }
 
 function formatRelative(value: string) {
@@ -111,15 +113,17 @@ function formatIso(value: string) {
   }
 
   const date = new Date(parsed);
-  return new Intl.DateTimeFormat("en-GB", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-    timeZone: "UTC",
-  }).format(date) + " UTC";
+  return (
+    new Intl.DateTimeFormat("en-GB", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+      timeZone: "UTC",
+    }).format(date) + " UTC"
+  );
 }
 
 function formatTimeEndpoint(value: string) {
@@ -145,7 +149,10 @@ function fieldLabel(field: string | null | undefined) {
   return FIELD_LABELS[field] ?? field;
 }
 
-function visualizationFor(searchPlan: SearchPlanDto, chartMetadata?: ChartMetadataDto | null) {
+function visualizationFor(
+  searchPlan: SearchPlanDto,
+  chartMetadata?: ChartMetadataDto | null,
+) {
   if (chartMetadata?.chart_type === "NUMBER") {
     return "Number";
   }
@@ -178,6 +185,7 @@ function buildRows(searchPlan: SearchPlanDto, chartMetadata?: ChartMetadataDto |
     {
       field: "Mode",
       value: searchPlan.mode === "search" ? "Search" : "Aggregation",
+      keyValue: searchPlan.mode,
       tone: "aggregation",
     },
   ];
@@ -187,6 +195,7 @@ function buildRows(searchPlan: SearchPlanDto, chartMetadata?: ChartMetadataDto |
     rows.push({
       field: "Time range",
       value: formatTimeRange(filters.timestamp.from, filters.timestamp.to),
+      keyValue: `${filters.timestamp.from}-${filters.timestamp.to}`,
       tone: "time",
     });
   }
@@ -206,7 +215,9 @@ function buildRows(searchPlan: SearchPlanDto, chartMetadata?: ChartMetadataDto |
     if (hasValue(value)) {
       rows.push({
         field: label,
-        value: key === "country_code" ? formatCountryValue(value) : joinValue(value),
+        value:
+          key === "country_code" ? formatCountryValue(value) : joinValue(value),
+        keyValue: key === "country_code" ? countryCodes(value).join(",") : joinValue(value),
         tone: key === "severity" ? "severity" : "default",
       });
     }
@@ -216,6 +227,7 @@ function buildRows(searchPlan: SearchPlanDto, chartMetadata?: ChartMetadataDto |
     rows.push({
       field: "Message contains",
       value: searchPlan.message_query ?? "",
+      keyValue: searchPlan.message_query ?? "",
     });
   }
 
@@ -223,6 +235,7 @@ function buildRows(searchPlan: SearchPlanDto, chartMetadata?: ChartMetadataDto |
     rows.push({
       field: "Aggregation",
       value: AGGREGATION_LABELS[searchPlan.aggregation.type],
+      keyValue: searchPlan.aggregation.type,
       tone: "aggregation",
     });
 
@@ -230,6 +243,7 @@ function buildRows(searchPlan: SearchPlanDto, chartMetadata?: ChartMetadataDto |
       rows.push({
         field: "Group by",
         value: fieldLabel(searchPlan.aggregation.field),
+        keyValue: searchPlan.aggregation.field ?? "",
         tone: "aggregation",
       });
     }
@@ -238,6 +252,7 @@ function buildRows(searchPlan: SearchPlanDto, chartMetadata?: ChartMetadataDto |
       rows.push({
         field: "Limit",
         value: `Top ${searchPlan.aggregation.top_n}`,
+        keyValue: String(searchPlan.aggregation.top_n),
         tone: "aggregation",
       });
     }
@@ -246,6 +261,7 @@ function buildRows(searchPlan: SearchPlanDto, chartMetadata?: ChartMetadataDto |
       rows.push({
         field: "Interval",
         value: searchPlan.aggregation.interval,
+        keyValue: searchPlan.aggregation.interval,
         tone: "time",
       });
     }
@@ -254,6 +270,7 @@ function buildRows(searchPlan: SearchPlanDto, chartMetadata?: ChartMetadataDto |
       rows.push({
         field: "Bucket order",
         value: searchPlan.aggregation.order === "desc" ? "Highest first" : "Lowest first",
+        keyValue: searchPlan.aggregation.order,
         tone: "aggregation",
       });
     }
@@ -265,12 +282,15 @@ function buildRows(searchPlan: SearchPlanDto, chartMetadata?: ChartMetadataDto |
     rows.push({
       field: "Sort",
       value: SORT_LABELS[key] ?? `${fieldLabel(firstSort.field)} ${firstSort.order}`,
+      keyValue: `${firstSort.field}:${firstSort.order}`,
     });
   }
 
+  const visualization = visualizationFor(searchPlan, chartMetadata);
   rows.push({
     field: "Visualization",
-    value: visualizationFor(searchPlan, chartMetadata),
+    value: visualization,
+    keyValue: visualization,
     tone: "aggregation",
   });
 
@@ -349,7 +369,7 @@ export function QueryBreakdown({
         <div className="divide-y divide-zinc-800/80">
           {rows.map((row) => (
             <div
-              key={`${row.field}-${row.value}`}
+              key={`${row.field}-${row.keyValue}`}
               className="grid grid-cols-[minmax(7rem,11rem)_1fr] bg-zinc-950/30"
             >
               <div className="px-3 py-2.5 text-sm font-medium text-zinc-400">
@@ -362,7 +382,7 @@ export function QueryBreakdown({
                     valueClassName(row.tone),
                   )}
                 >
-                  <span className="truncate">{row.value}</span>
+                  <span className="min-w-0 truncate">{row.value}</span>
                 </span>
               </div>
             </div>

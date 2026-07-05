@@ -18,13 +18,13 @@ export function EventsOverTime({ data }: { data: EventsOverTimePoint[] }) {
 
   return (
     <div className="flex h-full min-w-0 flex-col rounded-md border border-zinc-800 bg-zinc-900">
-      <div className="flex items-center justify-between border-b border-zinc-800 px-5 py-3.5 shrink-0">
+      <div className="flex shrink-0 items-center justify-between border-b border-zinc-800 px-4 py-3">
         <div>
           <h2 className="text-sm font-semibold text-zinc-100">Events Over Time</h2>
         </div>
       </div>
 
-      <div className="min-h-[300px] min-w-0 flex-1 p-5">
+      <div className="min-h-[240px] min-w-0 flex-1 p-4">
         {data.length === 0 ? (
           <div className="flex h-full items-center justify-center rounded-md border border-dashed border-zinc-800 bg-gradient-to-b from-cyan-500/5 via-zinc-950/40 to-transparent">
             <p className="text-sm text-zinc-500">No data available</p>
@@ -34,8 +34,8 @@ export function EventsOverTime({ data }: { data: EventsOverTimePoint[] }) {
             width="100%"
             height="100%"
             minWidth={0}
-            minHeight={280}
-            initialDimension={{ width: 900, height: 280 }}
+            minHeight={220}
+            initialDimension={{ width: 760, height: 220 }}
           >
             <LineChart
               data={data}

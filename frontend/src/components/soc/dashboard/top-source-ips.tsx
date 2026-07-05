@@ -14,8 +14,8 @@ export function TopSourceIps({ data }: { data: TopSourceIpItem[] }) {
   }
 
   return (
-    <div className="rounded-md border border-zinc-800 bg-zinc-900 flex flex-col h-full">
-      <div className="flex items-center justify-between border-b border-zinc-800 px-5 py-3.5 shrink-0">
+    <div className="flex h-full flex-col rounded-md border border-zinc-800 bg-zinc-900">
+      <div className="flex shrink-0 items-center justify-between border-b border-zinc-800 px-4 py-3">
         <div>
           <h2 className="text-sm font-semibold text-zinc-100">Top Source IPs</h2>
         </div>
@@ -24,7 +24,7 @@ export function TopSourceIps({ data }: { data: TopSourceIpItem[] }) {
         </span>
       </div>
 
-      <div className="flex flex-col gap-3.5 p-5 flex-1 min-h-0 overflow-y-auto">
+      <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-4">
         {data.length === 0 ? (
           <div className="flex h-full items-center justify-center">
             <p className="text-sm text-zinc-500">No data available</p>

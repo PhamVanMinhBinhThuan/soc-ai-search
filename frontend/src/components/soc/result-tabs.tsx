@@ -29,6 +29,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { formatLocalChartTooltipLabel } from "@/lib/chart-time-format";
 import type {
   AggregationResultItemDto,
   ChartMetadataDto,
@@ -132,6 +133,10 @@ function AnalyticsView({
   );
   const firstSummaryRow = firstSummaryIndex + 1;
   const lastSummaryRow = firstSummaryIndex + visibleAggregationResults.length;
+  const formatSummaryKey = (key: string) =>
+    chartMetadata?.chart_type === "LINE"
+      ? formatLocalChartTooltipLabel(key)
+      : key;
 
   return (
     <div className="space-y-4">
@@ -166,7 +171,9 @@ function AnalyticsView({
           <TableBody>
             {visibleAggregationResults.map((item) => (
               <TableRow key={item.key}>
-                <TableCell className="font-mono text-xs">{item.key}</TableCell>
+                <TableCell className="font-mono text-xs">
+                  {formatSummaryKey(item.key)}
+                </TableCell>
                 <TableCell className="text-right font-mono text-xs font-semibold text-cyan-300">
                   {item.value.toLocaleString("en-US")}
                 </TableCell>

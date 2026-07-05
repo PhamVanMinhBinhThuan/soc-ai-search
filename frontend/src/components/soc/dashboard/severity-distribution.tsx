@@ -34,30 +34,30 @@ export function SeverityDistribution({ data }: { data: SeverityDistributionItem[
 
   return (
     <div className="flex h-full min-w-0 flex-col rounded-md border border-zinc-800 bg-zinc-900">
-      <div className="border-b border-zinc-800 px-5 py-3.5 shrink-0">
+      <div className="shrink-0 border-b border-zinc-800 px-4 py-3">
         <h2 className="text-sm font-semibold text-zinc-100">Severity Distribution</h2>
       </div>
 
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col items-center justify-center p-5">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col items-center justify-center p-4">
         {data.length === 0 ? (
           <p className="text-sm text-zinc-500">No data available</p>
         ) : (
           <>
-            <div className="relative flex h-40 min-h-40 w-full min-w-0 shrink-0 items-center justify-center">
+            <div className="relative flex h-32 min-h-32 w-full min-w-0 shrink-0 items-center justify-center">
               <ResponsiveContainer
                 width="100%"
                 height="100%"
                 minWidth={0}
-                minHeight={160}
-                initialDimension={{ width: 320, height: 160 }}
+                minHeight={128}
+                initialDimension={{ width: 280, height: 128 }}
               >
                 <PieChart>
                   <Pie
                     data={data}
                     cx="50%"
                     cy="50%"
-                    innerRadius={60}
-                    outerRadius={80}
+                    innerRadius={46}
+                    outerRadius={64}
                     paddingAngle={2}
                     dataKey="count"
                     nameKey="severity"
@@ -89,7 +89,7 @@ export function SeverityDistribution({ data }: { data: SeverityDistributionItem[
               </div>
             </div>
 
-            <div className="mt-5 grid w-full grid-cols-2 gap-x-4 gap-y-2.5">
+            <div className="mt-4 grid w-full grid-cols-2 gap-x-4 gap-y-2">
               {data.map((item) => {
                 const key = capitalize(item.severity)
                 return (

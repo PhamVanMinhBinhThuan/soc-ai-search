@@ -198,10 +198,10 @@ export function SocDashboard({
   }, [canFetchDashboard, fetchData])
 
   return (
-    <main className="flex h-full min-h-0 flex-col bg-zinc-950 text-zinc-100 overflow-y-auto">
-      <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+    <main className="flex h-full min-h-0 flex-col overflow-y-auto bg-zinc-950 text-zinc-100">
+      <div className="mx-auto w-full max-w-7xl px-4 py-4 sm:px-5 lg:px-6">
         {/* Header */}
-        <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
+        <header className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-start gap-3">
             <div className="flex size-8 items-center justify-center rounded-lg border border-cyan-500/30 bg-cyan-500/10 mt-0.5">
               <LayoutDashboard className="size-5 text-cyan-300" />
@@ -258,14 +258,15 @@ export function SocDashboard({
               </div>
             </section>
 
-            {/* Full-width widgets */}
-            <div className="mb-4 min-w-0">
-              <EventsOverTime data={data.events_over_time} />
-            </div>
-
-            <div className="min-w-0">
-              <TopSourceIps data={data.top_source_ips} />
-            </div>
+            {/* Investigation widgets */}
+            <section className="grid min-w-0 grid-cols-1 gap-4 xl:grid-cols-3">
+              <div className="min-w-0 xl:col-span-2">
+                <EventsOverTime data={data.events_over_time} />
+              </div>
+              <div className="min-w-0 xl:col-span-1">
+                <TopSourceIps data={data.top_source_ips} />
+              </div>
+            </section>
           </>
         )}
       </div>

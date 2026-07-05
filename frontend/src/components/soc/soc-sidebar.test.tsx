@@ -50,8 +50,10 @@ describe('SocSidebar RBAC navigation', () => {
       screen.queryByRole('button', { name: /investigations/i }),
     ).not.toBeInTheDocument()
     expect(
-      screen.queryByRole('button', { name: /admin tools/i }),
+      screen.queryByRole('button', { name: /system audit logs/i }),
     ).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /admin tools/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /keycloak console/i })).not.toBeInTheDocument()
     expectRemovedNavigationItems()
   })
 
@@ -65,8 +67,10 @@ describe('SocSidebar RBAC navigation', () => {
       screen.getByRole('button', { name: /investigations/i }),
     ).toBeInTheDocument()
     expect(
-      screen.queryByRole('button', { name: /admin tools/i }),
+      screen.queryByRole('button', { name: /system audit logs/i }),
     ).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /admin tools/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /keycloak console/i })).not.toBeInTheDocument()
     expectRemovedNavigationItems()
   })
 
@@ -77,8 +81,10 @@ describe('SocSidebar RBAC navigation', () => {
       screen.getByRole('button', { name: /event search/i }),
     ).toBeInTheDocument()
     expect(
-      screen.getByRole('button', { name: /admin tools/i }),
+      screen.getByRole('button', { name: /system audit logs/i }),
     ).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /admin tools/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /keycloak console/i })).not.toBeInTheDocument()
     expectRemovedNavigationItems()
   })
 
@@ -92,8 +98,10 @@ describe('SocSidebar RBAC navigation', () => {
       screen.queryByRole('button', { name: /investigations/i }),
     ).not.toBeInTheDocument()
     expect(
-      screen.queryByRole('button', { name: /admin tools/i }),
+      screen.queryByRole('button', { name: /system audit logs/i }),
     ).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /admin tools/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /keycloak console/i })).not.toBeInTheDocument()
     expectRemovedNavigationItems()
   })
 })
@@ -125,5 +133,26 @@ describe('SocSidebar Query Library navigation', () => {
     fireEvent.click(btn)
 
     expect(onPageChange).toHaveBeenCalledWith('query-library')
+  })
+
+  it('calls audit handlers when System Audit Logs is clicked', () => {
+    const onPageChange = vi.fn()
+    const onOpenAuditLogs = vi.fn()
+
+    render(
+      <SocSidebar
+        identity="demo-user"
+        roles={['SOC_ADMIN']}
+        authLoading={false}
+        authEnabled
+        onPageChange={onPageChange}
+        onOpenAuditLogs={onOpenAuditLogs}
+      />
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /system audit logs/i }))
+
+    expect(onOpenAuditLogs).toHaveBeenCalledTimes(1)
+    expect(onPageChange).toHaveBeenCalledWith('audit-logs')
   })
 })

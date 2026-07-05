@@ -233,6 +233,32 @@ describe("ResultTabs polymorphic rendering", () => {
     expect(screen.getByText("bucket-12")).toBeInTheDocument();
   });
 
+  it("formats date histogram summary table time instead of showing raw UTC ISO", () => {
+    render(
+      <ResultTabs
+        {...baseProps}
+        mode="aggregation"
+        activeTab="analytics"
+        canExportCsv
+        aggregationResults={[
+          { key: "2026-07-04T11:00:00.000Z", value: 65 },
+        ]}
+        chartMetadata={{
+          chart_type: "LINE",
+          x_axis_label: "Time",
+          y_axis_label: "Event Count",
+        }}
+        total={65}
+      />,
+    );
+
+    expect(
+      screen.queryByText("2026-07-04T11:00:00.000Z"),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText(/04\/07\/2026/)).toBeInTheDocument();
+    expect(screen.getByText("65")).toBeInTheDocument();
+  });
+
   it("renders empty state for successful search with no events", () => {
     render(<ResultTabs {...baseProps} canExportCsv />);
 

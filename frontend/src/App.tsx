@@ -708,10 +708,14 @@ function App() {
                   canPin={canUseHistory}
                   focusSignal={searchFocusSignal}
                   onOpenQueryLibrary={() => navigate('/query-library')}
-                  onOpenRecentQueries={() => {
-                    setHistoryOpen(true);
-                    void loadHistory(0);
-                  }}
+                  onOpenRecentQueries={
+                    canUseHistory
+                      ? () => {
+                          setHistoryOpen(true);
+                          void loadHistory(0);
+                        }
+                      : undefined
+                  }
                 />
 
                 {requestStatus === "idle" ? <SearchIdleState /> : null}

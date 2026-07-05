@@ -14,9 +14,25 @@ const flagByCountryCode: Record<string, string> = {
   VN: vnFlag,
 }
 
-export function CountryCode({ code }: { code?: string | null }) {
+const countryNameByCode: Record<string, string> = {
+  CN: 'China',
+  DE: 'Germany',
+  RU: 'Russia',
+  SG: 'Singapore',
+  US: 'United States',
+  VN: 'Vietnam',
+}
+
+export function CountryCode({
+  code,
+  showName = false,
+}: {
+  code?: string | null
+  showName?: boolean
+}) {
   const normalizedCode = code?.trim().toUpperCase() || ''
   const flag = flagByCountryCode[normalizedCode]
+  const countryName = countryNameByCode[normalizedCode]
 
   return (
     <span
@@ -32,6 +48,9 @@ export function CountryCode({ code }: { code?: string | null }) {
         />
       ) : null}
       <span className="font-mono text-xs">{normalizedCode || 'N/A'}</span>
+      {showName && countryName ? (
+        <span className="text-xs font-medium text-zinc-200">{countryName}</span>
+      ) : null}
     </span>
   )
 }

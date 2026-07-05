@@ -111,4 +111,26 @@ describe("SearchSection additional buttons", () => {
     fireEvent.click(recentBtn);
     expect(onOpenRecent).toHaveBeenCalledTimes(1);
   });
+
+  it("hides Recent Queries when the handler is not provided", () => {
+    render(
+      <SearchSection
+        question=""
+        scenarios={[]}
+        isLoading={false}
+        isMockMode={false}
+        onQuestionChange={vi.fn()}
+        onSubmitQuestion={vi.fn()}
+        onSelectSuggestion={vi.fn()}
+        onOpenQueryLibrary={vi.fn()}
+      />
+    );
+
+    expect(
+      screen.getByRole("button", { name: /view queries/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /recent queries/i }),
+    ).not.toBeInTheDocument();
+  });
 });
