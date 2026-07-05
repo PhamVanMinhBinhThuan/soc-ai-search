@@ -85,6 +85,10 @@ describe('App history UX', () => {
     expect(mockState.getSearchHistory).not.toHaveBeenCalled()
 
     fireEvent.click(
+      screen.getByRole('button', { name: /event search/i }),
+    )
+
+    fireEvent.click(
       screen.getByRole('button', { name: /recent queries/i }),
     )
 

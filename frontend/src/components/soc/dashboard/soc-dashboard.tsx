@@ -200,9 +200,9 @@ export function SocDashboard({
   return (
     <main className="flex h-full min-h-0 flex-col overflow-y-auto bg-[radial-gradient(circle_at_82%_4%,rgba(34,211,238,0.16),transparent_30%),radial-gradient(circle_at_20%_92%,rgba(255,45,85,0.08),transparent_30%),#071018] text-zinc-100">
       <div className="pointer-events-none fixed inset-0 bg-[linear-gradient(rgba(34,211,238,0.035)_1px,transparent_1px),linear-gradient(90deg,rgba(34,211,238,0.035)_1px,transparent_1px)] bg-[size:34px_34px] opacity-40" />
-      <div className="relative mx-auto w-full max-w-7xl px-4 py-3 sm:px-5 lg:px-6">
+      <div className="relative mx-auto w-full max-w-7xl px-4 py-2.5 sm:px-5 lg:px-5">
         {/* Header */}
-        <header className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <header className="mb-2.5 flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-start gap-3">
             <div className="mt-0.5 flex size-9 items-center justify-center rounded-xl border border-cyan-400/35 bg-cyan-400/12 shadow-[0_0_24px_-10px_rgba(34,211,238,0.95)]">
               <LayoutDashboard className="size-5 text-cyan-300" />
@@ -250,8 +250,8 @@ export function SocDashboard({
         ) : (
           <>
             {/* Overview */}
-            <section className="mb-3 grid min-w-0 grid-cols-1 gap-3 xl:grid-cols-3">
-              <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 xl:col-span-2">
+            <section className="mb-2.5 grid min-w-0 grid-cols-1 gap-2.5 xl:grid-cols-3">
+              <div className="grid min-w-0 grid-cols-1 gap-2.5 sm:grid-cols-2 xl:col-span-2">
                 <KpiCards data={data.kpis} />
               </div>
               <div className="min-w-0 xl:col-span-1">
@@ -260,7 +260,7 @@ export function SocDashboard({
             </section>
 
             {/* Investigation widgets */}
-            <section className="grid min-w-0 grid-cols-1 gap-3 xl:grid-cols-3">
+            <section className="grid min-w-0 grid-cols-1 gap-2.5 xl:grid-cols-3">
               <div className="min-w-0 xl:col-span-2">
                 <EventsOverTime data={data.events_over_time} />
               </div>

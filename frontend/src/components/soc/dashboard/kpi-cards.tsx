@@ -56,7 +56,7 @@ export function KpiCards({ data }: { data: KpiData }) {
         return (
           <div
             key={kpi.label}
-            className={`group relative overflow-hidden rounded-2xl border p-4 transition-all duration-200 hover:-translate-y-0.5 ${kpi.panelClass}`}
+            className={`group relative overflow-hidden rounded-2xl border p-3.5 transition-all duration-200 hover:-translate-y-0.5 ${kpi.panelClass}`}
           >
             <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(34,211,238,0.09)_1px,transparent_1px),linear-gradient(90deg,rgba(34,211,238,0.09)_1px,transparent_1px)] bg-[size:22px_22px] opacity-35" />
             <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent" />
@@ -66,7 +66,7 @@ export function KpiCards({ data }: { data: KpiData }) {
                 <Icon className={`h-4 w-4 ${kpi.iconClass}`} strokeWidth={2} />
               </div>
             </div>
-            <p className={`relative mt-3 text-3xl font-bold tabular-nums drop-shadow-[0_0_10px_rgba(34,211,238,0.18)] ${kpi.valueClass}`}>{kpi.value}</p>
+            <p className={`relative mt-2.5 text-3xl font-bold tabular-nums drop-shadow-[0_0_10px_rgba(34,211,238,0.18)] ${kpi.valueClass}`}>{kpi.value}</p>
           </div>
         )
       })}

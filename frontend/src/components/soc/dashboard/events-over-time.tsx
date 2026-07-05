@@ -52,13 +52,13 @@ export function EventsOverTime({ data }: { data: EventsOverTimePoint[] }) {
   return (
     <div className="relative flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-cyan-400/35 bg-[linear-gradient(180deg,rgba(34,211,238,0.08),rgba(17,19,24,0.92))] shadow-[0_0_30px_-18px_rgba(34,211,238,0.9),inset_0_1px_0_rgba(255,255,255,0.06)]">
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(34,211,238,0.055)_1px,transparent_1px),linear-gradient(90deg,rgba(34,211,238,0.055)_1px,transparent_1px)] bg-[size:28px_28px] opacity-30" />
-      <div className="relative flex shrink-0 items-center justify-between border-b border-cyan-400/20 px-4 py-3">
+      <div className="relative flex shrink-0 items-center justify-between border-b border-cyan-400/20 px-4 py-2.5">
         <div>
           <h2 className="text-sm font-semibold text-zinc-100">Events Over Time</h2>
         </div>
       </div>
 
-      <div className="relative min-h-[220px] min-w-0 flex-1 p-3">
+      <div className="relative min-h-[202px] min-w-0 flex-1 p-2.5">
         {data.length === 0 ? (
           <div className="flex h-full items-center justify-center rounded-md border border-dashed border-zinc-800 bg-gradient-to-b from-cyan-500/5 via-zinc-950/40 to-transparent">
             <p className="text-sm text-zinc-500">No data available</p>
@@ -68,8 +68,8 @@ export function EventsOverTime({ data }: { data: EventsOverTimePoint[] }) {
             width="100%"
             height="100%"
             minWidth={0}
-            minHeight={220}
-            initialDimension={{ width: 760, height: 220 }}
+            minHeight={202}
+            initialDimension={{ width: 760, height: 202 }}
           >
             <AreaChart
               data={data}

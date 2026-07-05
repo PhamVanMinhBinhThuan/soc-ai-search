@@ -636,7 +636,7 @@ function App() {
       />
 
       <Routes>
-        <Route path="/" element={<Navigate to="/search" replace />} />
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
         <Route
           path="/audit-logs"
@@ -879,7 +879,7 @@ function App() {
           }
         />
 
-        <Route path="*" element={<Navigate to="/search" replace />} />
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
 
       <EventDetailDrawer

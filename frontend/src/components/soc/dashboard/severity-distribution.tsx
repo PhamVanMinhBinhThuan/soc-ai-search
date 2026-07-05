@@ -45,30 +45,30 @@ export function SeverityDistribution({ data }: { data: SeverityDistributionItem[
   return (
     <div className="relative flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-violet-400/35 bg-[linear-gradient(180deg,rgba(168,85,247,0.10),rgba(17,19,24,0.92))] shadow-[0_0_30px_-18px_rgba(168,85,247,0.85),inset_0_1px_0_rgba(255,255,255,0.06)]">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_60%_18%,rgba(34,211,238,0.13),transparent_28%)]" />
-      <div className="relative shrink-0 border-b border-violet-400/20 px-4 py-3">
+      <div className="relative shrink-0 border-b border-violet-400/20 px-4 py-2.5">
         <h2 className="text-sm font-semibold text-zinc-100">Severity Distribution</h2>
       </div>
 
-      <div className="relative flex min-h-0 min-w-0 flex-1 flex-col items-center justify-center p-3">
+      <div className="relative flex min-h-0 min-w-0 flex-1 flex-col items-center justify-center p-2.5">
         {data.length === 0 ? (
           <p className="text-sm text-zinc-500">No data available</p>
         ) : (
           <>
-            <div className="relative flex h-32 min-h-32 w-full min-w-0 shrink-0 items-center justify-center">
+            <div className="relative flex h-[120px] min-h-[120px] w-full min-w-0 shrink-0 items-center justify-center">
               <ResponsiveContainer
                 width="100%"
                 height="100%"
                 minWidth={0}
-                minHeight={128}
-                initialDimension={{ width: 280, height: 128 }}
+                minHeight={120}
+                initialDimension={{ width: 280, height: 120 }}
               >
                 <PieChart>
                   <Pie
                     data={orderedData}
                     cx="50%"
                     cy="50%"
-                    innerRadius={46}
-                    outerRadius={66}
+                    innerRadius={42}
+                    outerRadius={60}
                     paddingAngle={2}
                     dataKey="count"
                     nameKey="severity"

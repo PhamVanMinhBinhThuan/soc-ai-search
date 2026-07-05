@@ -244,15 +244,15 @@ export function AuditLogsPage() {
                       className={cn(
                         "group w-full cursor-pointer rounded-lg border p-3 text-left transition-all",
                         isActive
-                          ? "border-cyan-400/55 bg-cyan-400/[0.09] shadow-[0_0_24px_-12px_rgba(34,211,238,0.9),inset_0_1px_0_rgba(255,255,255,0.06)]"
-                          : "border-cyan-400/12 bg-[#111827]/45 hover:border-cyan-400/30 hover:bg-cyan-400/[0.055]",
+                          ? "border-cyan-400/55 bg-cyan-400/[0.10] shadow-[0_0_26px_-12px_rgba(34,211,238,0.95),inset_0_1px_0_rgba(255,255,255,0.06)]"
+                          : "border-cyan-400/16 bg-[linear-gradient(180deg,rgba(34,211,238,0.055),rgba(17,24,39,0.45))] hover:border-cyan-400/35 hover:bg-cyan-400/[0.07]",
                       )}
                     >
                       <div className="mb-1.5 flex items-center justify-between font-mono text-xs text-zinc-500">
                         <span>{timeStr}</span>
                         <span className="font-sans text-zinc-400">{item.user_identity}</span>
                       </div>
-                      <p className={cn("mb-2 line-clamp-2 text-sm font-medium leading-snug text-pretty", isActive ? "text-zinc-100" : "text-zinc-300")}>
+                      <p className={cn("mb-2 line-clamp-2 text-sm font-semibold leading-snug text-pretty", isActive ? "text-zinc-100" : "text-zinc-300")}>
                         <QuestionSummary question={item.question} />
                       </p>
                       <div className="flex flex-wrap items-center gap-1.5">
@@ -291,8 +291,8 @@ export function AuditLogsPage() {
                         key={item.query_id}
                         onClick={() => setSelectedId(isActive ? null : item.query_id)}
                         className={cn(
-                          "group cursor-pointer border-b border-l-2 border-b-cyan-400/10 border-l-transparent transition hover:bg-cyan-400/[0.055]",
-                          isActive && "border-l-cyan-300 bg-cyan-400/[0.10] shadow-[inset_0_0_0_1px_rgba(34,211,238,0.18)]",
+                          "group cursor-pointer border-b border-l-2 border-b-cyan-400/10 border-l-transparent bg-[linear-gradient(90deg,rgba(34,211,238,0.018),rgba(8,10,15,0.1))] transition hover:bg-cyan-400/[0.075] hover:shadow-[0_0_22px_-16px_rgba(34,211,238,0.9)]",
+                          isActive && "border-l-cyan-300 bg-cyan-400/[0.11] shadow-[inset_0_0_0_1px_rgba(34,211,238,0.24),0_0_26px_-16px_rgba(34,211,238,0.95)]",
                         )}
                       >
                         <td className="whitespace-nowrap px-3 py-3 font-mono text-xs text-zinc-500">
@@ -300,8 +300,13 @@ export function AuditLogsPage() {
                           <span>{timeStr}</span>
                         </td>
                         <td className="px-3 py-3 text-sm text-zinc-300">{item.user_identity}</td>
-                        <td className="px-3 py-3">
-                          <span className="line-clamp-2 text-sm font-medium text-zinc-200">
+                        <td className="px-3 py-2.5">
+                          <span className={cn(
+                            "flex min-h-9 items-center rounded-xl border px-3 py-2 text-sm font-semibold text-zinc-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition",
+                            isActive
+                              ? "border-cyan-300/35 bg-cyan-400/[0.08] shadow-[0_0_18px_-12px_rgba(34,211,238,0.9),inset_0_1px_0_rgba(255,255,255,0.06)]"
+                              : "border-cyan-400/12 bg-[#111827]/45 group-hover:border-cyan-400/28 group-hover:bg-cyan-400/[0.055]",
+                          )}>
                             <QuestionSummary question={item.question} compact />
                           </span>
                         </td>

@@ -104,10 +104,12 @@ export function SocSidebar({
     <TooltipProvider>
       <aside
         className={cn(
-          'sticky top-0 hidden h-svh shrink-0 flex-col overflow-hidden border-r border-cyan-400/15 bg-[radial-gradient(circle_at_15%_10%,rgba(34,211,238,0.12),transparent_30%),#0B0E13] py-4 transition-[width] duration-300 ease-in-out md:flex',
+          'sticky top-0 hidden h-svh shrink-0 flex-col overflow-hidden border-r border-cyan-400/30 bg-[radial-gradient(circle_at_15%_10%,rgba(34,211,238,0.12),transparent_30%),#0B0E13] py-4 shadow-[10px_0_32px_-24px_rgba(34,211,238,0.95)] transition-[width] duration-300 ease-in-out md:flex',
           expanded ? 'w-60' : 'w-16',
         )}
       >
+        <div className="pointer-events-none absolute right-0 top-0 h-full w-px bg-gradient-to-b from-transparent via-cyan-300/45 to-transparent" />
+
         <div className="mb-5 flex h-10 shrink-0 items-center px-3">
           <Tooltip>
             <TooltipTrigger asChild>

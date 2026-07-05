@@ -201,7 +201,7 @@ export function QueryLibraryPage({
         </h1>
       </header>
 
-      <div className="mx-auto flex min-h-0 w-full max-w-[1500px] flex-1 flex-col gap-4 p-4 sm:p-5">
+      <div className="mx-auto flex min-h-0 w-full max-w-[1500px] flex-1 flex-col gap-4 overflow-hidden p-4 sm:p-5">
           <section className="flex flex-col gap-3" aria-label="Query filters">
             <div className="relative">
               <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-500" />
