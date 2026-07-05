@@ -5,7 +5,7 @@ import { InvestigationDetailPanel } from "./investigation-detail-panel"
 import { getSearchHistory, getSearchHistoryDetail, togglePinHistory } from "@/services/history-api"
 import type { AuditStatus, SearchHistoryItemDto, SearchHistoryDetailDto, SearchMode } from "@/types/soc"
 
-const PAGE_SIZE = 5
+const PAGE_SIZE = 10
 
 export function InvestigationsPage({
   onRunAgain,
@@ -97,9 +97,9 @@ export function InvestigationsPage({
   }
 
   return (
-    <main className="flex h-full min-h-0 flex-col bg-zinc-950 text-zinc-200">
+    <main className="flex h-full min-h-0 flex-col bg-[radial-gradient(circle_at_85%_5%,rgba(34,211,238,0.08),transparent_28%),radial-gradient(circle_at_20%_90%,rgba(255,45,85,0.05),transparent_30%),#080A0F] text-zinc-200">
       {/* Page header */}
-      <header className="flex items-center gap-3 border-b border-zinc-800 px-5 py-4 shrink-0">
+      <header className="flex shrink-0 items-center gap-3 border-b border-[#252A33] bg-[#0B0E13]/85 px-5 py-4 backdrop-blur">
         <div className="flex size-9 items-center justify-center rounded-lg border border-cyan-500/30 bg-cyan-500/10">
           <ShieldAlert className="size-5 text-cyan-300" />
         </div>

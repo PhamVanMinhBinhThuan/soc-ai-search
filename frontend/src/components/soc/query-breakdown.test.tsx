@@ -35,7 +35,7 @@ describe("QueryBreakdown", () => {
     expect(screen.getByText("Last 24 hours to now")).toBeInTheDocument();
     expect(screen.getByText("failed_login")).toBeInTheDocument();
     expect(screen.getByText("CN")).toBeInTheDocument();
-    expect(screen.getByText("China")).toBeInTheDocument();
+    expect(screen.queryByText("China")).not.toBeInTheDocument();
     expect(screen.getByText("Event logs table")).toBeInTheDocument();
     expect(screen.queryByText("Host")).not.toBeInTheDocument();
     expect(
@@ -57,9 +57,7 @@ describe("QueryBreakdown", () => {
     );
 
     expect(screen.getByText("VN")).toBeInTheDocument();
-    expect(screen.getByText("Vietnam")).toBeInTheDocument();
     expect(screen.getByText("CN")).toBeInTheDocument();
-    expect(screen.getByText("China")).toBeInTheDocument();
     expect(screen.getByText("XX")).toBeInTheDocument();
   });
 

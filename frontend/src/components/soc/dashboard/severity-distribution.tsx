@@ -23,18 +23,28 @@ const DOT_COLORS = {
   Low: "bg-zinc-500",
 }
 
+const SEVERITY_ORDER = ["Critical", "High", "Medium", "Low"] as const
+
 function capitalize(s: string): keyof typeof COLORS {
   return (s.charAt(0).toUpperCase() + s.slice(1).toLowerCase()) as keyof typeof COLORS
 }
 
 export function SeverityDistribution({ data }: { data: SeverityDistributionItem[] }) {
+  const orderedData = useMemo(() => {
+    return [...data].sort((a, b) => {
+      const aIndex = SEVERITY_ORDER.indexOf(capitalize(a.severity))
+      const bIndex = SEVERITY_ORDER.indexOf(capitalize(b.severity))
+      return (aIndex === -1 ? 99 : aIndex) - (bIndex === -1 ? 99 : bIndex)
+    })
+  }, [data])
+
   const total = useMemo(() => {
     return data.reduce((acc, curr) => acc + curr.count, 0)
   }, [data])
 
   return (
-    <div className="flex h-full min-w-0 flex-col rounded-md border border-zinc-800 bg-zinc-900">
-      <div className="shrink-0 border-b border-zinc-800 px-4 py-3">
+    <div className="flex h-full min-w-0 flex-col rounded-2xl border border-[#252A33] bg-[#111318] shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+      <div className="shrink-0 border-b border-[#252A33] px-4 py-3">
         <h2 className="text-sm font-semibold text-zinc-100">Severity Distribution</h2>
       </div>
 
@@ -53,7 +63,7 @@ export function SeverityDistribution({ data }: { data: SeverityDistributionItem[
               >
                 <PieChart>
                   <Pie
-                    data={data}
+                    data={orderedData}
                     cx="50%"
                     cy="50%"
                     innerRadius={46}
@@ -63,7 +73,7 @@ export function SeverityDistribution({ data }: { data: SeverityDistributionItem[
                     nameKey="severity"
                     stroke="none"
                   >
-                    {data.map((entry) => {
+                    {orderedData.map((entry) => {
                       const key = capitalize(entry.severity)
                       return <Cell key={entry.severity} fill={COLORS[key] ?? "#52525b"} />
                     })}
@@ -84,16 +94,16 @@ export function SeverityDistribution({ data }: { data: SeverityDistributionItem[
                   {total.toLocaleString()}
                 </span>
                 <span className="text-[10px] uppercase tracking-wide text-zinc-500">
-                  Total
+                  Events
                 </span>
               </div>
             </div>
 
-            <div className="mt-4 grid w-full grid-cols-2 gap-x-4 gap-y-2">
-              {data.map((item) => {
+            <div className="mt-4 grid w-full grid-cols-2 gap-2">
+              {orderedData.map((item) => {
                 const key = capitalize(item.severity)
                 return (
-                  <div key={item.severity} className="flex items-center justify-between gap-2">
+                  <div key={item.severity} className="flex items-center justify-between gap-2 rounded-full border border-zinc-800/80 bg-zinc-950/45 px-2.5 py-1.5">
                     <div className="flex items-center gap-2">
                       <span className={`h-2 w-2 rounded-full ${DOT_COLORS[key] ?? "bg-zinc-500"}`} />
                       <span className="text-xs text-zinc-400">{key}</span>

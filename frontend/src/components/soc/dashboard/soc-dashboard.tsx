@@ -198,7 +198,7 @@ export function SocDashboard({
   }, [canFetchDashboard, fetchData])
 
   return (
-    <main className="flex h-full min-h-0 flex-col overflow-y-auto bg-zinc-950 text-zinc-100">
+    <main className="flex h-full min-h-0 flex-col overflow-y-auto bg-[radial-gradient(circle_at_85%_5%,rgba(34,211,238,0.08),transparent_28%),radial-gradient(circle_at_20%_90%,rgba(255,45,85,0.05),transparent_30%),#080A0F] text-zinc-100">
       <div className="mx-auto w-full max-w-7xl px-4 py-4 sm:px-5 lg:px-6">
         {/* Header */}
         <header className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

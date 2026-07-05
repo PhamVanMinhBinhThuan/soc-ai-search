@@ -51,11 +51,11 @@ export function KpiCards({ data }: { data: KpiData }) {
         return (
           <div
             key={kpi.label}
-            className={`group rounded-md border border-zinc-800 bg-zinc-900 p-4 transition-all duration-200 ${kpi.glow}`}
+            className={`group rounded-2xl border border-[#252A33] bg-[linear-gradient(180deg,rgba(255,255,255,0.035),rgba(255,255,255,0.01)),#111318] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition-all duration-200 ${kpi.glow}`}
           >
             <div className="flex items-start justify-between">
               <p className="text-xs font-medium uppercase tracking-wide text-zinc-400">{kpi.label}</p>
-              <div className="rounded-md border border-zinc-800 bg-zinc-950/60 p-1.5">
+              <div className="rounded-lg border border-zinc-800 bg-zinc-950/60 p-1.5">
                 <Icon className={`h-4 w-4 ${kpi.iconClass}`} strokeWidth={2} />
               </div>
             </div>

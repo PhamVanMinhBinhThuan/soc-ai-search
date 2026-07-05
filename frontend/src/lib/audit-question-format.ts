@@ -1,7 +1,15 @@
 const AI_CORRECTED_PREFIX = "[AI Corrected]";
+const EDITED_PREFIX = "[Edited SearchPlan]";
+const FILTERED_PREFIX = "[Filtered Result]";
 const ORIGINAL_MARKER = "Original question:";
 const FEEDBACK_MARKER = "Feedback:";
 const REWRITTEN_MARKER = "Rewritten question:";
+
+export type AuditQuestionListParts = {
+  prefix: "AI Corrected" | "Edited SearchPlan" | "Filtered Result" | null;
+  question: string;
+  feedback?: string;
+};
 
 export type AiCorrectedQuestionParts = {
   original: string;
@@ -50,9 +58,48 @@ export function parseAiCorrectedQuestion(
 }
 
 export function formatQuestionForList(question: string) {
-  const corrected = parseAiCorrectedQuestion(question);
-  if (!corrected) {
-    return question;
+  const parts = parseQuestionForList(question);
+  if (parts.prefix) {
+    return parts.feedback
+      ? `[${parts.prefix}] ${ORIGINAL_MARKER} ${parts.question} | ${FEEDBACK_MARKER} ${parts.feedback}`
+      : `[${parts.prefix}] ${parts.question}`;
   }
-  return `${AI_CORRECTED_PREFIX} ${ORIGINAL_MARKER} ${corrected.original} | ${FEEDBACK_MARKER} ${corrected.feedback}`;
+  return parts.question;
+}
+
+export function parseQuestionForList(question: string): AuditQuestionListParts {
+  const corrected = parseAiCorrectedQuestion(question);
+  if (corrected) {
+    return {
+      prefix: "AI Corrected",
+      question: corrected.original,
+      feedback: corrected.feedback,
+    };
+  }
+
+  const edited = parseOriginalQuestionPrefix(question, EDITED_PREFIX);
+  if (edited) {
+    return { prefix: "Edited SearchPlan", question: edited };
+  }
+
+  const filtered = parseOriginalQuestionPrefix(question, FILTERED_PREFIX);
+  if (filtered) {
+    return { prefix: "Filtered Result", question: filtered };
+  }
+
+  return { prefix: null, question };
+}
+
+function parseOriginalQuestionPrefix(question: string, prefix: string) {
+  if (!question.startsWith(prefix)) {
+    return null;
+  }
+
+  const originalStart = question.indexOf(ORIGINAL_MARKER);
+  if (originalStart === -1) {
+    return question.slice(prefix.length).trim() || null;
+  }
+
+  const value = question.slice(originalStart + ORIGINAL_MARKER.length).trim();
+  return value || null;
 }

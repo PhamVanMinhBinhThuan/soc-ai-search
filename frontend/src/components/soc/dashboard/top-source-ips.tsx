@@ -14,8 +14,8 @@ export function TopSourceIps({ data }: { data: TopSourceIpItem[] }) {
   }
 
   return (
-    <div className="flex h-full flex-col rounded-md border border-zinc-800 bg-zinc-900">
-      <div className="flex shrink-0 items-center justify-between border-b border-zinc-800 px-4 py-3">
+    <div className="flex h-full flex-col rounded-2xl border border-[#252A33] bg-[#111318] shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+      <div className="flex shrink-0 items-center justify-between border-b border-[#252A33] px-4 py-3">
         <div>
           <h2 className="text-sm font-semibold text-zinc-100">Top Source IPs</h2>
         </div>
@@ -31,14 +31,22 @@ export function TopSourceIps({ data }: { data: TopSourceIpItem[] }) {
           </div>
         ) : (
           data.map((row, index) => (
-            <div key={row.ip}>
-              <div className="mb-1.5 flex items-center justify-between">
-                <span className="font-mono text-xs text-zinc-200">{row.ip}</span>
-                <span className="text-xs font-medium tabular-nums text-zinc-400">
-                  {row.events.toLocaleString()}
+            <div
+              key={row.ip}
+              className={index === 0 ? "rounded-xl border border-rose-500/20 bg-rose-500/[0.035] p-2" : "p-2"}
+            >
+              <div className="mb-1.5 flex items-center justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-2">
+                  <span className="flex size-6 shrink-0 items-center justify-center rounded-full border border-zinc-700 bg-zinc-950 text-[10px] font-bold text-zinc-300">
+                    #{index + 1}
+                  </span>
+                  <span className="truncate font-mono text-xs text-zinc-100">{row.ip}</span>
+                </div>
+                <span className="shrink-0 text-xs font-medium tabular-nums text-zinc-400">
+                  {row.events.toLocaleString()} events
                 </span>
               </div>
-              <div className="h-1.5 w-full overflow-hidden rounded-full bg-zinc-800">
+              <div className="h-1.5 w-full overflow-hidden rounded-full bg-zinc-800/80">
                 <div
                   className={`h-full rounded-full ${getBarColor(index)}`}
                   style={{ width: `${row.percentage}%` }}

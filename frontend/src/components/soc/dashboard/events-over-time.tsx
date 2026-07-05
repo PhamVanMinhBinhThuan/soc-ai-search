@@ -1,5 +1,6 @@
 import {
-  LineChart,
+  Area,
+  AreaChart,
   Line,
   XAxis,
   YAxis,
@@ -17,8 +18,8 @@ export function EventsOverTime({ data }: { data: EventsOverTimePoint[] }) {
   const tickFormatter = createLocalChartTickFormatter(data, "timestamp")
 
   return (
-    <div className="flex h-full min-w-0 flex-col rounded-md border border-zinc-800 bg-zinc-900">
-      <div className="flex shrink-0 items-center justify-between border-b border-zinc-800 px-4 py-3">
+    <div className="flex h-full min-w-0 flex-col rounded-2xl border border-[#252A33] bg-[#111318] shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+      <div className="flex shrink-0 items-center justify-between border-b border-[#252A33] px-4 py-3">
         <div>
           <h2 className="text-sm font-semibold text-zinc-100">Events Over Time</h2>
         </div>
@@ -37,7 +38,7 @@ export function EventsOverTime({ data }: { data: EventsOverTimePoint[] }) {
             minHeight={220}
             initialDimension={{ width: 760, height: 220 }}
           >
-            <LineChart
+            <AreaChart
               data={data}
               margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
             >
@@ -82,6 +83,14 @@ export function EventsOverTime({ data }: { data: EventsOverTimePoint[] }) {
                 itemStyle={{ color: "#22d3ee", fontWeight: 500 }}
                 labelStyle={{ color: "#a1a1aa", marginBottom: "4px" }}
               />
+              <Area
+                type="monotone"
+                dataKey="events"
+                stroke="none"
+                fill="url(#colorEvents)"
+                fillOpacity={1}
+                isAnimationActive={false}
+              />
               <Line
                 type="monotone"
                 dataKey="events"
@@ -91,7 +100,7 @@ export function EventsOverTime({ data }: { data: EventsOverTimePoint[] }) {
                 activeDot={{ r: 4, fill: "#22d3ee", stroke: "#18181b", strokeWidth: 2 }}
                 animationDuration={1000}
               />
-            </LineChart>
+            </AreaChart>
           </ResponsiveContainer>
         )}
       </div>

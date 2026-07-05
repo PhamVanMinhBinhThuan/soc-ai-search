@@ -85,7 +85,7 @@ function formatCountryValue(value: string | string[] | null | undefined) {
   return (
     <span className="flex flex-wrap gap-1.5">
       {codes.map((code) => (
-        <CountryCode key={code} code={code} showName />
+        <CountryCode key={code} code={code} />
       ))}
     </span>
   );

@@ -2,14 +2,14 @@ import { useCallback, useEffect, useState } from "react"
 import { ChevronLeft, ChevronRight, Download, Search, ShieldAlert, ShieldCheck, Lightbulb } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { formatQuestionForList } from "@/lib/audit-question-format"
+import { parseQuestionForList, type AuditQuestionListParts } from "@/lib/audit-question-format"
 import { downloadCsvBlob } from "@/services/csv-export-api"
 import { exportAuditLogs, getAuditLogs, getSearchHistoryDetail } from "@/services/history-api"
 import type { AuditLogItem, AuditStatus, SearchHistoryDetailDto, SearchMode } from "@/types/soc"
 import { ModeBadge, StatusBadge } from "../investigations/investigation-badges"
 import { InvestigationDetailPanel } from "../investigations/investigation-detail-panel"
 
-const PAGE_SIZE = 5
+const PAGE_SIZE = 10
 
 export function AuditLogsPage() {
   const [items, setItems] = useState<AuditLogItem[]>([])
@@ -158,8 +158,8 @@ export function AuditLogsPage() {
   )
 
   return (
-    <div className="flex h-full min-h-0 w-full flex-col bg-zinc-950 text-zinc-50">
-      <header className="flex shrink-0 flex-col border-b border-zinc-800 bg-zinc-900/50 p-4">
+    <div className="flex h-full min-h-0 w-full flex-col bg-[radial-gradient(circle_at_85%_5%,rgba(34,211,238,0.08),transparent_28%),radial-gradient(circle_at_20%_90%,rgba(255,45,85,0.05),transparent_30%),#080A0F] text-zinc-50">
+      <header className="flex shrink-0 flex-col border-b border-[#252A33] bg-[#0B0E13]/85 p-4 backdrop-blur">
         <div className="flex items-center gap-3">
           <ShieldCheck className="size-5 text-amber-400" />
           <div>
@@ -221,7 +221,10 @@ export function AuditLogsPage() {
             ) : items.length === 0 ? (
               <div className="flex h-full flex-col items-center justify-center text-center text-zinc-500">
                 <ShieldAlert className="mb-4 size-10 opacity-20" />
-                <p>No audit logs match your filters.</p>
+                <p className="text-sm font-semibold text-zinc-200">No audit logs found</p>
+                <p className="mt-1 max-w-sm text-xs text-zinc-500">
+                  Try clearing filters or searching a different user/question.
+                </p>
               </div>
             ) : selectedId ? (
               <div className="flex flex-col gap-2 p-2">
@@ -248,7 +251,7 @@ export function AuditLogsPage() {
                         <span className="font-sans text-zinc-400">{item.user_identity}</span>
                       </div>
                       <p className={cn("mb-2 line-clamp-2 text-sm font-medium leading-snug text-pretty", isActive ? "text-zinc-100" : "text-zinc-300")}>
-                        {formatQuestionForList(item.question)}
+                        <QuestionSummary question={item.question} />
                       </p>
                       <div className="flex flex-wrap items-center gap-1.5">
                         <ModeBadge mode={item.mode} />
@@ -285,7 +288,10 @@ export function AuditLogsPage() {
                       <tr
                         key={item.query_id}
                         onClick={() => setSelectedId(isActive ? null : item.query_id)}
-                        className={cn("group cursor-pointer border-b border-zinc-800/70 transition hover:bg-zinc-900/60", isActive && "bg-cyan-950/20")}
+                        className={cn(
+                          "group cursor-pointer border-b border-l-2 border-b-zinc-800/70 border-l-transparent transition hover:bg-cyan-400/[0.045]",
+                          isActive && "border-l-cyan-400 bg-cyan-400/[0.08]",
+                        )}
                       >
                         <td className="whitespace-nowrap px-3 py-3 font-mono text-xs text-zinc-500">
                           <span className="block text-zinc-400">{dateStr}</span>
@@ -294,7 +300,7 @@ export function AuditLogsPage() {
                         <td className="px-3 py-3 text-sm text-zinc-300">{item.user_identity}</td>
                         <td className="px-3 py-3">
                           <span className="line-clamp-2 text-sm font-medium text-zinc-200">
-                            {formatQuestionForList(item.question)}
+                            <QuestionSummary question={item.question} compact />
                           </span>
                         </td>
                         <td className="whitespace-nowrap px-3 py-3 text-right font-mono text-xs text-zinc-400">
@@ -312,14 +318,17 @@ export function AuditLogsPage() {
                 </tbody>
               </table>
             )}
+          </div>
+
           {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="sticky bottom-0 z-10 flex shrink-0 items-center justify-between border-t border-zinc-800 bg-zinc-950 px-4 py-2.5">
+          {total > 0 && totalPages > 1 && (
+            <div className="sticky bottom-0 z-10 flex shrink-0 items-center justify-between border-t border-[#252A33] bg-[#080A0F]/95 px-4 py-2.5 backdrop-blur">
               <span className="text-xs text-zinc-500">
                 Page {page + 1} of {Math.max(1, totalPages)} &middot; {total.toLocaleString()} total
               </span>
               <div className="flex items-center gap-1">
                 <button
+                  aria-label="Previous page"
                   onClick={() => setPage(page - 1)}
                   disabled={page === 0 || loading}
                   className="flex size-7 items-center justify-center rounded-md border border-zinc-800 bg-zinc-900 text-zinc-400 transition hover:border-zinc-700 hover:text-zinc-100 disabled:pointer-events-none disabled:opacity-30"
@@ -327,6 +336,7 @@ export function AuditLogsPage() {
                   <ChevronLeft className="size-4" />
                 </button>
                 <button
+                  aria-label="Next page"
                   onClick={() => setPage(page + 1)}
                   disabled={page >= totalPages - 1 || loading}
                   className="flex size-7 items-center justify-center rounded-md border border-zinc-800 bg-zinc-900 text-zinc-400 transition hover:border-zinc-700 hover:text-zinc-100 disabled:pointer-events-none disabled:opacity-30"
@@ -336,7 +346,11 @@ export function AuditLogsPage() {
               </div>
             </div>
           )}
-          </div>
+          {total > 0 && totalPages <= 1 && (
+            <div className="sticky bottom-0 z-10 flex shrink-0 items-center justify-between border-t border-[#252A33] bg-[#080A0F]/95 px-4 py-2.5 text-xs text-zinc-500 backdrop-blur">
+              Page 1 of 1 &middot; {total.toLocaleString()} total
+            </div>
+          )}
         </div>
 
         <div
@@ -372,6 +386,52 @@ export function AuditLogsPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+function QuestionSummary({
+  question,
+  compact = false,
+}: {
+  question: string
+  compact?: boolean
+}) {
+  const parts = parseQuestionForList(question)
+
+  if (!parts.prefix) {
+    return <>{parts.question}</>
+  }
+
+  return (
+    <span className="flex min-w-0 flex-wrap items-center gap-1.5">
+      <QuestionPrefixBadge parts={parts} />
+      <span className={cn("min-w-0", compact ? "truncate" : "line-clamp-2")}>
+        {parts.question}
+      </span>
+      {parts.feedback ? (
+        <span className="min-w-0 text-zinc-500">
+          <span className="text-zinc-600">Feedback:</span> {parts.feedback}
+        </span>
+      ) : null}
+    </span>
+  )
+}
+
+function QuestionPrefixBadge({ parts }: { parts: AuditQuestionListParts }) {
+  const styles: Record<NonNullable<AuditQuestionListParts["prefix"]>, string> = {
+    "Edited SearchPlan": "border-amber-500/30 bg-amber-500/10 text-amber-200",
+    "Filtered Result": "border-cyan-500/30 bg-cyan-500/10 text-cyan-200",
+    "AI Corrected": "border-purple-500/30 bg-purple-500/10 text-purple-200",
+  }
+
+  if (!parts.prefix) {
+    return null
+  }
+
+  return (
+    <span className={cn("inline-flex shrink-0 items-center rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide", styles[parts.prefix])}>
+      {parts.prefix}
+    </span>
   )
 }
 

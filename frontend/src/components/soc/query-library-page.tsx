@@ -19,7 +19,7 @@ import {
   type QueryLibraryItem,
 } from '@/lib/query-library'
 
-const ITEMS_PER_PAGE = 5
+const ITEMS_PER_PAGE = 10
 
 const ALL_CATEGORIES: QueryLibraryCategory[] = [
   'search',
@@ -73,7 +73,7 @@ function CopyButton({ question }: { question: string }) {
 function QueryBadge({ badge }: { badge: string }) {
   return (
     <span
-      className={`inline-flex items-center rounded-md border px-1.5 py-0.5 text-[10px] font-semibold uppercase ${BADGE_CLASS_MAP[badge] ?? 'border-zinc-800 bg-zinc-900/60 text-zinc-400'}`}
+      className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] ${BADGE_CLASS_MAP[badge] ?? 'border-zinc-800 bg-zinc-900/60 text-zinc-400'}`}
     >
       {badge}
     </span>
@@ -96,8 +96,8 @@ function CategoryButton({
       onClick={onClick}
       className={
         active
-          ? 'rounded-full border border-cyan-500/40 bg-cyan-500/15 px-3 py-1.5 text-xs font-medium text-cyan-100 shadow-[0_0_18px_-12px_#22d3ee]'
-          : 'rounded-full border border-zinc-800 bg-zinc-900/60 px-3 py-1.5 text-xs font-medium text-zinc-400 transition-colors hover:border-cyan-500/30 hover:text-zinc-100'
+          ? 'rounded-full border border-cyan-500/40 bg-cyan-500/15 px-3 py-1.5 text-xs font-semibold text-cyan-100 shadow-[0_0_18px_-12px_#22d3ee]'
+          : 'rounded-full border border-[#252A33] bg-[#111318]/80 px-3 py-1.5 text-xs font-medium text-slate-400 transition-colors hover:border-cyan-500/30 hover:bg-[#161A22] hover:text-zinc-100'
       }
     >
       {label}
@@ -113,9 +113,9 @@ function QueryCard({
   onUseQuery: (question: string) => void
 }) {
   return (
-    <article className="rounded-xl border border-zinc-800 bg-zinc-950/70 p-3 transition-colors hover:border-cyan-500/35 hover:bg-cyan-950/10">
+    <article className="rounded-2xl border border-[#252A33] bg-[#111318]/80 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] transition-colors hover:border-cyan-500/35 hover:bg-[#161A22]">
       <div className="flex items-start justify-between gap-4">
-        <p className="min-w-0 text-sm font-semibold leading-5 text-zinc-100">
+        <p className="min-w-0 text-[15px] font-semibold leading-6 text-[#F8FAFC]">
           {item.question}
         </p>
         <div className="flex shrink-0 items-center gap-1.5">
@@ -138,7 +138,7 @@ function QueryCard({
         ))}
       </div>
 
-      <p className="mt-1.5 text-[11px] text-zinc-500">
+      <p className="mt-2 text-xs text-slate-400">
         Expected: {EXPECTED_VIEW_LABELS[item.expectedView]}
       </p>
     </article>
@@ -190,8 +190,8 @@ export function QueryLibraryPage({
   }
 
   return (
-    <main className="flex h-full min-h-0 flex-1 flex-col bg-zinc-950 text-zinc-200">
-      <header className="flex shrink-0 items-center gap-3 border-b border-zinc-800 px-5 py-4">
+    <main className="flex h-full min-h-0 flex-1 flex-col bg-[radial-gradient(circle_at_85%_5%,rgba(34,211,238,0.08),transparent_28%),radial-gradient(circle_at_20%_90%,rgba(255,45,85,0.05),transparent_30%),#080A0F] text-zinc-200">
+      <header className="flex shrink-0 items-center gap-3 border-b border-[#252A33] bg-[#0B0E13]/85 px-5 py-4 backdrop-blur">
         <div className="flex size-9 items-center justify-center rounded-lg border border-cyan-500/30 bg-cyan-500/10">
           <Library className="size-5 text-cyan-300" />
         </div>
@@ -200,8 +200,7 @@ export function QueryLibraryPage({
         </h1>
       </header>
 
-      <div className="min-h-0 flex-1 overflow-y-auto">
-        <div className="mx-auto flex w-full max-w-[1500px] flex-col gap-4 p-4 sm:p-5">
+      <div className="mx-auto flex min-h-0 w-full max-w-[1500px] flex-1 flex-col gap-4 p-4 sm:p-5">
           <section className="flex flex-col gap-3" aria-label="Query filters">
             <div className="relative">
               <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-500" />
@@ -211,7 +210,7 @@ export function QueryLibraryPage({
                 onChange={(event) => handleSearchChange(event.target.value)}
                 placeholder="Search queries, tags, event types, users, hosts..."
                 aria-label="Search query library"
-                className="h-11 w-full rounded-xl border border-zinc-800 bg-zinc-950/70 px-10 text-sm text-zinc-100 placeholder:text-zinc-500 focus-visible:border-cyan-500/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/10"
+                className="h-11 w-full rounded-xl border border-[#252A33] bg-[#111318]/80 px-10 text-sm text-zinc-100 placeholder:text-slate-500 focus-visible:border-cyan-500/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/10"
               />
             </div>
 
@@ -232,8 +231,9 @@ export function QueryLibraryPage({
             </div>
           </section>
 
-          {pageItems.length > 0 ? (
-            <section className="flex flex-col gap-3" aria-label="Query list">
+          <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+            {pageItems.length > 0 ? (
+            <section className="flex flex-col gap-3 pb-2" aria-label="Query list">
               {pageItems.map((item) => (
                 <QueryCard
                   key={item.id}
@@ -242,8 +242,8 @@ export function QueryLibraryPage({
                 />
               ))}
             </section>
-          ) : (
-            <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-zinc-800 bg-zinc-950/70 py-14 text-center">
+            ) : (
+            <div className="flex min-h-[280px] flex-col items-center justify-center gap-3 rounded-2xl border border-[#252A33] bg-[#111318]/80 py-14 text-center">
               <SearchX className="size-10 text-zinc-600" />
               <div>
                 <p className="text-sm font-semibold text-zinc-100">
@@ -254,10 +254,11 @@ export function QueryLibraryPage({
                 </p>
               </div>
             </div>
-          )}
+            )}
+          </div>
 
-          {filtered.length > ITEMS_PER_PAGE ? (
-            <div className="sticky bottom-0 z-10 flex items-center justify-between border-t border-zinc-800 bg-zinc-950/95 px-1 py-3 backdrop-blur">
+          {filtered.length > 0 && totalPages > 1 ? (
+            <div className="z-10 flex shrink-0 items-center justify-between border-t border-[#252A33] bg-[#080A0F]/95 px-1 py-3 backdrop-blur">
               <span className="text-xs text-zinc-500">
                 Showing {rangeStart}-{rangeEnd} of {filtered.length}
               </span>
@@ -285,8 +286,11 @@ export function QueryLibraryPage({
                 </button>
               </div>
             </div>
+          ) : filtered.length > 0 ? (
+            <div className="z-10 flex shrink-0 items-center justify-between border-t border-[#252A33] bg-[#080A0F]/95 px-1 py-3 text-xs text-zinc-500 backdrop-blur">
+              Page 1 of 1 &middot; {filtered.length.toLocaleString()} total
+            </div>
           ) : null}
-        </div>
       </div>
     </main>
   )

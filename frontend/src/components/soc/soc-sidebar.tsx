@@ -28,6 +28,12 @@ const primaryNav = [
   { icon: Search, label: 'Event Search', pageId: 'search' as const },
 ]
 
+const activeNavClass =
+  'border-l-2 border-l-cyan-300 bg-[linear-gradient(90deg,rgba(0,224,255,.16),rgba(255,45,85,.04))] text-cyan-200 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_0_22px_-14px_rgba(34,211,238,0.9)] ring-1 ring-cyan-400/20'
+
+const inactiveNavClass =
+  'border-l-2 border-l-transparent text-muted-foreground hover:bg-[#161A22] hover:text-foreground'
+
 const investigationsNav = {
   icon: ScrollText,
   label: 'Investigations',
@@ -98,7 +104,7 @@ export function SocSidebar({
     <TooltipProvider>
       <aside
         className={cn(
-          'sticky top-0 hidden h-svh shrink-0 flex-col overflow-hidden border-r border-border bg-sidebar py-4 transition-[width] duration-300 ease-in-out md:flex',
+          'sticky top-0 hidden h-svh shrink-0 flex-col overflow-hidden border-r border-[#252A33] bg-[#0B0E13] py-4 transition-[width] duration-300 ease-in-out md:flex',
           expanded ? 'w-60' : 'w-16',
         )}
       >
@@ -162,9 +168,7 @@ export function SocSidebar({
                 className={cn(
                   'relative flex h-10 w-full shrink-0 items-center rounded-xl transition-colors',
                   expanded ? 'justify-start px-3' : 'justify-center',
-                  activePage === item.pageId
-                    ? 'bg-cyan-400/10 text-cyan-300 ring-1 ring-cyan-400/25'
-                    : 'text-muted-foreground hover:bg-secondary hover:text-foreground',
+                  activePage === item.pageId ? activeNavClass : inactiveNavClass,
                 )}
               >
                 <item.icon className="size-5 shrink-0" />
@@ -195,9 +199,7 @@ export function SocSidebar({
                 className={cn(
                   'relative flex h-10 w-full shrink-0 items-center rounded-xl transition-colors',
                   expanded ? 'justify-start px-3' : 'justify-center',
-                  activePage === investigationsNav.pageId
-                    ? 'bg-cyan-400/10 text-cyan-300 ring-1 ring-cyan-400/25'
-                    : 'text-muted-foreground hover:bg-secondary hover:text-foreground',
+                  activePage === investigationsNav.pageId ? activeNavClass : inactiveNavClass,
                 )}
               >
                 <investigationsNav.icon className="size-5 shrink-0" />
@@ -225,9 +227,7 @@ export function SocSidebar({
               className={cn(
                 'relative flex h-10 w-full shrink-0 items-center rounded-xl transition-colors',
                 expanded ? 'justify-start px-3' : 'justify-center',
-                activePage === 'query-library'
-                  ? 'bg-cyan-400/10 text-cyan-300 ring-1 ring-cyan-400/25'
-                  : 'text-muted-foreground hover:bg-secondary hover:text-foreground',
+                activePage === 'query-library' ? activeNavClass : inactiveNavClass,
               )}
             >
               <Library className="size-5 shrink-0" />
@@ -257,9 +257,7 @@ export function SocSidebar({
                 className={cn(
                   'relative flex h-10 w-full shrink-0 items-center rounded-xl transition-colors',
                   expanded ? 'justify-start px-3' : 'justify-center',
-                  activePage === 'audit-logs'
-                    ? 'bg-cyan-400/10 text-cyan-300 ring-1 ring-cyan-400/25'
-                    : 'text-muted-foreground hover:bg-secondary hover:text-foreground',
+                  activePage === 'audit-logs' ? activeNavClass : inactiveNavClass,
                 )}
               >
                 <History className="size-5 shrink-0" />
@@ -307,8 +305,8 @@ export function SocSidebar({
 
           <div
             className={cn(
-              'mt-2 flex h-12 items-center',
-              expanded ? 'px-1' : 'justify-center',
+              'mt-2 flex h-12 items-center rounded-2xl border border-[#252A33] bg-[#111318]/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]',
+              expanded ? 'px-2' : 'justify-center border-transparent bg-transparent shadow-none',
             )}
           >
             <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-secondary text-sm font-semibold ring-1 ring-border">
