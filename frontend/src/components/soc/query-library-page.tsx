@@ -191,7 +191,7 @@ export function QueryLibraryPage({
   }
 
   return (
-    <main className="flex h-full min-h-0 flex-1 flex-col bg-[radial-gradient(circle_at_85%_5%,rgba(34,211,238,0.11),transparent_28%),radial-gradient(circle_at_20%_90%,rgba(255,45,85,0.05),transparent_30%),#080A0F] text-zinc-200">
+    <main className="flex h-svh min-h-0 flex-1 flex-col overflow-hidden bg-[radial-gradient(circle_at_85%_5%,rgba(34,211,238,0.11),transparent_28%),radial-gradient(circle_at_20%_90%,rgba(255,45,85,0.05),transparent_30%),#080A0F] text-zinc-200">
       <header className="flex shrink-0 items-center gap-3 border-b border-cyan-400/15 bg-[#0B0E13]/85 px-5 py-4 backdrop-blur">
         <div className="flex size-9 items-center justify-center rounded-xl border border-cyan-400/35 bg-cyan-400/12 shadow-[0_0_22px_-10px_rgba(34,211,238,0.9)]">
           <Library className="size-5 text-cyan-300" />
@@ -202,7 +202,7 @@ export function QueryLibraryPage({
       </header>
 
       <div className="mx-auto flex min-h-0 w-full max-w-[1500px] flex-1 flex-col gap-4 overflow-hidden p-4 sm:p-5">
-          <section className="flex flex-col gap-3" aria-label="Query filters">
+          <section className="shrink-0 flex flex-col gap-3" aria-label="Query filters">
             <div className="relative">
               <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-500" />
               <input
