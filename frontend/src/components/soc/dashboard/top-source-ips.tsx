@@ -14,17 +14,18 @@ export function TopSourceIps({ data }: { data: TopSourceIpItem[] }) {
   }
 
   return (
-    <div className="flex h-full flex-col rounded-2xl border border-[#252A33] bg-[#111318] shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
-      <div className="flex shrink-0 items-center justify-between border-b border-[#252A33] px-4 py-3">
+    <div className="relative flex h-full flex-col overflow-hidden rounded-2xl border border-cyan-400/30 bg-[linear-gradient(180deg,rgba(34,211,238,0.08),rgba(17,19,24,0.94))] shadow-[0_0_30px_-18px_rgba(34,211,238,0.88),inset_0_1px_0_rgba(255,255,255,0.06)]">
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(34,211,238,0.045)_1px,transparent_1px),linear-gradient(90deg,rgba(34,211,238,0.045)_1px,transparent_1px)] bg-[size:24px_24px] opacity-25" />
+      <div className="relative flex shrink-0 items-center justify-between border-b border-cyan-400/20 px-4 py-3">
         <div>
           <h2 className="text-sm font-semibold text-zinc-100">Top Source IPs</h2>
         </div>
-        <span className="rounded border border-zinc-800 bg-zinc-950/60 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-zinc-500">
+        <span className="rounded border border-cyan-400/20 bg-cyan-400/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-cyan-200/70">
           Live
         </span>
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-4">
+      <div className="relative flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto p-3">
         {data.length === 0 ? (
           <div className="flex h-full items-center justify-center">
             <p className="text-sm text-zinc-500">No data available</p>
@@ -33,22 +34,22 @@ export function TopSourceIps({ data }: { data: TopSourceIpItem[] }) {
           data.map((row, index) => (
             <div
               key={row.ip}
-              className={index === 0 ? "rounded-xl border border-rose-500/20 bg-rose-500/[0.035] p-2" : "p-2"}
+              className={index === 0 ? "rounded-xl border border-rose-400/35 bg-rose-500/[0.06] p-2 shadow-[0_0_18px_-12px_rgba(244,63,94,0.9)]" : "rounded-xl border border-transparent p-2 hover:border-cyan-400/15 hover:bg-cyan-400/[0.035]"}
             >
               <div className="mb-1.5 flex items-center justify-between gap-3">
                 <div className="flex min-w-0 items-center gap-2">
-                  <span className="flex size-6 shrink-0 items-center justify-center rounded-full border border-zinc-700 bg-zinc-950 text-[10px] font-bold text-zinc-300">
+                  <span className="flex size-6 shrink-0 items-center justify-center rounded-full border border-cyan-400/20 bg-cyan-400/10 text-[10px] font-bold text-cyan-100">
                     #{index + 1}
                   </span>
                   <span className="truncate font-mono text-xs text-zinc-100">{row.ip}</span>
                 </div>
-                <span className="shrink-0 text-xs font-medium tabular-nums text-zinc-400">
+                <span className="shrink-0 text-xs font-medium tabular-nums text-cyan-100/80">
                   {row.events.toLocaleString()} events
                 </span>
               </div>
-              <div className="h-1.5 w-full overflow-hidden rounded-full bg-zinc-800/80">
+              <div className="h-1.5 w-full overflow-hidden rounded-full bg-zinc-950/80">
                 <div
-                  className={`h-full rounded-full ${getBarColor(index)}`}
+                  className={`h-full rounded-full ${getBarColor(index)} shadow-[0_0_12px_rgba(34,211,238,0.4)]`}
                   style={{ width: `${row.percentage}%` }}
                 />
               </div>

@@ -198,16 +198,17 @@ export function SocDashboard({
   }, [canFetchDashboard, fetchData])
 
   return (
-    <main className="flex h-full min-h-0 flex-col overflow-y-auto bg-[radial-gradient(circle_at_85%_5%,rgba(34,211,238,0.08),transparent_28%),radial-gradient(circle_at_20%_90%,rgba(255,45,85,0.05),transparent_30%),#080A0F] text-zinc-100">
-      <div className="mx-auto w-full max-w-7xl px-4 py-4 sm:px-5 lg:px-6">
+    <main className="flex h-full min-h-0 flex-col overflow-y-auto bg-[radial-gradient(circle_at_82%_4%,rgba(34,211,238,0.16),transparent_30%),radial-gradient(circle_at_20%_92%,rgba(255,45,85,0.08),transparent_30%),#071018] text-zinc-100">
+      <div className="pointer-events-none fixed inset-0 bg-[linear-gradient(rgba(34,211,238,0.035)_1px,transparent_1px),linear-gradient(90deg,rgba(34,211,238,0.035)_1px,transparent_1px)] bg-[size:34px_34px] opacity-40" />
+      <div className="relative mx-auto w-full max-w-7xl px-4 py-3 sm:px-5 lg:px-6">
         {/* Header */}
-        <header className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <header className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-start gap-3">
-            <div className="flex size-8 items-center justify-center rounded-lg border border-cyan-500/30 bg-cyan-500/10 mt-0.5">
+            <div className="mt-0.5 flex size-9 items-center justify-center rounded-xl border border-cyan-400/35 bg-cyan-400/12 shadow-[0_0_24px_-10px_rgba(34,211,238,0.95)]">
               <LayoutDashboard className="size-5 text-cyan-300" />
             </div>
             <div className="flex flex-col items-start gap-0.2">
-              <h1 className="text-xl font-semibold tracking-tight text-zinc-100 leading-none mt-1">
+              <h1 className="mt-1 text-xl font-semibold leading-none tracking-tight text-zinc-50 drop-shadow-[0_0_14px_rgba(34,211,238,0.28)]">
                 SOC Overview
               </h1>
               <span className="rounded border border-zinc-800 bg-zinc-950/60 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-zinc-500 mt-0.5">
@@ -215,13 +216,13 @@ export function SocDashboard({
               </span>
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="hidden items-center gap-1.5 text-xs text-zinc-500 sm:inline-flex">
+          <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-cyan-400/10 bg-zinc-950/25 px-2 py-1.5 backdrop-blur">
+            <span className="hidden items-center gap-1.5 text-xs text-cyan-100/60 sm:inline-flex">
               <Clock3 className="size-3.5 text-cyan-400/70" />
               Auto refresh every 3 minutes
             </span>
             {lastUpdated && (
-              <span className="text-xs text-zinc-500 hidden sm:inline">
+              <span className="hidden text-xs text-zinc-400 sm:inline">
                 Last updated: {lastUpdated.toLocaleTimeString()}
               </span>
             )}
@@ -230,7 +231,7 @@ export function SocDashboard({
                 if (canFetchDashboard) void fetchData()
               }}
               disabled={refreshing || !canFetchDashboard}
-              className="inline-flex items-center justify-center gap-2 rounded-md border border-zinc-800 bg-zinc-900 px-4 py-2 text-sm font-medium text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-zinc-50 disabled:opacity-50"
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-cyan-400/20 bg-cyan-400/10 px-4 py-2 text-sm font-semibold text-cyan-50 transition-colors hover:border-cyan-300/45 hover:bg-cyan-400/18 disabled:opacity-50"
             >
               <RefreshCcw className={`h-4 w-4 ${refreshing ? "animate-spin text-cyan-400" : ""}`} />
               Refresh
@@ -249,8 +250,8 @@ export function SocDashboard({
         ) : (
           <>
             {/* Overview */}
-            <section className="mb-4 grid min-w-0 grid-cols-1 gap-4 xl:grid-cols-3">
-              <div className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 xl:col-span-2">
+            <section className="mb-3 grid min-w-0 grid-cols-1 gap-3 xl:grid-cols-3">
+              <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 xl:col-span-2">
                 <KpiCards data={data.kpis} />
               </div>
               <div className="min-w-0 xl:col-span-1">
@@ -259,7 +260,7 @@ export function SocDashboard({
             </section>
 
             {/* Investigation widgets */}
-            <section className="grid min-w-0 grid-cols-1 gap-4 xl:grid-cols-3">
+            <section className="grid min-w-0 grid-cols-1 gap-3 xl:grid-cols-3">
               <div className="min-w-0 xl:col-span-2">
                 <EventsOverTime data={data.events_over_time} />
               </div>

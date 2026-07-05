@@ -29,10 +29,10 @@ const primaryNav = [
 ]
 
 const activeNavClass =
-  'border-l-2 border-l-cyan-300 bg-[linear-gradient(90deg,rgba(0,224,255,.16),rgba(255,45,85,.04))] text-cyan-200 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_0_22px_-14px_rgba(34,211,238,0.9)] ring-1 ring-cyan-400/20'
+  'border-l-2 border-l-cyan-300 bg-[linear-gradient(90deg,rgba(0,224,255,.22),rgba(255,45,85,.05))] text-cyan-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.07),0_0_24px_-10px_rgba(34,211,238,0.95)] ring-1 ring-cyan-300/30'
 
 const inactiveNavClass =
-  'border-l-2 border-l-transparent text-muted-foreground hover:bg-[#161A22] hover:text-foreground'
+  'border-l-2 border-l-transparent text-muted-foreground hover:bg-cyan-400/[0.07] hover:text-cyan-100'
 
 const investigationsNav = {
   icon: ScrollText,
@@ -104,7 +104,7 @@ export function SocSidebar({
     <TooltipProvider>
       <aside
         className={cn(
-          'sticky top-0 hidden h-svh shrink-0 flex-col overflow-hidden border-r border-[#252A33] bg-[#0B0E13] py-4 transition-[width] duration-300 ease-in-out md:flex',
+          'sticky top-0 hidden h-svh shrink-0 flex-col overflow-hidden border-r border-cyan-400/15 bg-[radial-gradient(circle_at_15%_10%,rgba(34,211,238,0.12),transparent_30%),#0B0E13] py-4 transition-[width] duration-300 ease-in-out md:flex',
           expanded ? 'w-60' : 'w-16',
         )}
       >
@@ -116,7 +116,7 @@ export function SocSidebar({
                 aria-label="Expand sidebar"
                 aria-expanded={expanded}
                 onClick={() => setExpanded(true)}
-                className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-cyan-400/10 text-cyan-300 shadow-[0_0_22px_-8px_#22d3ee] ring-1 ring-cyan-400/25 transition-colors hover:bg-cyan-400/15 hover:text-cyan-100"
+              className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-cyan-400/12 text-cyan-200 shadow-[0_0_24px_-7px_#22d3ee] ring-1 ring-cyan-300/35 transition-colors hover:bg-cyan-400/18 hover:text-cyan-50"
               >
                 <ShieldHalf className="size-5" />
               </button>
@@ -129,7 +129,7 @@ export function SocSidebar({
               expanded ? 'ml-3 w-36 opacity-100' : 'ml-0 w-0 opacity-0',
             )}
           >
-            <span className="block text-base font-semibold">SOC Console</span>
+            <span className="block text-base font-semibold text-zinc-50 drop-shadow-[0_0_12px_rgba(34,211,238,0.25)]">SOC Console</span>
             <span className="block text-xs text-muted-foreground">
               Events Search
             </span>
@@ -305,11 +305,11 @@ export function SocSidebar({
 
           <div
             className={cn(
-              'mt-2 flex h-12 items-center rounded-2xl border border-[#252A33] bg-[#111318]/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]',
+              'mt-2 flex h-12 items-center rounded-2xl border border-cyan-400/15 bg-[#111318]/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_0_18px_-16px_rgba(34,211,238,0.9)]',
               expanded ? 'px-2' : 'justify-center border-transparent bg-transparent shadow-none',
             )}
           >
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-secondary text-sm font-semibold ring-1 ring-border">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-cyan-400/10 text-sm font-semibold text-cyan-50 ring-1 ring-cyan-400/25 shadow-[0_0_18px_-10px_rgba(34,211,238,0.9)]">
               {initials}
             </div>
             <div

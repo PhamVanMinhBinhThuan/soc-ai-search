@@ -43,12 +43,13 @@ export function SeverityDistribution({ data }: { data: SeverityDistributionItem[
   }, [data])
 
   return (
-    <div className="flex h-full min-w-0 flex-col rounded-2xl border border-[#252A33] bg-[#111318] shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
-      <div className="shrink-0 border-b border-[#252A33] px-4 py-3">
+    <div className="relative flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-violet-400/35 bg-[linear-gradient(180deg,rgba(168,85,247,0.10),rgba(17,19,24,0.92))] shadow-[0_0_30px_-18px_rgba(168,85,247,0.85),inset_0_1px_0_rgba(255,255,255,0.06)]">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_60%_18%,rgba(34,211,238,0.13),transparent_28%)]" />
+      <div className="relative shrink-0 border-b border-violet-400/20 px-4 py-3">
         <h2 className="text-sm font-semibold text-zinc-100">Severity Distribution</h2>
       </div>
 
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col items-center justify-center p-4">
+      <div className="relative flex min-h-0 min-w-0 flex-1 flex-col items-center justify-center p-3">
         {data.length === 0 ? (
           <p className="text-sm text-zinc-500">No data available</p>
         ) : (
@@ -67,7 +68,7 @@ export function SeverityDistribution({ data }: { data: SeverityDistributionItem[
                     cx="50%"
                     cy="50%"
                     innerRadius={46}
-                    outerRadius={64}
+                    outerRadius={66}
                     paddingAngle={2}
                     dataKey="count"
                     nameKey="severity"
@@ -80,17 +81,18 @@ export function SeverityDistribution({ data }: { data: SeverityDistributionItem[
                   </Pie>
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: "#18181b",
-                      border: "1px solid #27272a",
-                      borderRadius: "6px",
+                      backgroundColor: "#111318",
+                      border: "1px solid rgba(34,211,238,0.22)",
+                      borderRadius: "12px",
                       color: "#f4f4f5",
+                      boxShadow: "0 0 24px -16px rgba(34,211,238,0.9)",
                     }}
                     itemStyle={{ fontWeight: 500 }}
                   />
                 </PieChart>
               </ResponsiveContainer>
               <div className="absolute flex flex-col items-center justify-center pointer-events-none">
-                <span className="text-xl font-semibold tabular-nums text-zinc-50">
+                <span className="text-2xl font-bold tabular-nums text-zinc-50 drop-shadow-[0_0_12px_rgba(34,211,238,0.25)]">
                   {total.toLocaleString()}
                 </span>
                 <span className="text-[10px] uppercase tracking-wide text-zinc-500">
@@ -99,11 +101,11 @@ export function SeverityDistribution({ data }: { data: SeverityDistributionItem[
               </div>
             </div>
 
-            <div className="mt-4 grid w-full grid-cols-2 gap-2">
+            <div className="mt-3 grid w-full grid-cols-2 gap-2">
               {orderedData.map((item) => {
                 const key = capitalize(item.severity)
                 return (
-                  <div key={item.severity} className="flex items-center justify-between gap-2 rounded-full border border-zinc-800/80 bg-zinc-950/45 px-2.5 py-1.5">
+                  <div key={item.severity} className="flex items-center justify-between gap-2 rounded-full border border-white/10 bg-zinc-950/50 px-2.5 py-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
                     <div className="flex items-center gap-2">
                       <span className={`h-2 w-2 rounded-full ${DOT_COLORS[key] ?? "bg-zinc-500"}`} />
                       <span className="text-xs text-zinc-400">{key}</span>

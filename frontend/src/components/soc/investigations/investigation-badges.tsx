@@ -24,16 +24,16 @@ export function ModeBadge({ mode }: { mode: SearchMode | null }) {
   if (!mode) return null
 
   const styles: Record<SearchMode, string> = {
-    search: "border-cyan-500/30 bg-cyan-500/10 text-cyan-300",
-    aggregation: "border-purple-500/30 bg-purple-500/10 text-purple-300",
+    search: "border-cyan-400/40 bg-cyan-400/12 text-cyan-100 shadow-[0_0_16px_-10px_rgba(34,211,238,0.95)]",
+    aggregation: "border-purple-400/40 bg-purple-400/12 text-purple-100 shadow-[0_0_16px_-10px_rgba(168,85,247,0.95)]",
   }
   return <BaseBadge className={styles[mode]}>{mode}</BaseBadge>
 }
 
 export function StatusBadge({ status }: { status: AuditStatus }) {
   const styles: Record<AuditStatus, string> = {
-    SUCCESS: "border-emerald-500/30 bg-emerald-500/10 text-emerald-300",
-    FAILED: "border-rose-500/30 bg-rose-500/10 text-rose-300",
+    SUCCESS: "border-emerald-400/40 bg-emerald-400/12 text-emerald-100 shadow-[0_0_16px_-10px_rgba(16,185,129,0.95)]",
+    FAILED: "border-rose-400/40 bg-rose-400/12 text-rose-100 shadow-[0_0_16px_-10px_rgba(244,63,94,0.95)]",
   }
   return (
     <BaseBadge className={styles[status]}>

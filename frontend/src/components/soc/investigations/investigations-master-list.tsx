@@ -48,7 +48,7 @@ export function InvestigationsMasterList({
         value={questionQuery}
         onChange={(event) => onQuestionQueryChange(event.target.value)}
         placeholder="Search questions..."
-        className="h-10 w-full rounded-lg border border-zinc-800 bg-zinc-900/60 py-2 pl-8 pr-3 text-sm text-zinc-200 placeholder:text-zinc-500 outline-none transition focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/30"
+        className="h-10 w-full rounded-xl border border-cyan-400/20 bg-cyan-950/10 py-2 pl-8 pr-3 text-sm text-zinc-100 placeholder:text-slate-500 outline-none shadow-[0_0_22px_-18px_rgba(34,211,238,0.9)] transition hover:border-cyan-400/35 focus:border-cyan-300/70 focus:ring-2 focus:ring-cyan-400/15"
       />
     </div>
   )
@@ -86,8 +86,8 @@ export function InvestigationsMasterList({
       className={cn(
         "inline-flex h-10 items-center justify-center gap-2 rounded-lg border px-3 text-xs font-semibold transition whitespace-nowrap shrink-0",
         pinnedOnly
-          ? "border-amber-500/40 bg-amber-500/10 text-amber-200"
-          : "border-zinc-800 bg-zinc-900/50 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200",
+          ? "border-amber-400/45 bg-amber-400/12 text-amber-100 shadow-[0_0_18px_-12px_rgba(251,191,36,0.9)]"
+          : "border-cyan-400/15 bg-zinc-900/50 text-zinc-400 hover:border-cyan-400/35 hover:bg-cyan-400/10 hover:text-cyan-100",
       )}
     >
       <Star
@@ -101,8 +101,8 @@ export function InvestigationsMasterList({
   )
 
   return (
-    <div className="flex h-full min-h-0 flex-col border-r border-zinc-800">
-      <div className="flex flex-col gap-3 border-b border-zinc-800 p-3">
+    <div className="flex h-full min-h-0 flex-col border-r border-cyan-400/15 bg-[radial-gradient(circle_at_15%_10%,rgba(34,211,238,0.08),transparent_28%),#080A0F]">
+      <div className="flex flex-col gap-3 border-b border-cyan-400/15 bg-[#0B0E13]/80 p-3 backdrop-blur">
         {/* Layout cho màn hình Full (chưa click) */}
         <div className={cn("gap-2 xl:grid-cols-[minmax(220px,1fr)_160px_160px_auto]", expanded ? "grid" : "hidden")}>
           {searchEl}
@@ -145,24 +145,24 @@ export function InvestigationsMasterList({
           </div>
         ) : expanded ? (
           <table className="w-full border-collapse text-left">
-            <thead className="sticky top-0 z-10 bg-zinc-950/95 backdrop-blur">
-              <tr className="border-b border-zinc-800">
+            <thead className="sticky top-0 z-10 bg-[linear-gradient(90deg,rgba(34,211,238,0.11),rgba(168,85,247,0.05)),#0B0E13]/95 backdrop-blur">
+              <tr className="border-b border-cyan-400/18">
                 <th className="w-10 px-3 py-2.5">
                   <span className="sr-only">Pinned</span>
                 </th>
-                <th className="px-3 py-2.5 text-xs font-medium uppercase tracking-wide text-zinc-500">
+                <th className="px-3 py-2.5 text-[11px] font-bold uppercase tracking-[0.16em] text-cyan-100/65">
                   Timestamp
                 </th>
-                <th className="px-3 py-2.5 text-xs font-medium uppercase tracking-wide text-zinc-500">
+                <th className="px-3 py-2.5 text-[11px] font-bold uppercase tracking-[0.16em] text-cyan-100/65">
                   Question
                 </th>
-                <th className="px-3 py-2.5 text-right text-xs font-medium uppercase tracking-wide text-zinc-500">
+                <th className="px-3 py-2.5 text-right text-[11px] font-bold uppercase tracking-[0.16em] text-cyan-100/65">
                   Results
                 </th>
-                <th className="px-3 py-2.5 text-xs font-medium uppercase tracking-wide text-zinc-500">
+                <th className="px-3 py-2.5 text-[11px] font-bold uppercase tracking-[0.16em] text-cyan-100/65">
                   Mode
                 </th>
-                <th className="px-3 py-2.5 text-xs font-medium uppercase tracking-wide text-zinc-500">
+                <th className="px-3 py-2.5 text-[11px] font-bold uppercase tracking-[0.16em] text-cyan-100/65">
                   Status
                 </th>
                 <th className="w-8 px-3 py-2.5">
@@ -188,8 +188,8 @@ export function InvestigationsMasterList({
                     key={item.query_id}
                     onClick={() => onSelect(item.query_id)}
                     className={cn(
-                      "group cursor-pointer border-b border-l-2 border-b-zinc-800/70 border-l-transparent transition hover:bg-cyan-400/[0.045]",
-                      item.query_id === activeId && "border-l-cyan-400 bg-cyan-400/[0.08]",
+                      "group cursor-pointer border-b border-l-2 border-b-cyan-400/10 border-l-transparent transition hover:bg-cyan-400/[0.055]",
+                      item.query_id === activeId && "border-l-cyan-300 bg-cyan-400/[0.10] shadow-[inset_0_0_0_1px_rgba(34,211,238,0.18)]",
                     )}
                   >
                     <td className="px-3 py-3">
@@ -259,8 +259,8 @@ export function InvestigationsMasterList({
                     className={cn(
                       "group w-full rounded-lg border p-3 text-left transition",
                       isActive
-                        ? "border-cyan-500/50 bg-cyan-500/[0.06] shadow-[0_0_0_1px_rgba(34,211,238,0.15),0_0_18px_-6px_rgba(34,211,238,0.5)]"
-                        : "border-zinc-800 bg-zinc-900/40 hover:border-zinc-700 hover:bg-zinc-900/70",
+                        ? "border-cyan-400/55 bg-cyan-400/[0.09] shadow-[0_0_24px_-12px_rgba(34,211,238,0.9),inset_0_1px_0_rgba(255,255,255,0.06)]"
+                        : "border-cyan-400/12 bg-[#111827]/45 hover:border-cyan-400/30 hover:bg-cyan-400/[0.055]",
                     )}
                   >
                     <div className="mb-1.5 flex items-center justify-between">
@@ -308,7 +308,7 @@ export function InvestigationsMasterList({
       </div>
 
       {total > 0 && totalPages > 1 && (
-          <div className="sticky bottom-0 z-10 flex shrink-0 items-center justify-between border-t border-[#252A33] bg-[#080A0F]/95 px-4 py-2.5 backdrop-blur">
+          <div className="sticky bottom-0 z-10 flex shrink-0 items-center justify-between border-t border-cyan-400/18 bg-[#080A0F]/95 px-4 py-2.5 backdrop-blur">
             <span className="text-xs text-zinc-500">
               Page {page + 1} of {totalPages} &middot; {total.toLocaleString()} total
             </span>
@@ -317,7 +317,7 @@ export function InvestigationsMasterList({
                 aria-label="Previous page"
                 onClick={() => onPageChange(Math.max(0, page - 1))}
                 disabled={page === 0}
-                className="flex size-7 items-center justify-center rounded-md border border-zinc-800 bg-zinc-900 text-zinc-400 transition hover:border-zinc-700 hover:text-zinc-100 disabled:pointer-events-none disabled:opacity-30"
+                className="flex size-7 items-center justify-center rounded-md border border-cyan-400/15 bg-zinc-900 text-zinc-400 transition hover:border-cyan-400/45 hover:bg-cyan-400/10 hover:text-cyan-100 disabled:pointer-events-none disabled:opacity-30"
               >
                 <ChevronLeft className="size-4" />
               </button>
@@ -325,7 +325,7 @@ export function InvestigationsMasterList({
                 aria-label="Next page"
                 onClick={() => onPageChange(Math.min(totalPages - 1, page + 1))}
                 disabled={page >= totalPages - 1}
-                className="flex size-7 items-center justify-center rounded-md border border-zinc-800 bg-zinc-900 text-zinc-400 transition hover:border-zinc-700 hover:text-zinc-100 disabled:pointer-events-none disabled:opacity-30"
+                className="flex size-7 items-center justify-center rounded-md border border-cyan-400/15 bg-zinc-900 text-zinc-400 transition hover:border-cyan-400/45 hover:bg-cyan-400/10 hover:text-cyan-100 disabled:pointer-events-none disabled:opacity-30"
               >
                 <ChevronRight className="size-4" />
               </button>
@@ -333,7 +333,7 @@ export function InvestigationsMasterList({
           </div>
       )}
       {total > 0 && totalPages <= 1 && (
-          <div className="sticky bottom-0 z-10 flex shrink-0 items-center justify-between border-t border-[#252A33] bg-[#080A0F]/95 px-4 py-2.5 text-xs text-zinc-500 backdrop-blur">
+          <div className="sticky bottom-0 z-10 flex shrink-0 items-center justify-between border-t border-cyan-400/18 bg-[#080A0F]/95 px-4 py-2.5 text-xs text-zinc-500 backdrop-blur">
             Page 1 of 1 &middot; {total.toLocaleString()} total
           </div>
       )}
@@ -371,9 +371,9 @@ function QuestionSummary({
 
 function QuestionPrefixBadge({ parts }: { parts: AuditQuestionListParts }) {
   const styles: Record<NonNullable<AuditQuestionListParts["prefix"]>, string> = {
-    "Edited SearchPlan": "border-amber-500/30 bg-amber-500/10 text-amber-200",
-    "Filtered Result": "border-cyan-500/30 bg-cyan-500/10 text-cyan-200",
-    "AI Corrected": "border-purple-500/30 bg-purple-500/10 text-purple-200",
+    "Edited SearchPlan": "border-amber-400/40 bg-amber-400/12 text-amber-100 shadow-[0_0_16px_-10px_rgba(251,191,36,0.9)]",
+    "Filtered Result": "border-cyan-400/40 bg-cyan-400/12 text-cyan-100 shadow-[0_0_16px_-10px_rgba(34,211,238,0.9)]",
+    "AI Corrected": "border-purple-400/40 bg-purple-400/12 text-purple-100 shadow-[0_0_16px_-10px_rgba(168,85,247,0.9)]",
   }
 
   if (!parts.prefix) {
@@ -404,7 +404,7 @@ function FilterSelect({
       <select
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="h-10 w-full appearance-none rounded-lg border border-zinc-800 bg-zinc-900/60 px-3 pr-8 text-sm font-medium text-zinc-200 outline-none transition hover:border-zinc-700 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/30"
+        className="h-10 w-full appearance-none rounded-xl border border-cyan-400/20 bg-cyan-950/10 px-3 pr-8 text-sm font-medium text-zinc-100 outline-none shadow-[0_0_22px_-18px_rgba(34,211,238,0.9)] transition hover:border-cyan-400/35 focus:border-cyan-300/70 focus:ring-2 focus:ring-cyan-400/15"
       >
         {options.map((option) => (
           <option key={option.value} value={option.value}>
