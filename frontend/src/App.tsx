@@ -692,8 +692,10 @@ function App() {
         <Route
           path="/search"
           element={
-            <div className="min-w-0 flex-1">
-              <main className="mx-auto flex min-w-0 w-full max-w-[1500px] flex-col gap-5 p-4 sm:p-6">
+            <div className="relative min-w-0 flex-1 overflow-hidden bg-[#050a10]">
+              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_15%_0%,rgba(34,211,238,0.11),transparent_30%),radial-gradient(circle_at_88%_12%,rgba(168,85,247,0.1),transparent_26%),radial-gradient(circle_at_55%_95%,rgba(255,45,85,0.055),transparent_34%)]" />
+              <div className="pointer-events-none absolute inset-0 opacity-[0.075] [background-image:linear-gradient(rgba(34,211,238,0.4)_1px,transparent_1px),linear-gradient(90deg,rgba(34,211,238,0.4)_1px,transparent_1px)] [background-size:44px_44px]" />
+              <main className="relative mx-auto flex h-svh min-w-0 w-full max-w-[1540px] flex-col gap-4 overflow-y-auto p-4 sm:p-5">
                 <SearchSection
                   question={question}
                   scenarios={mockScenarios}

@@ -40,11 +40,11 @@ function JsonViewer({
   copyStatus: 'idle' | 'copied' | 'failed'
 }) {
   return (
-    <div className="relative h-[22rem] overflow-auto rounded-xl border border-border bg-[#090b10]">
+    <div className="relative h-[22rem] overflow-auto rounded-xl border border-cyan-400/15 bg-[#071018] shadow-inner shadow-black/30">
       <Button
         variant="outline"
         size="sm"
-        className="absolute top-2 right-2 z-10 bg-card/90"
+        className="absolute top-2 right-2 z-10 border-cyan-400/25 bg-zinc-950/90 text-cyan-100 hover:bg-cyan-400/10"
         onClick={onCopy}
         aria-label="Copy JSON to clipboard"
       >
@@ -59,7 +59,7 @@ function JsonViewer({
             ? 'Copy failed'
             : 'Copy'}
       </Button>
-      <pre className="min-w-max p-3 pr-24 font-mono text-xs leading-6 text-cyan-200">
+      <pre className="min-w-max p-3 pr-24 font-mono text-xs leading-6 text-cyan-100">
         {JSON.stringify(value, null, 2)}
       </pre>
     </div>
@@ -106,7 +106,7 @@ function SearchPlanEditor({
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="relative overflow-hidden rounded-xl border border-border bg-[#090b10]">
+      <div className="relative overflow-hidden rounded-xl border border-cyan-400/15 bg-[#071018] shadow-inner shadow-black/30">
         <CodeMirror
           value={code}
           height="22rem"
@@ -223,7 +223,7 @@ function QueryRefiner({
   }
 
   return (
-    <div className="rounded-2xl border border-cyan-400/15 bg-zinc-950/40 p-4">
+    <div className="rounded-2xl border border-cyan-400/25 bg-[#07131c]/80 p-4 shadow-[0_0_26px_-20px_#22d3ee]">
       <div className="flex flex-wrap items-start gap-3">
         <div className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-cyan-400/25 bg-cyan-400/10 text-cyan-300">
           <Sparkles className="size-4" />
@@ -243,7 +243,7 @@ function QueryRefiner({
           onChange={(event) => setRefinement(event.target.value)}
           maxLength={500}
           placeholder="Example: Change the time range to last 7 days and include vpn.user"
-          className="min-h-28 resize-y rounded-xl border border-border bg-zinc-950/70 px-3 py-2 text-sm text-foreground outline-none transition focus:border-cyan-400/60 focus:ring-2 focus:ring-cyan-400/10"
+          className="min-h-28 resize-y rounded-xl border border-cyan-400/20 bg-zinc-950/75 px-3 py-2 text-sm text-foreground outline-none transition placeholder:text-slate-500 focus:border-cyan-300/70 focus:ring-2 focus:ring-cyan-400/10"
           aria-label="Correction or refinement note"
         />
 
@@ -269,7 +269,7 @@ function QueryRefiner({
               size="sm"
               onClick={() => void handleRefine()}
               disabled={isRefining || !refinement.trim()}
-              className="bg-cyan-600 text-white hover:bg-cyan-700 disabled:bg-cyan-600/50"
+              className="bg-cyan-500 text-slate-950 shadow-[0_0_18px_-10px_#22d3ee] hover:bg-cyan-300 disabled:bg-cyan-600/40"
             >
               {isRefining ? (
                 <Loader2 className="mr-2 size-4 animate-spin" />
@@ -340,14 +340,16 @@ export function QueryTransparency({
   }
 
   return (
-    <Card className="gap-0 overflow-hidden border border-border bg-card py-0">
-      <div className="flex flex-wrap items-center gap-2 border-b border-border px-4 py-3">
-        <Code2 className="size-4 text-cyan-300" />
-        <h2 className="text-sm font-semibold">Query Transparency</h2>
+    <Card className="gap-0 overflow-hidden border border-cyan-400/25 bg-[#091018]/90 py-0 shadow-[0_0_34px_-24px_#22d3ee]">
+      <div className="flex flex-wrap items-center gap-2 border-b border-cyan-400/15 bg-cyan-400/[0.035] px-4 py-3">
+        <span className="grid size-8 place-items-center rounded-xl border border-cyan-400/25 bg-cyan-400/10 text-cyan-200">
+          <Code2 className="size-4" />
+        </span>
+        <h2 className="text-sm font-semibold text-slate-50">Query Transparency</h2>
         <Button
           variant="ghost"
           size="icon"
-          className="ml-auto size-7 text-muted-foreground hover:text-foreground"
+          className="ml-auto size-7 text-slate-400 hover:bg-cyan-400/10 hover:text-cyan-100"
           aria-expanded={expanded}
           aria-controls="query-transparency-content"
           aria-label={expanded ? 'Collapse query transparency' : 'Expand query transparency'}

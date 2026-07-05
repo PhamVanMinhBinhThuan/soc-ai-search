@@ -258,10 +258,10 @@ function RawEventsView({
   const lastResult = Math.min(page * size + events.length, total);
 
   return (
-    <div className="overflow-hidden rounded-xl border border-border">
-      <div className="flex items-center gap-2 border-b border-border bg-secondary/25 px-4 py-3">
-        <Table2 className="size-4 text-cyan-300" />
-        <h3 className="text-sm font-semibold">Event Logs</h3>
+    <div className="overflow-hidden rounded-2xl border border-cyan-400/20 bg-[#071018]/85 shadow-[0_0_26px_-22px_#22d3ee]">
+      <div className="flex items-center gap-2 border-b border-cyan-400/15 bg-cyan-400/[0.055] px-4 py-3">
+        <Table2 className="size-4 text-cyan-200" />
+        <h3 className="text-sm font-semibold text-slate-50">Event Logs</h3>
         <div className="flex-1" />
         <span className="hidden items-center gap-1 text-xs text-muted-foreground sm:inline-flex">
           <Lightbulb className="size-3.5 text-amber-300" />
@@ -269,8 +269,8 @@ function RawEventsView({
         </span>
       </div>
       <Table>
-        <TableHeader>
-          <TableRow>
+        <TableHeader className="bg-cyan-950/20">
+          <TableRow className="border-cyan-400/15 hover:bg-transparent">
             <TableHead>Timestamp</TableHead>
             <TableHead>Severity</TableHead>
             <TableHead>Source</TableHead>
@@ -291,7 +291,7 @@ function RawEventsView({
               key={event.event_id}
               tabIndex={0}
               aria-label={`Open event ${event.event_id}`}
-              className="group cursor-pointer focus-visible:bg-secondary/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-cyan-400/50"
+              className="group cursor-pointer border-cyan-400/10 transition-colors hover:bg-cyan-400/[0.045] focus-visible:bg-cyan-400/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-cyan-400/50"
               onClick={() => onSelectEvent(event.event_id)}
               onKeyDown={(eventKey) => {
                 if (eventKey.key === "Enter" || eventKey.key === " ") {
@@ -310,7 +310,7 @@ function RawEventsView({
                 {event.source}
               </TableCell>
               <TableCell>
-                <span className="rounded-md bg-secondary px-2 py-1 text-xs">
+                <span className="rounded-md border border-cyan-400/15 bg-cyan-400/10 px-2 py-1 text-xs text-cyan-100">
                   {event.event_type}
                 </span>
               </TableCell>
@@ -326,14 +326,14 @@ function RawEventsView({
                 {event.message}
               </TableCell>
               <TableCell className="px-2">
-                <ChevronRight className="size-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+                <ChevronRight className="size-4 text-cyan-200 opacity-0 transition-opacity group-hover:opacity-100" />
               </TableCell>
             </TableRow>
           ))}
         </TableBody>
       </Table>
 
-      <div className="flex items-center justify-between border-t border-border px-4 py-3">
+      <div className="flex items-center justify-between border-t border-cyan-400/15 bg-zinc-950/55 px-4 py-3">
         <span className="text-xs text-muted-foreground">
           Showing{" "}
           <span className="font-mono text-foreground">{firstResult}</span>
@@ -408,7 +408,7 @@ function MultiSelectDropdown<T extends string>({
       </label>
       <button
         type="button"
-        className="flex w-full items-center justify-between rounded-xl border border-border bg-zinc-950/70 px-3 py-2.5 text-left text-sm text-foreground shadow-inner shadow-black/20 transition hover:border-zinc-700 focus:border-cyan-400/60 focus:outline-none"
+        className="flex w-full items-center justify-between rounded-xl border border-cyan-400/20 bg-zinc-950/75 px-3 py-2.5 text-left text-sm text-foreground shadow-inner shadow-black/20 transition hover:border-cyan-300/45 focus:border-cyan-300/70 focus:outline-none"
         aria-expanded={open}
         onClick={() => setOpen((current) => !current)}
       >
@@ -428,7 +428,7 @@ function MultiSelectDropdown<T extends string>({
       </button>
 
       {open ? (
-        <div className="absolute z-20 mt-2 max-h-64 w-full overflow-y-auto rounded-xl border border-border bg-zinc-950 p-2 shadow-2xl shadow-black/50">
+        <div className="absolute z-20 mt-2 max-h-64 w-full overflow-y-auto rounded-xl border border-cyan-400/25 bg-zinc-950 p-2 shadow-2xl shadow-cyan-950/30">
           <div className="mb-1 flex items-center justify-between px-1">
             <span className="text-[11px] text-muted-foreground">
               {values.length} selected
@@ -455,7 +455,7 @@ function MultiSelectDropdown<T extends string>({
                     "flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-xs transition " +
                     (selected
                       ? `${accentClassName} text-foreground`
-                      : "text-muted-foreground hover:bg-zinc-900 hover:text-foreground")
+                      : "text-muted-foreground hover:bg-cyan-400/10 hover:text-foreground")
                   }
                   onClick={() => onChange(toggleArrayValue(values, option))}
                 >
@@ -574,8 +574,8 @@ function ResultControls({
   const ControlsToggleIcon = controlsExpanded ? ChevronUp : ChevronDown;
 
   return (
-    <div className="border-b border-border bg-background/20 px-4 py-4">
-      <div className="rounded-2xl border border-zinc-800 bg-zinc-950/40 shadow-inner shadow-black/20">
+    <div className="border-b border-cyan-400/15 bg-cyan-950/[0.06] px-4 py-4">
+      <div className="rounded-2xl border border-cyan-400/20 bg-zinc-950/55 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_0_24px_-22px_#22d3ee]">
         <button
           type="button"
           className="flex w-full items-center justify-between gap-3 px-4 py-4 text-left"
@@ -584,10 +584,10 @@ function ResultControls({
           onClick={() => setControlsExpanded((current) => !current)}
         >
           <div className="flex items-center gap-2">
-            <span className="grid size-8 place-items-center rounded-xl border border-cyan-400/20 bg-cyan-400/10 text-cyan-200">
+            <span className="grid size-8 place-items-center rounded-xl border border-cyan-300/30 bg-cyan-400/15 text-cyan-100 shadow-[0_0_18px_-12px_#22d3ee]">
               <SlidersHorizontal className="size-4" />
             </span>
-            <h3 className="text-sm font-semibold text-foreground">
+            <h3 className="text-sm font-semibold text-slate-50">
               Filter & Sort Results
             </h3>
           </div>
@@ -620,7 +620,7 @@ function ResultControls({
                 <select
                   value={searchSort}
                   onChange={(event) => setSearchSort(event.target.value)}
-                  className="w-full rounded-xl border border-border bg-zinc-950/70 px-3 py-2.5 text-sm text-foreground outline-none transition focus:border-cyan-400/50"
+                  className="w-full rounded-xl border border-cyan-400/20 bg-zinc-950/75 px-3 py-2.5 text-sm text-foreground outline-none transition focus:border-cyan-300/60"
                 >
                   {SEARCH_SORT_OPTIONS.map((option) => (
                     <option
@@ -637,37 +637,37 @@ function ResultControls({
                 value={source}
                 onChange={(event) => setSource(event.target.value)}
                 placeholder="Source, e.g. vpn"
-                className="rounded-xl border border-border bg-zinc-950/70 px-3 py-2.5 text-sm outline-none transition placeholder:text-muted-foreground focus:border-cyan-400/50"
+                className="rounded-xl border border-cyan-400/20 bg-zinc-950/75 px-3 py-2.5 text-sm outline-none transition placeholder:text-muted-foreground focus:border-cyan-300/60"
               />
               <input
                 value={user}
                 onChange={(event) => setUser(event.target.value)}
                 placeholder="User"
-                className="rounded-xl border border-border bg-zinc-950/70 px-3 py-2.5 text-sm outline-none transition placeholder:text-muted-foreground focus:border-cyan-400/50"
+                className="rounded-xl border border-cyan-400/20 bg-zinc-950/75 px-3 py-2.5 text-sm outline-none transition placeholder:text-muted-foreground focus:border-cyan-300/60"
               />
               <input
                 value={host}
                 onChange={(event) => setHost(event.target.value)}
                 placeholder="Host"
-                className="rounded-xl border border-border bg-zinc-950/70 px-3 py-2.5 text-sm outline-none transition placeholder:text-muted-foreground focus:border-cyan-400/50"
+                className="rounded-xl border border-cyan-400/20 bg-zinc-950/75 px-3 py-2.5 text-sm outline-none transition placeholder:text-muted-foreground focus:border-cyan-300/60"
               />
               <input
                 value={ip}
                 onChange={(event) => setIp(event.target.value)}
                 placeholder="Source IP"
-                className="rounded-xl border border-border bg-zinc-950/70 px-3 py-2.5 text-sm outline-none transition placeholder:text-muted-foreground focus:border-cyan-400/50"
+                className="rounded-xl border border-cyan-400/20 bg-zinc-950/75 px-3 py-2.5 text-sm outline-none transition placeholder:text-muted-foreground focus:border-cyan-300/60"
               />
               <input
                 value={countryCode}
                 onChange={(event) => setCountryCode(event.target.value)}
                 placeholder="Country code, e.g. CN"
-                className="rounded-xl border border-border bg-zinc-950/70 px-3 py-2.5 text-sm outline-none transition placeholder:text-muted-foreground focus:border-cyan-400/50"
+                className="rounded-xl border border-cyan-400/20 bg-zinc-950/75 px-3 py-2.5 text-sm outline-none transition placeholder:text-muted-foreground focus:border-cyan-300/60"
               />
               <input
                 value={messageQuery}
                 onChange={(event) => setMessageQuery(event.target.value)}
                 placeholder="Message contains"
-                className="rounded-xl border border-border bg-zinc-950/70 px-3 py-2.5 text-sm outline-none transition placeholder:text-muted-foreground focus:border-cyan-400/50 lg:col-span-2"
+                className="rounded-xl border border-cyan-400/20 bg-zinc-950/75 px-3 py-2.5 text-sm outline-none transition placeholder:text-muted-foreground focus:border-cyan-300/60 lg:col-span-2"
               />
             </div>
 
@@ -693,6 +693,7 @@ function ResultControls({
                 variant="outline"
                 size="sm"
                 onClick={applySearchControls}
+                className="border-cyan-300/35 bg-cyan-400/10 text-cyan-100 hover:bg-cyan-400/20"
               >
                 Apply Filters
               </Button>
@@ -754,17 +755,19 @@ export function ResultTabs({
 
   return (
     <div className="space-y-4">
-      <Card className="gap-0 overflow-hidden border border-border bg-card py-0">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3">
+      <Card className="gap-0 overflow-hidden border border-cyan-400/25 bg-[#091018]/90 py-0 shadow-[0_0_36px_-24px_#22d3ee]">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-cyan-400/15 bg-cyan-400/[0.04] px-4 py-3">
           <div className="flex flex-wrap items-center gap-2">
-            <Table2 className="size-4 text-cyan-300" />
-            <h2 className="text-sm font-semibold">Query Result</h2>
+            <span className="grid size-8 place-items-center rounded-xl border border-cyan-400/25 bg-cyan-400/10 text-cyan-200">
+              <Table2 className="size-4" />
+            </span>
+            <h2 className="text-sm font-semibold text-slate-50">Query Result</h2>
           </div>
           <div className="flex items-center gap-2">
             <Button
               variant="ghost"
               size="icon"
-              className="size-7 text-muted-foreground hover:text-foreground"
+              className="size-7 text-slate-400 hover:bg-cyan-400/10 hover:text-cyan-100"
               aria-expanded={expanded}
               aria-controls="query-result-content"
               aria-label={
@@ -781,11 +784,11 @@ export function ResultTabs({
           <div id="query-result-content">
             <div className="flex flex-wrap items-center justify-between gap-3 px-4 pt-4">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="rounded-lg border border-border bg-background/35 px-3 py-1.5 text-xs text-muted-foreground">
+                <span className="rounded-lg border border-cyan-400/20 bg-cyan-400/10 px-3 py-1.5 text-xs text-slate-400">
                   Mode: <strong className="text-foreground">{mode}</strong>
                 </span>
                 {mode !== "aggregation" ? (
-                  <span className="rounded-lg border border-border bg-background/35 px-3 py-1.5 text-xs text-muted-foreground">
+                  <span className="rounded-lg border border-cyan-400/20 bg-cyan-400/10 px-3 py-1.5 text-xs text-slate-400">
                     Total Events:{" "}
                     <strong className="text-foreground">
                       {total.toLocaleString("en-US")}
@@ -814,6 +817,7 @@ export function ResultTabs({
                         ? `Export query ${queryId}`
                         : "No query available"
                   }
+                  className="border-cyan-300/35 bg-zinc-950/70 text-cyan-100 hover:bg-cyan-400/10"
                 >
                   {exportStatus === "loading" ? (
                     <LoaderCircle className="animate-spin" />

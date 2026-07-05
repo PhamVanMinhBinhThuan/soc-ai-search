@@ -75,9 +75,9 @@ export function FollowUpSuggestions({
 
   if (isLoading) {
     return (
-      <section className="rounded-2xl border border-border bg-card p-4">
+      <section className="rounded-2xl border border-cyan-400/20 bg-zinc-950/50 p-4 shadow-[0_0_32px_-24px_#22d3ee]">
         <div className="mb-3 flex items-center gap-2">
-          <span className="flex size-8 items-center justify-center rounded-lg bg-violet-500/15 text-violet-200 ring-1 ring-violet-400/25">
+          <span className="flex size-8 items-center justify-center rounded-xl border border-violet-300/30 bg-violet-500/15 text-violet-200 ring-1 ring-violet-400/25">
             <Sparkles className="size-4" />
           </span>
           <h2 className="text-sm font-semibold text-foreground">
@@ -88,7 +88,7 @@ export function FollowUpSuggestions({
           {[0, 1, 2].map((item) => (
             <div
               key={item}
-              className="h-24 animate-pulse rounded-xl border border-border bg-secondary/30"
+              className="h-24 animate-pulse rounded-xl border border-cyan-400/15 bg-cyan-400/5"
             />
           ))}
         </div>
@@ -101,25 +101,26 @@ export function FollowUpSuggestions({
   }
 
   return (
-    <section className="rounded-2xl border border-border bg-card p-4 shadow-[0_0_30px_-24px_#22d3ee]">
+    <section className="relative overflow-hidden rounded-2xl border border-cyan-400/25 bg-zinc-950/55 p-4 shadow-[0_0_34px_-22px_#22d3ee]">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_0%,rgba(34,211,238,0.12),transparent_30%)]" />
       <div className="mb-3 flex items-center gap-2">
-        <span className="flex size-8 items-center justify-center rounded-lg bg-violet-500/15 text-violet-200 ring-1 ring-violet-400/25">
+        <span className="relative flex size-8 items-center justify-center rounded-xl border border-violet-300/30 bg-violet-500/15 text-violet-200 ring-1 ring-violet-400/25">
           <Sparkles className="size-4" />
         </span>
-        <h2 className="text-sm font-semibold text-foreground">
+        <h2 className="relative text-sm font-semibold text-slate-50">
           Next Investigation Steps
         </h2>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-3">
+      <div className="relative grid gap-3 md:grid-cols-3">
         {suggestions.map((suggestion) => (
           <button
             key={`${suggestion.title}-${suggestion.question}`}
             type="button"
             onClick={() => onSelectSuggestion(suggestion.question)}
-            className="group rounded-xl border border-border bg-zinc-950/45 p-3 text-left transition-colors hover:border-cyan-400/40 hover:bg-cyan-400/5"
+            className="group rounded-xl border border-cyan-400/15 bg-[#07131c]/80 p-3 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition hover:-translate-y-0.5 hover:border-cyan-300/45 hover:bg-cyan-400/10 hover:shadow-[0_0_24px_-16px_#22d3ee]"
           >
-            <span className="block text-sm font-semibold text-foreground group-hover:text-cyan-100">
+            <span className="block text-sm font-semibold text-slate-50 group-hover:text-cyan-100">
               {suggestion.title}
             </span>
             <span className="mt-2 block text-xs leading-5 text-muted-foreground group-hover:text-slate-300">
