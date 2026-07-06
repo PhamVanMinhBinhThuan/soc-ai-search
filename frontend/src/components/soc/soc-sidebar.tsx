@@ -7,7 +7,6 @@ import {
   ScrollText,
   Search,
   ShieldHalf,
-  UserRound,
 } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 
@@ -91,15 +90,16 @@ export function SocSidebar({
   const historyVisible = canViewHistory(permissionContext)
   const adminVisible = canViewAuditLogs(permissionContext)
   const visiblePrimaryNav = primaryNav
-  const initials = identity
-    .split(/[.@_\-\s]+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join('') || 'DA'
   const roleLabel = authLoading
     ? 'Loading role'
     : highestSocRole(roles) ?? (authEnabled ? 'Authenticated' : 'SOC Analyst')
+  const avatarSrc = roles.includes('SOC_ADMIN')
+    ? '/images/avatar-admin.png'
+    : roles.includes('SOC_ANALYST')
+      ? '/images/avatar-analyst.png'
+      : roles.includes('SOC_VIEWER')
+        ? '/images/avatar-viewer.png'
+        : '/images/avatar-analyst.png'
 
   return (
     <TooltipProvider>
@@ -284,8 +284,11 @@ export function SocSidebar({
           >
             <div className={cn('flex min-w-0 items-center', expanded ? 'w-full gap-2' : 'justify-center')}>
               <div className="relative flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-cyan-300/25 bg-[radial-gradient(circle_at_35%_25%,rgba(255,255,255,0.22),transparent_24%),linear-gradient(135deg,rgba(34,211,238,0.26),rgba(15,23,42,0.92))] text-cyan-50 ring-1 ring-cyan-400/20 shadow-[0_0_18px_-10px_rgba(34,211,238,0.9)]">
-                <UserRound className="size-5 opacity-95" />
-                <span className="sr-only">{initials}</span>
+                <img
+                  src={avatarSrc}
+                  alt={`${roleLabel} avatar`}
+                  className="size-full object-cover"
+                />
               </div>
               <div
                 className={cn(
