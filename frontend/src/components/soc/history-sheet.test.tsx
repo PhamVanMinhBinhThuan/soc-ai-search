@@ -106,13 +106,13 @@ describe('HistorySheet', () => {
     expect(onRetry).toHaveBeenCalledTimes(1)
   })
 
-  it('runs a history item again when the card is clicked', () => {
+  it('uses a history item when the card is clicked', () => {
     const onRunAgain = vi.fn()
     renderHistorySheet({ onRunAgain })
 
     fireEvent.click(
       screen.getByRole('button', {
-        name: /run query again: show me failed login attempts/i,
+        name: /use recent query: show me failed login attempts/i,
       }),
     )
 

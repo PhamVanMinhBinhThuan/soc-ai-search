@@ -564,6 +564,16 @@ function App() {
     });
   };
 
+  const fillHistoryItemQuestion = (item: SearchHistoryItemDto) => {
+    const aiCorrected = parseAiCorrectedQuestion(item.question);
+    const runnableQuestion = aiCorrected?.rewritten ?? item.question;
+    historyOpenRef.current = false;
+    setHistoryOpen(false);
+    setQuestion(runnableQuestion);
+    setSearchFocusSignal((value) => value + 1);
+    navigate("/search");
+  };
+
   const navigateToAuditLogs = () => {
     navigate("/audit-logs");
   };
@@ -919,9 +929,7 @@ function App() {
           navigate("/investigations");
         }}
         onRunAgain={(item) => {
-          setHistoryOpen(false);
-          navigate("/search");
-          runHistoryItem(item);
+          fillHistoryItemQuestion(item);
         }}
         onRetry={() => loadHistory(0)}
       />
