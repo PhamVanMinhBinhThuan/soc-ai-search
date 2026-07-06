@@ -107,24 +107,19 @@ function BucketTooltip({
 
 function ThreatRankingChart({
   data,
-  aggregationField,
 }: {
   data: AggregationResultItemDto[]
-  aggregationField?: string | null
 }) {
   const maxValue = Math.max(...data.map((item) => item.value), 1)
 
   return (
-    <div className="relative h-80 min-h-80 min-w-0 w-full overflow-hidden rounded-2xl border border-cyan-400/30 bg-[linear-gradient(180deg,rgba(34,211,238,0.08),rgba(8,10,15,0.72))] p-4 shadow-[0_0_28px_-18px_rgba(34,211,238,0.9),inset_0_1px_0_rgba(255,255,255,0.05)]">
+    <div className="relative min-h-80 min-w-0 w-full rounded-2xl border border-cyan-400/30 bg-[linear-gradient(180deg,rgba(34,211,238,0.08),rgba(8,10,15,0.72))] p-4 shadow-[0_0_28px_-18px_rgba(34,211,238,0.9),inset_0_1px_0_rgba(255,255,255,0.05)]">
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(34,211,238,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(34,211,238,0.04)_1px,transparent_1px)] bg-[size:28px_28px] opacity-35" />
-      <div className="relative flex h-full flex-col gap-3 overflow-y-auto pr-1">
+      <div className="relative flex flex-col gap-3">
         <div className="flex items-center justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-200/80">
-              Threat Ranking
-            </p>
-            <p className="mt-1 text-xs text-slate-400">
-              Top buckets by {aggregationField ?? 'field'}
+              Top Results
             </p>
           </div>
           <span className="rounded-full border border-cyan-400/25 bg-cyan-400/10 px-2.5 py-1 font-mono text-[11px] text-cyan-100">
@@ -220,12 +215,7 @@ export function AggregationChart({
   }
 
   if (useThreatRanking) {
-    return (
-      <ThreatRankingChart
-        data={data}
-        aggregationField={aggregationField}
-      />
-    )
+    return <ThreatRankingChart data={data} />
   }
 
   return (
