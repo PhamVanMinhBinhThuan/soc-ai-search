@@ -32,36 +32,55 @@ import { QueryBreakdown } from './query-breakdown'
 
 function JsonViewer({
   value,
+  label,
+  readOnly = false,
   onCopy,
   copyStatus,
 }: {
   value: unknown
+  label: string
+  readOnly?: boolean
   onCopy: () => void
   copyStatus: 'idle' | 'copied' | 'failed'
 }) {
   return (
-    <div className="relative h-[22rem] overflow-auto rounded-xl border border-cyan-400/15 bg-[#071018] shadow-inner shadow-black/30">
-      <Button
-        variant="outline"
-        size="sm"
-        className="absolute top-2 right-2 z-10 border-cyan-400/25 bg-zinc-950/90 text-cyan-100 hover:bg-cyan-400/10"
-        onClick={onCopy}
-        aria-label="Copy JSON to clipboard"
-      >
-        {copyStatus === 'copied' ? (
-          <Check className="text-emerald-300" />
-        ) : (
-          <Copy />
-        )}
-        {copyStatus === 'copied'
-          ? 'Copied'
-          : copyStatus === 'failed'
-            ? 'Copy failed'
-            : 'Copy'}
-      </Button>
-      <pre className="min-w-max p-3 pr-24 font-mono text-xs leading-6 text-cyan-100">
-        {JSON.stringify(value, null, 2)}
-      </pre>
+    <div className="overflow-hidden rounded-[1.35rem] border border-cyan-200/30 bg-[linear-gradient(145deg,rgba(28,43,64,0.82),rgba(10,18,34,0.96))] shadow-[0_0_0_1px_rgba(34,211,238,0.08),0_24px_80px_-46px_rgba(34,211,238,0.9)] backdrop-blur-xl">
+      <div className="flex items-center gap-3 border-b border-cyan-200/20 bg-white/[0.035] px-4 py-2.5">
+        <div className="flex items-center gap-1.5">
+          <span className="size-2.5 rounded-full bg-rose-400/90" />
+          <span className="size-2.5 rounded-full bg-amber-400/90" />
+          <span className="size-2.5 rounded-full bg-emerald-400/90" />
+        </div>
+        <span className="font-mono text-xs text-slate-400">{label}</span>
+        {readOnly ? (
+          <span className="ml-auto rounded-full border border-amber-300/20 bg-amber-300/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-200">
+            Read-only
+          </span>
+        ) : null}
+        <Button
+          variant="outline"
+          size="sm"
+          className="ml-auto h-8 border-cyan-300/30 bg-cyan-300/10 text-cyan-50 shadow-[0_0_18px_-9px_#60a5fa] hover:border-cyan-200/70 hover:bg-cyan-300/20 hover:text-white"
+          onClick={onCopy}
+          aria-label="Copy JSON to clipboard"
+        >
+          {copyStatus === 'copied' ? (
+            <Check className="text-emerald-300" />
+          ) : (
+            <Copy />
+          )}
+          {copyStatus === 'copied'
+            ? 'Copied'
+            : copyStatus === 'failed'
+              ? 'Copy failed'
+              : 'Copy'}
+        </Button>
+      </div>
+      <div className="h-[22rem] overflow-auto bg-[linear-gradient(180deg,rgba(34,38,55,0.72),rgba(17,24,39,0.92))]">
+        <pre className="min-w-max p-4 font-mono text-xs leading-6 text-cyan-100">
+          {JSON.stringify(value, null, 2)}
+        </pre>
+      </div>
     </div>
   )
 }
@@ -106,7 +125,15 @@ function SearchPlanEditor({
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="relative overflow-hidden rounded-xl border border-cyan-400/15 bg-[#071018] shadow-inner shadow-black/30">
+      <div className="overflow-hidden rounded-[1.35rem] border border-cyan-200/30 bg-[linear-gradient(145deg,rgba(28,43,64,0.82),rgba(10,18,34,0.96))] shadow-[0_0_0_1px_rgba(34,211,238,0.08),0_24px_80px_-46px_rgba(34,211,238,0.9)] backdrop-blur-xl">
+        <div className="flex items-center gap-3 border-b border-cyan-200/20 bg-white/[0.035] px-4 py-2.5">
+          <div className="flex items-center gap-1.5">
+            <span className="size-2.5 rounded-full bg-rose-400/90" />
+            <span className="size-2.5 rounded-full bg-amber-400/90" />
+            <span className="size-2.5 rounded-full bg-emerald-400/90" />
+          </div>
+          <span className="font-mono text-xs text-slate-400">search_plan.json</span>
+        </div>
         <CodeMirror
           value={code}
           height="22rem"
@@ -135,6 +162,7 @@ function SearchPlanEditor({
             size="sm"
             onClick={handleReset}
             disabled={isRunning}
+            className="border-slate-700 bg-slate-950/60 text-slate-200 hover:border-cyan-300/40 hover:bg-cyan-400/10 hover:text-cyan-100"
           >
             <RotateCcw className="mr-2 size-4" />
             Reset to AI Plan
@@ -144,6 +172,7 @@ function SearchPlanEditor({
             size="sm"
             onClick={onCancel}
             disabled={isRunning}
+            className="border-slate-700 bg-slate-950/60 text-slate-200 hover:border-cyan-300/40 hover:bg-cyan-400/10 hover:text-cyan-100"
           >
             Cancel
           </Button>
@@ -151,7 +180,7 @@ function SearchPlanEditor({
             size="sm"
             disabled={error !== null || isRunning}
             onClick={() => void handleRun()}
-            className="bg-cyan-600 text-white hover:bg-cyan-700 disabled:bg-cyan-600/50"
+            className="bg-cyan-400 text-slate-950 shadow-[0_0_20px_-10px_#22d3ee] hover:bg-cyan-300 disabled:bg-cyan-600/50"
           >
             {isRunning ? (
               <Loader2 className="mr-2 size-4 animate-spin" />
@@ -223,14 +252,14 @@ function QueryRefiner({
   }
 
   return (
-    <div className="rounded-2xl border border-cyan-400/25 bg-[#07131c]/80 p-4 shadow-[0_0_26px_-20px_#22d3ee]">
+    <div className="h-full rounded-[1.35rem] border border-cyan-200/35 bg-[linear-gradient(145deg,rgba(94,116,126,0.28),rgba(16,40,49,0.76)_38%,rgba(8,19,31,0.94))] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_0_0_1px_rgba(34,211,238,0.07),0_24px_80px_-48px_rgba(125,211,252,0.9)] backdrop-blur-xl">
       <div className="flex flex-wrap items-start gap-3">
-        <div className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-cyan-400/25 bg-cyan-400/10 text-cyan-300">
+        <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-cyan-300/30 bg-cyan-300/10 text-cyan-200 shadow-[0_0_20px_-12px_#22d3ee]">
           <Sparkles className="size-4" />
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex h-9 items-center gap-2">
-            <h3 className="text-sm font-semibold text-foreground">
+            <h3 className="text-sm font-semibold text-slate-50">
               Correct or Refine Query
             </h3>
           </div>
@@ -243,7 +272,7 @@ function QueryRefiner({
           onChange={(event) => setRefinement(event.target.value)}
           maxLength={500}
           placeholder="Example: Change the time range to last 7 days and include vpn.user"
-          className="min-h-28 resize-y rounded-xl border border-cyan-400/20 bg-zinc-950/75 px-3 py-2 text-sm text-foreground outline-none transition placeholder:text-slate-500 focus:border-cyan-300/70 focus:ring-2 focus:ring-cyan-400/10"
+          className="min-h-32 resize-y rounded-xl border border-cyan-200/20 bg-slate-950/90 px-3 py-2 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-cyan-200/70 focus:ring-2 focus:ring-cyan-300/15"
           aria-label="Correction or refinement note"
         />
 
@@ -261,6 +290,7 @@ function QueryRefiner({
               size="sm"
               onClick={reset}
               disabled={isRefining || !refinement.trim()}
+              className="border-slate-700 bg-slate-950/50 text-slate-300 hover:border-cyan-300/40 hover:bg-cyan-400/10 hover:text-cyan-100"
             >
               Reset
             </Button>
@@ -269,7 +299,7 @@ function QueryRefiner({
               size="sm"
               onClick={() => void handleRefine()}
               disabled={isRefining || !refinement.trim()}
-              className="bg-cyan-500 text-slate-950 shadow-[0_0_18px_-10px_#22d3ee] hover:bg-cyan-300 disabled:bg-cyan-600/40"
+              className="bg-cyan-300 text-slate-950 shadow-[0_0_22px_-10px_#22d3ee] hover:bg-cyan-200 disabled:bg-cyan-600/40"
             >
               {isRefining ? (
                 <Loader2 className="mr-2 size-4 animate-spin" />
@@ -340,9 +370,9 @@ export function QueryTransparency({
   }
 
   return (
-    <Card className="gap-0 overflow-hidden border border-cyan-400/25 bg-[#091018]/90 py-0 shadow-[0_0_34px_-24px_#22d3ee]">
-      <div className="flex flex-wrap items-center gap-2 border-b border-cyan-400/15 bg-cyan-400/[0.035] px-4 py-3">
-        <span className="grid size-8 place-items-center rounded-xl border border-cyan-400/25 bg-cyan-400/10 text-cyan-200">
+    <Card className="gap-0 overflow-hidden rounded-[1.35rem] border border-cyan-300/20 bg-[radial-gradient(circle_at_10%_0%,rgba(34,211,238,0.12),transparent_32%),radial-gradient(circle_at_82%_18%,rgba(99,102,241,0.12),transparent_30%),linear-gradient(180deg,rgba(8,19,31,0.94),rgba(2,6,23,0.96))] py-0 shadow-[0_24px_80px_-54px_rgba(34,211,238,0.9)]">
+      <div className="flex flex-wrap items-center gap-2 border-b border-cyan-300/15 bg-cyan-300/[0.035] px-4 py-3">
+        <span className="grid size-8 place-items-center rounded-xl border border-cyan-300/25 bg-cyan-300/10 text-cyan-200">
           <Code2 className="size-4" />
         </span>
         <h2 className="text-sm font-semibold text-slate-50">Query Transparency</h2>
@@ -366,18 +396,27 @@ export function QueryTransparency({
           onValueChange={setActiveTab}
           className="px-2 py-2 sm:px-3 sm:py-3"
         >
-          <div className="mb-2 flex items-center justify-between">
-            <TabsList className="max-w-full overflow-x-auto">
-              <TabsTrigger value="breakdown">
-                <ListTree />
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <TabsList className="h-auto max-w-full justify-start overflow-x-auto rounded-full border border-slate-700/50 bg-slate-950/55 p-1 text-slate-400 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
+              <TabsTrigger
+                value="breakdown"
+                className="gap-2 rounded-full px-3 py-2 text-xs font-semibold text-slate-400 data-[state=active]:bg-cyan-300/15 data-[state=active]:text-cyan-50 data-[state=active]:shadow-[0_0_20px_-10px_#60a5fa]"
+              >
+                <ListTree className="size-4" />
                 Query Breakdown
               </TabsTrigger>
-              <TabsTrigger value="plan">
-                <FileJson2 />
+              <TabsTrigger
+                value="plan"
+                className="gap-2 rounded-full px-3 py-2 text-xs font-semibold text-slate-400 data-[state=active]:bg-cyan-300/15 data-[state=active]:text-cyan-50 data-[state=active]:shadow-[0_0_20px_-10px_#60a5fa]"
+              >
+                <FileJson2 className="size-4" />
                 Validated SearchPlan
               </TabsTrigger>
-              <TabsTrigger value="dsl">
-                <Code2 />
+              <TabsTrigger
+                value="dsl"
+                className="gap-2 rounded-full px-3 py-2 text-xs font-semibold text-slate-400 data-[state=active]:bg-cyan-300/15 data-[state=active]:text-cyan-50 data-[state=active]:shadow-[0_0_20px_-10px_#60a5fa]"
+              >
+                <Code2 className="size-4" />
                 Compiled DSL
               </TabsTrigger>
             </TabsList>
@@ -389,27 +428,27 @@ export function QueryTransparency({
                     variant="outline"
                     size="sm"
                     onClick={() => setIsEditing(true)}
-                    className="ml-auto border-cyan-400/30 text-cyan-400 hover:border-cyan-400/50 hover:bg-cyan-950/30 hover:text-cyan-300"
+                    className="ml-auto border-cyan-300/35 bg-cyan-300/10 text-cyan-100 shadow-[0_0_18px_-12px_#22d3ee] hover:border-cyan-300/60 hover:bg-cyan-300/15 hover:text-cyan-50"
                   >
                     <Edit2 className="mr-2 size-4" />
                     Edit SearchPlan
                   </Button>
                 ) : null}
                 {!canEditPlan ? (
-                  <span className="ml-auto hidden items-center rounded-md border border-amber-500/20 bg-amber-500/10 px-2 py-1 text-xs font-medium text-amber-500 sm:inline-flex">
+                  <span className="ml-auto hidden items-center rounded-full border border-amber-300/20 bg-amber-300/10 px-2.5 py-1 text-[11px] font-semibold text-amber-200 sm:inline-flex">
                     SearchPlan editing requires ANALYST or ADMIN.
                   </span>
                 ) : null}
               </>
             ) : activeTab === 'dsl' ? (
-              <span className="ml-auto hidden items-center rounded-md border border-amber-500/20 bg-amber-500/10 px-2 py-1 text-xs font-medium text-amber-500 sm:inline-flex">
+              <span className="ml-auto hidden items-center rounded-full border border-amber-300/20 bg-amber-300/10 px-2.5 py-1 text-[11px] font-semibold text-amber-200 sm:inline-flex">
                 Read-only
               </span>
             ) : null}
           </div>
 
           <TabsContent value="breakdown" className="mt-0 outline-none">
-            <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(22rem,28rem)]">
+            <div className="grid gap-4 xl:grid-cols-[minmax(0,1.7fr)_minmax(22rem,0.8fr)]">
               <QueryBreakdown
                 searchPlan={searchPlan}
                 chartMetadata={chartMetadata}
@@ -428,34 +467,41 @@ export function QueryTransparency({
           </TabsContent>
 
           <TabsContent value="plan" className="mt-0 outline-none">
-            {isEditing ? (
-              <SearchPlanEditor
-                initialValue={searchPlan}
-                resetValue={resetSearchPlan ?? searchPlan}
-                onCancel={() => setIsEditing(false)}
-                onRun={async (editedPlan) => {
-                  await onRunEditedPlan?.(editedPlan)
-                }}
-              />
-            ) : (
-              <JsonViewer
-                value={searchPlan}
-                copyStatus={
-                  copyState?.type === 'plan' ? copyState.status : 'idle'
-                }
-                onCopy={() => void copyValue('plan', searchPlan)}
-              />
-            )}
+            <div className="mx-auto max-w-5xl rounded-[1.6rem] border border-cyan-200/15 bg-cyan-300/[0.025] p-2 shadow-[0_0_0_1px_rgba(34,211,238,0.06),0_24px_90px_-58px_rgba(34,211,238,0.95)]">
+              {isEditing ? (
+                <SearchPlanEditor
+                  initialValue={searchPlan}
+                  resetValue={resetSearchPlan ?? searchPlan}
+                  onCancel={() => setIsEditing(false)}
+                  onRun={async (editedPlan) => {
+                    await onRunEditedPlan?.(editedPlan)
+                  }}
+                />
+              ) : (
+                <JsonViewer
+                  label="search_plan.json"
+                  value={searchPlan}
+                  copyStatus={
+                    copyState?.type === 'plan' ? copyState.status : 'idle'
+                  }
+                  onCopy={() => void copyValue('plan', searchPlan)}
+                />
+              )}
+            </div>
           </TabsContent>
 
           <TabsContent value="dsl" className="mt-0 outline-none">
-            <JsonViewer
-              value={generatedDsl}
-              copyStatus={
-                copyState?.type === 'dsl' ? copyState.status : 'idle'
-              }
-              onCopy={() => void copyValue('dsl', generatedDsl)}
-            />
+            <div className="mx-auto max-w-5xl rounded-[1.6rem] border border-cyan-200/15 bg-cyan-300/[0.025] p-2 shadow-[0_0_0_1px_rgba(34,211,238,0.06),0_24px_90px_-58px_rgba(34,211,238,0.95)]">
+              <JsonViewer
+                label="compiled_dsl.json"
+                readOnly
+                value={generatedDsl}
+                copyStatus={
+                  copyState?.type === 'dsl' ? copyState.status : 'idle'
+                }
+                onCopy={() => void copyValue('dsl', generatedDsl)}
+              />
+            </div>
           </TabsContent>
         </Tabs>
       ) : null}

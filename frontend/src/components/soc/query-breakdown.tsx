@@ -1,5 +1,21 @@
 import type { ReactNode } from "react";
-import { BarChart3, Hash, LineChart, ListTree, Table2 } from "lucide-react";
+import {
+  BarChart3,
+  CalendarClock,
+  Filter,
+  Gauge,
+  Globe2,
+  Hash,
+  LineChart,
+  ListFilter,
+  ListTree,
+  MessageSquareText,
+  Network,
+  Search,
+  Server,
+  Table2,
+  UserRound,
+} from "lucide-react";
 
 import { CountryCode } from "@/components/soc/country-code";
 import { cn } from "@/lib/utils";
@@ -313,14 +329,54 @@ function VisualizationIcon({ searchPlan }: { searchPlan: SearchPlanDto }) {
 function valueClassName(tone: BreakdownRow["tone"]) {
   switch (tone) {
     case "time":
-      return "border-cyan-400/20 bg-cyan-400/10 text-cyan-200";
+      return "border-cyan-300/25 bg-cyan-300/12 text-cyan-100 shadow-[0_0_18px_-14px_#22d3ee]";
     case "severity":
-      return "border-amber-400/20 bg-amber-400/10 text-amber-200";
+      return "border-amber-300/25 bg-amber-300/12 text-amber-100";
     case "aggregation":
-      return "border-violet-400/20 bg-violet-400/10 text-violet-200";
+      return "border-violet-300/25 bg-violet-300/12 text-violet-100";
     default:
-      return "border-zinc-700 bg-zinc-900/70 text-zinc-200";
+      return "border-slate-600/70 bg-slate-900/70 text-slate-100";
   }
+}
+
+function FieldIcon({ field }: { field: string }) {
+  const className = "size-4 text-cyan-300/75";
+
+  if (field === "Mode") {
+    return <Gauge className={className} />;
+  }
+  if (field === "Time range" || field === "Interval") {
+    return <CalendarClock className={className} />;
+  }
+  if (field === "Aggregation" || field === "Group by" || field === "Bucket order") {
+    return <Network className={className} />;
+  }
+  if (field === "Limit") {
+    return <Hash className={className} />;
+  }
+  if (field === "Visualization") {
+    return <BarChart3 className={className} />;
+  }
+  if (field === "User") {
+    return <UserRound className={className} />;
+  }
+  if (field === "Host" || field === "Source") {
+    return <Server className={className} />;
+  }
+  if (field === "Source IP" || field === "Country") {
+    return <Globe2 className={className} />;
+  }
+  if (field === "Message contains") {
+    return <MessageSquareText className={className} />;
+  }
+  if (field === "Sort") {
+    return <ListFilter className={className} />;
+  }
+  if (field === "Event type" || field === "Severity") {
+    return <Filter className={className} />;
+  }
+
+  return <Search className={className} />;
 }
 
 export function QueryBreakdown({
@@ -330,12 +386,14 @@ export function QueryBreakdown({
 }: QueryBreakdownProps) {
   if (!searchPlan) {
     return (
-      <div className={cn("rounded-2xl border border-zinc-800 bg-zinc-950/40 p-5", className)}>
-        <div className="flex items-center gap-2 text-sm font-semibold text-zinc-100">
-          <ListTree className="size-4 text-cyan-300" />
+      <div className={cn("rounded-[1.35rem] border border-cyan-200/30 bg-[linear-gradient(145deg,rgba(94,116,126,0.26),rgba(15,38,52,0.78)_42%,rgba(8,19,31,0.94))] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_0_0_1px_rgba(34,211,238,0.07),0_22px_80px_-50px_rgba(125,211,252,0.9)] backdrop-blur-xl", className)}>
+        <div className="flex items-center gap-3 text-sm font-semibold text-slate-50">
+          <span className="grid size-9 place-items-center rounded-xl border border-cyan-300/25 bg-cyan-300/10 text-cyan-200">
+            <ListTree className="size-4" />
+          </span>
           Query Breakdown
         </div>
-        <p className="mt-3 text-sm text-zinc-500">
+        <p className="mt-3 text-sm text-slate-400">
           No SearchPlan available to build a query breakdown.
         </p>
       </div>
@@ -345,44 +403,45 @@ export function QueryBreakdown({
   const rows = buildRows(searchPlan, chartMetadata);
 
   return (
-    <div className={cn("rounded-2xl border border-zinc-800 bg-zinc-950/40 p-4", className)}>
+    <div className={cn("rounded-[1.35rem] border border-cyan-200/30 bg-[linear-gradient(145deg,rgba(94,116,126,0.26),rgba(15,38,52,0.78)_42%,rgba(8,19,31,0.94))] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_0_0_1px_rgba(34,211,238,0.07),0_22px_80px_-50px_rgba(125,211,252,0.9)] backdrop-blur-xl", className)}>
       <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <span className="grid size-8 place-items-center rounded-xl border border-cyan-400/20 bg-cyan-400/10 text-cyan-200">
+          <span className="grid size-10 place-items-center rounded-xl border border-cyan-300/25 bg-cyan-300/10 text-cyan-200 shadow-[0_0_20px_-12px_#22d3ee]">
             <ListTree className="size-4" />
           </span>
-          <h3 className="text-sm font-semibold tracking-tight text-zinc-100">
+          <h3 className="text-sm font-semibold tracking-tight text-slate-50">
             Query Breakdown
           </h3>
         </div>
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-cyan-200">
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-cyan-300/25 bg-cyan-300/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-cyan-100 shadow-[0_0_18px_-14px_#22d3ee]">
           <VisualizationIcon searchPlan={searchPlan} />
           {searchPlan.mode}
         </span>
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-zinc-800">
-        <div className="grid grid-cols-[minmax(7rem,11rem)_1fr] border-b border-zinc-800 bg-zinc-900/60 text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-500">
-          <div className="px-3 py-2">Field</div>
-          <div className="border-l border-zinc-800 px-3 py-2">Value</div>
+      <div className="overflow-hidden rounded-xl border border-cyan-200/20 bg-slate-950/35 shadow-inner shadow-black/20">
+        <div className="grid grid-cols-[minmax(8rem,13rem)_1fr] border-b border-cyan-200/25 bg-cyan-200/[0.035] text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-100/60">
+          <div className="px-4 py-2.5">Field</div>
+          <div className="border-l border-cyan-300/15 px-4 py-2.5">Value</div>
         </div>
-        <div className="divide-y divide-zinc-800/80">
+        <div className="divide-y divide-cyan-200/20">
           {rows.map((row) => (
             <div
               key={`${row.field}-${row.keyValue}`}
-              className="grid grid-cols-[minmax(7rem,11rem)_1fr] bg-zinc-950/30"
+              className="grid grid-cols-[minmax(8rem,13rem)_1fr] bg-slate-950/15 transition hover:bg-cyan-200/[0.045]"
             >
-              <div className="px-3 py-2.5 text-sm font-medium text-zinc-400">
-                {row.field}
+              <div className="flex items-center gap-2 px-4 py-3 text-sm font-medium text-slate-300">
+                <FieldIcon field={row.field} />
+                <span>{row.field}</span>
               </div>
-              <div className="border-l border-zinc-800 px-3 py-2">
+              <div className="border-l border-cyan-200/20 px-4 py-2.5">
                 <span
                   className={cn(
-                    "inline-flex max-w-full rounded-lg border px-2.5 py-1 text-sm font-medium leading-5",
+                    "inline-flex max-w-full rounded-lg border px-2.5 py-1 text-sm font-semibold leading-5",
                     valueClassName(row.tone),
                   )}
                 >
-                  <span className="min-w-0 truncate">{row.value}</span>
+                  <span className="min-w-0">{row.value}</span>
                 </span>
               </div>
             </div>
