@@ -104,21 +104,22 @@ export function SocSidebar({
     <TooltipProvider>
       <aside
         className={cn(
-          'sticky top-0 hidden h-svh shrink-0 flex-col overflow-hidden border-r border-cyan-400/30 bg-[radial-gradient(circle_at_15%_10%,rgba(34,211,238,0.12),transparent_30%),#0B0E13] py-4 shadow-[10px_0_32px_-24px_rgba(34,211,238,0.95)] transition-[width] duration-300 ease-in-out md:flex',
+          'sticky top-0 hidden h-svh shrink-0 flex-col overflow-hidden border-r border-cyan-300/20 bg-[radial-gradient(circle_at_15%_8%,rgba(34,211,238,0.14),transparent_32%),radial-gradient(circle_at_90%_100%,rgba(14,165,233,0.08),transparent_36%),#070b12] py-4 shadow-[10px_0_36px_-26px_rgba(34,211,238,0.95)] transition-[width] duration-300 ease-in-out md:flex',
           expanded ? 'w-60' : 'w-16',
         )}
       >
-        <div className="pointer-events-none absolute right-0 top-0 h-full w-px bg-gradient-to-b from-transparent via-cyan-300/45 to-transparent" />
+        <div className="pointer-events-none absolute right-0 top-0 h-full w-px bg-gradient-to-b from-transparent via-cyan-300/55 to-transparent" />
+        <div className="pointer-events-none absolute right-0 top-0 h-full w-8 bg-gradient-to-l from-cyan-300/[0.035] to-transparent" />
 
-        <div className="mb-5 flex h-10 shrink-0 items-center px-3">
+        <div className="relative mb-5 flex h-10 shrink-0 items-center px-3">
           <Tooltip>
             <TooltipTrigger asChild>
               <button
                 type="button"
-                aria-label="Expand sidebar"
+                aria-label={expanded ? 'SOC Console' : 'Expand sidebar'}
                 aria-expanded={expanded}
                 onClick={() => setExpanded(true)}
-              className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-cyan-400/12 text-cyan-200 shadow-[0_0_24px_-7px_#22d3ee] ring-1 ring-cyan-300/35 transition-colors hover:bg-cyan-400/18 hover:text-cyan-50"
+                className="flex size-10 shrink-0 items-center justify-center rounded-2xl border border-cyan-300/25 bg-cyan-400/10 text-cyan-200 shadow-[0_0_26px_-10px_#22d3ee] ring-1 ring-cyan-300/15 transition-colors hover:border-cyan-200/45 hover:bg-cyan-400/16 hover:text-cyan-50"
               >
                 <ShieldHalf className="size-5" />
               </button>
@@ -144,7 +145,7 @@ export function SocSidebar({
                 aria-expanded={expanded}
                 onClick={() => setExpanded(false)}
                 className={cn(
-                  'ml-auto flex size-7 shrink-0 items-center justify-center rounded-lg border border-border/70 bg-background/30 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground',
+                  'absolute -right-1.5 top-1/2 flex size-8 -translate-y-1/2 shrink-0 items-center justify-center rounded-xl border border-cyan-300/15 bg-slate-950/90 text-slate-400 shadow-[0_10px_28px_-18px_#22d3ee] transition-colors hover:border-cyan-300/45 hover:bg-cyan-400/10 hover:text-cyan-100',
                   expanded ? 'opacity-100' : 'pointer-events-none opacity-0',
                 )}
               >
@@ -168,7 +169,7 @@ export function SocSidebar({
                 aria-current={activePage === item.pageId ? 'page' : undefined}
                 onClick={() => onPageChange?.(item.pageId)}
                 className={cn(
-                  'relative flex h-10 w-full shrink-0 items-center rounded-xl transition-colors',
+                  'relative flex h-10 w-full shrink-0 items-center rounded-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40',
                   expanded ? 'justify-start px-3' : 'justify-center',
                   activePage === item.pageId ? activeNavClass : inactiveNavClass,
                 )}
@@ -199,7 +200,7 @@ export function SocSidebar({
                 aria-current={activePage === investigationsNav.pageId ? 'page' : undefined}
                 onClick={() => onPageChange?.(investigationsNav.pageId)}
                 className={cn(
-                  'relative flex h-10 w-full shrink-0 items-center rounded-xl transition-colors',
+                  'relative flex h-10 w-full shrink-0 items-center rounded-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40',
                   expanded ? 'justify-start px-3' : 'justify-center',
                   activePage === investigationsNav.pageId ? activeNavClass : inactiveNavClass,
                 )}
@@ -227,7 +228,7 @@ export function SocSidebar({
               aria-current={activePage === 'query-library' ? 'page' : undefined}
               onClick={() => onPageChange?.('query-library')}
               className={cn(
-                'relative flex h-10 w-full shrink-0 items-center rounded-xl transition-colors',
+                'relative flex h-10 w-full shrink-0 items-center rounded-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40',
                 expanded ? 'justify-start px-3' : 'justify-center',
                 activePage === 'query-library' ? activeNavClass : inactiveNavClass,
               )}
@@ -257,7 +258,7 @@ export function SocSidebar({
                   onPageChange?.('audit-logs')
                 }}
                 className={cn(
-                  'relative flex h-10 w-full shrink-0 items-center rounded-xl transition-colors',
+                  'relative flex h-10 w-full shrink-0 items-center rounded-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40',
                   expanded ? 'justify-start px-3' : 'justify-center',
                   activePage === 'audit-logs' ? activeNavClass : inactiveNavClass,
                 )}
@@ -278,57 +279,55 @@ export function SocSidebar({
           ) : null}
         </nav>
 
-        <div className="mt-auto flex flex-col gap-1.5 px-3">
-          {authEnabled && onLogout ? (
-            <CollapsedTooltip collapsed={collapsed} label="Sign Out">
-              <button
-                type="button"
-                aria-label="Sign Out"
-                onClick={onLogout}
-                className={cn(
-                  'flex h-10 w-full shrink-0 items-center rounded-xl transition-colors text-muted-foreground hover:bg-rose-500/10 hover:text-rose-400',
-                  expanded ? 'justify-start px-3' : 'justify-center',
-                )}
-              >
-                <Power className="size-5 shrink-0" />
-                <span
-                  className={cn(
-                    'overflow-hidden whitespace-nowrap text-left text-sm transition-[width,opacity,margin] duration-300',
-                    expanded
-                      ? 'ml-3 w-36 opacity-100'
-                      : 'ml-0 w-0 opacity-0',
-                  )}
-                >
-                  Sign Out
-                </span>
-              </button>
-            </CollapsedTooltip>
-          ) : null}
-
+        <div className="mt-auto border-t border-cyan-300/10 px-3 pt-3">
           <div
             className={cn(
-              'mt-2 flex h-12 items-center rounded-2xl border border-cyan-400/15 bg-[#111318]/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_0_18px_-16px_rgba(34,211,238,0.9)]',
-              expanded ? 'px-2' : 'justify-center border-transparent bg-transparent shadow-none',
+              'flex flex-col rounded-2xl border border-cyan-300/15 bg-[linear-gradient(180deg,rgba(15,23,42,0.72),rgba(3,7,18,0.72))] shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_0_22px_-18px_rgba(34,211,238,0.95)] backdrop-blur',
+              expanded ? 'gap-2 p-2' : 'items-center gap-2 border-transparent bg-transparent p-0 shadow-none',
             )}
           >
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-cyan-400/10 text-sm font-semibold text-cyan-50 ring-1 ring-cyan-400/25 shadow-[0_0_18px_-10px_rgba(34,211,238,0.9)]">
-              {initials}
+            <div className={cn('flex min-w-0 items-center', expanded ? 'w-full gap-2' : 'justify-center')}>
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-full border border-cyan-300/20 bg-cyan-400/10 text-sm font-semibold text-cyan-50 ring-1 ring-cyan-400/20 shadow-[0_0_18px_-10px_rgba(34,211,238,0.9)]">
+                {initials}
+              </div>
+              <div
+                className={cn(
+                  'overflow-hidden whitespace-nowrap transition-[width,opacity,margin] duration-300',
+                  expanded ? 'w-32 opacity-100' : 'w-0 opacity-0',
+                )}
+              >
+                <span className="block max-w-32 truncate text-sm font-semibold text-slate-50">
+                  {identity}
+                </span>
+                <span className="block text-xs text-cyan-100/70">
+                  {roleLabel}
+                </span>
+              </div>
             </div>
-            <div
-              className={cn(
-                'overflow-hidden whitespace-nowrap transition-[width,opacity,margin] duration-300',
-                expanded
-                  ? 'ml-3 w-32 opacity-100'
-                  : 'ml-0 w-0 opacity-0',
-              )}
-            >
-              <span className="block max-w-32 truncate text-sm font-medium">
-                {identity}
-              </span>
-              <span className="block text-xs text-muted-foreground">
-                {roleLabel}
-              </span>
-            </div>
+
+            {authEnabled && onLogout ? (
+              <CollapsedTooltip collapsed={collapsed} label="Sign Out">
+                <button
+                  type="button"
+                  aria-label="Sign Out"
+                  onClick={onLogout}
+                  className={cn(
+                    'flex h-9 shrink-0 items-center rounded-xl border border-transparent text-slate-400 transition-colors hover:border-rose-300/20 hover:bg-rose-400/10 hover:text-rose-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-300/30',
+                    expanded ? 'w-full justify-center gap-2 px-3' : 'w-10 justify-center',
+                  )}
+                >
+                  <Power className="size-4 shrink-0" />
+                  <span
+                    className={cn(
+                      'overflow-hidden whitespace-nowrap text-sm font-medium transition-[width,opacity] duration-300',
+                      expanded ? 'w-16 opacity-100' : 'w-0 opacity-0',
+                    )}
+                  >
+                    Sign Out
+                  </span>
+                </button>
+              </CollapsedTooltip>
+            ) : null}
           </div>
         </div>
       </aside>
