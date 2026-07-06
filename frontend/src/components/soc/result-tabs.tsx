@@ -32,6 +32,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatLocalChartTooltipLabel } from "@/lib/chart-time-format";
 import type {
   AggregationResultItemDto,
+  AggregationType,
   ChartMetadataDto,
   ExportStatus,
   SearchEventDto,
@@ -103,9 +104,13 @@ function EmptyModeState({
 function AnalyticsView({
   aggregationResults,
   chartMetadata,
+  aggregationField,
+  aggregationType,
 }: {
   aggregationResults: AggregationResultItemDto[];
   chartMetadata: ChartMetadataDto | null;
+  aggregationField?: string | null;
+  aggregationType?: AggregationType | null;
 }) {
   const [summaryPage, setSummaryPage] = useState(0);
 
@@ -148,20 +153,22 @@ function AnalyticsView({
         <AggregationChart
           data={aggregationResults}
           metadata={chartMetadata ?? undefined}
+          aggregationField={aggregationField}
+          aggregationType={aggregationType}
         />
       </Suspense>
 
-      <div className="overflow-hidden rounded-xl border border-border">
-        <div className="flex items-center gap-2 border-b border-border bg-secondary/25 px-4 py-3">
-          <Table2 className="size-4 text-cyan-300" />
-          <h3 className="text-sm font-semibold">Summary Table</h3>
+      <div className="overflow-hidden rounded-2xl border border-cyan-400/20 bg-[#071018]/85 shadow-[0_0_24px_-22px_#22d3ee]">
+        <div className="flex items-center gap-2 border-b border-cyan-400/15 bg-cyan-400/[0.055] px-4 py-3">
+          <Table2 className="size-4 text-cyan-200" />
+          <h3 className="text-sm font-semibold text-slate-50">Summary Table</h3>
           <span className="ml-auto font-mono text-[11px] text-muted-foreground">
             {aggregationResults.length} buckets
           </span>
         </div>
         <Table>
-          <TableHeader>
-            <TableRow>
+          <TableHeader className="bg-cyan-950/20">
+            <TableRow className="border-cyan-400/15 hover:bg-transparent">
               <TableHead>{chartMetadata?.x_axis_label ?? "Key"}</TableHead>
               <TableHead className="text-right">
                 {chartMetadata?.y_axis_label ?? "Value"}
@@ -170,7 +177,10 @@ function AnalyticsView({
           </TableHeader>
           <TableBody>
             {visibleAggregationResults.map((item) => (
-              <TableRow key={item.key}>
+              <TableRow
+                key={item.key}
+                className="border-cyan-400/10 transition-colors hover:bg-cyan-400/[0.045]"
+              >
                 <TableCell className="font-mono text-xs">
                   {formatSummaryKey(item.key)}
                 </TableCell>
@@ -182,7 +192,7 @@ function AnalyticsView({
           </TableBody>
         </Table>
         {totalSummaryPages > 1 ? (
-          <div className="flex items-center justify-between border-t border-border px-4 py-3">
+          <div className="flex items-center justify-between border-t border-cyan-400/15 bg-zinc-950/55 px-4 py-3">
             <span className="text-xs text-muted-foreground">
               Showing{" "}
               <span className="font-mono text-foreground">
@@ -890,6 +900,8 @@ export function ResultTabs({
                 <AnalyticsView
                   aggregationResults={aggregationResults}
                   chartMetadata={chartMetadata}
+                  aggregationField={response?.search_plan.aggregation?.field ?? null}
+                  aggregationType={response?.search_plan.aggregation?.type ?? null}
                 />
               </TabsContent>
               <TabsContent value="raw">

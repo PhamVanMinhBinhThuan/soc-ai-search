@@ -219,18 +219,18 @@ describe("ResultTabs polymorphic rendering", () => {
       />,
     );
 
-    expect(screen.getByText("bucket-1")).toBeInTheDocument();
-    expect(screen.getByText("bucket-10")).toBeInTheDocument();
-    expect(screen.queryByText("bucket-11")).not.toBeInTheDocument();
+    expect(screen.getByRole("cell", { name: "bucket-1" })).toBeInTheDocument();
+    expect(screen.getByRole("cell", { name: "bucket-10" })).toBeInTheDocument();
+    expect(screen.queryByRole("cell", { name: "bucket-11" })).not.toBeInTheDocument();
     expect(screen.getByText(/showing/i)).toHaveTextContent(
       "Showing 1 - 10 of 12",
     );
 
     fireEvent.click(screen.getByRole("button", { name: /next summary page/i }));
 
-    expect(screen.queryByText("bucket-1")).not.toBeInTheDocument();
-    expect(screen.getByText("bucket-11")).toBeInTheDocument();
-    expect(screen.getByText("bucket-12")).toBeInTheDocument();
+    expect(screen.queryByRole("cell", { name: "bucket-1" })).not.toBeInTheDocument();
+    expect(screen.getByRole("cell", { name: "bucket-11" })).toBeInTheDocument();
+    expect(screen.getByRole("cell", { name: "bucket-12" })).toBeInTheDocument();
   });
 
   it("formats date histogram summary table time instead of showing raw UTC ISO", () => {

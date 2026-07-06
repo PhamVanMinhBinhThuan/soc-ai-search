@@ -4,6 +4,7 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
+  Cell,
   LabelList,
   Line,
   ResponsiveContainer,
@@ -14,6 +15,7 @@ import {
 
 import type {
   AggregationResultItemDto,
+  AggregationType,
   ChartMetadataDto,
 } from '@/types/soc'
 import {
@@ -24,6 +26,28 @@ import {
 type TooltipPayload = {
   dataKey?: string | number
   value?: number | string
+  payload?: AggregationResultItemDto
+}
+
+const THREAT_RANKING_FIELDS = new Set(['ip', 'user', 'host', 'source'])
+const RANK_COLORS = ['#FB3B66', '#F59E0B', '#22D3EE', '#A855F7', '#64748B']
+const SEVERITY_COLORS: Record<string, string> = {
+  critical: '#FB3B66',
+  high: '#F59E0B',
+  medium: '#22D3EE',
+  low: '#64748B',
+}
+
+function formatNumber(value: number | string | undefined) {
+  return Number(value ?? 0).toLocaleString('en-US')
+}
+
+function getBucketShare(value: number | string | undefined, total: number) {
+  const numericValue = Number(value ?? 0)
+  if (total <= 0) {
+    return '0.0'
+  }
+  return ((numericValue / total) * 100).toFixed(1)
 }
 
 function EventCountTooltip({
@@ -51,27 +75,156 @@ function EventCountTooltip({
   )
 }
 
+function BucketTooltip({
+  active,
+  label,
+  payload,
+  total,
+}: {
+  active?: boolean
+  label?: unknown
+  payload?: TooltipPayload[]
+  total: number
+}) {
+  if (!active || !payload?.length) {
+    return null
+  }
+
+  const value = payload.find((item) => item.dataKey === 'value')?.value
+
+  return (
+    <div className="rounded-xl border border-cyan-400/25 bg-[#111318]/95 px-3 py-2 text-sm shadow-[0_0_28px_-14px_rgba(34,211,238,0.95),0_10px_30px_-20px_rgba(0,0,0,0.9)] backdrop-blur">
+      <p className="mb-1 font-mono text-slate-200">{String(label)}</p>
+      <p className="font-semibold text-cyan-300">
+        Events: {formatNumber(value)}
+      </p>
+      <p className="text-xs text-slate-400">
+        Share: {getBucketShare(value, total)}%
+      </p>
+    </div>
+  )
+}
+
+function ThreatRankingChart({
+  data,
+  aggregationField,
+}: {
+  data: AggregationResultItemDto[]
+  aggregationField?: string | null
+}) {
+  const maxValue = Math.max(...data.map((item) => item.value), 1)
+
+  return (
+    <div className="relative h-80 min-h-80 min-w-0 w-full overflow-hidden rounded-2xl border border-cyan-400/30 bg-[linear-gradient(180deg,rgba(34,211,238,0.08),rgba(8,10,15,0.72))] p-4 shadow-[0_0_28px_-18px_rgba(34,211,238,0.9),inset_0_1px_0_rgba(255,255,255,0.05)]">
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(34,211,238,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(34,211,238,0.04)_1px,transparent_1px)] bg-[size:28px_28px] opacity-35" />
+      <div className="relative flex h-full flex-col gap-3 overflow-y-auto pr-1">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-200/80">
+              Threat Ranking
+            </p>
+            <p className="mt-1 text-xs text-slate-400">
+              Top buckets by {aggregationField ?? 'field'}
+            </p>
+          </div>
+          <span className="rounded-full border border-cyan-400/25 bg-cyan-400/10 px-2.5 py-1 font-mono text-[11px] text-cyan-100">
+            {data.length} buckets
+          </span>
+        </div>
+
+        {data.map((item, index) => {
+          const color = RANK_COLORS[index] ?? RANK_COLORS[RANK_COLORS.length - 1]
+          const width = `${Math.max((item.value / maxValue) * 100, 2)}%`
+          const isTopRank = index === 0
+
+          return (
+            <div
+              key={`${item.key}-${index}`}
+              className={
+                'rounded-2xl border p-3 transition ' +
+                (isTopRank
+                  ? 'border-rose-300/35 bg-rose-500/[0.075] shadow-[0_0_24px_-16px_rgba(251,59,102,0.9)]'
+                  : 'border-cyan-400/12 bg-zinc-950/35')
+              }
+              title={`Rank ${index + 1}, ${item.key}, ${formatNumber(item.value)} events`}
+              aria-label={`Rank ${index + 1}, ${item.key}, ${formatNumber(item.value)} events`}
+            >
+              <div className="mb-2 flex items-center gap-3">
+                <span
+                  className="grid size-8 shrink-0 place-items-center rounded-xl border font-mono text-xs font-bold"
+                  style={{
+                    borderColor: `${color}66`,
+                    backgroundColor: `${color}22`,
+                    color,
+                  }}
+                >
+                  #{index + 1}
+                </span>
+                <span className="min-w-0 flex-1 truncate font-mono text-sm font-semibold text-slate-100">
+                  {item.key}
+                </span>
+                <span className="font-mono text-sm font-semibold text-cyan-200">
+                  {formatNumber(item.value)}
+                </span>
+              </div>
+              <div className="h-2 overflow-hidden rounded-full bg-zinc-950/85">
+                <div
+                  className="h-full rounded-full shadow-[0_0_16px_rgba(34,211,238,0.45)]"
+                  style={{
+                    width,
+                    background: `linear-gradient(90deg, ${color}, #22D3EE)`,
+                  }}
+                />
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 export function AggregationChart({
   data,
   metadata,
+  aggregationField,
+  aggregationType,
 }: {
   data: AggregationResultItemDto[]
   metadata?: ChartMetadataDto
+  aggregationField?: string | null
+  aggregationType?: AggregationType | null
 }) {
   const lineTickFormatter = createLocalChartTickFormatter(data, 'key')
+  const totalValue = data.reduce((sum, item) => sum + item.value, 0)
+  const useThreatRanking =
+    metadata?.chart_type !== 'LINE' &&
+    metadata?.chart_type !== 'NUMBER' &&
+    aggregationType !== 'count' &&
+    Boolean(aggregationField && THREAT_RANKING_FIELDS.has(aggregationField))
 
   if (metadata?.chart_type === 'NUMBER') {
     return (
-      <div className="grid h-80 place-items-center rounded-xl border border-border bg-background/25">
+      <div className="relative grid h-80 place-items-center overflow-hidden rounded-2xl border border-cyan-400/30 bg-[radial-gradient(circle_at_50%_0%,rgba(34,211,238,0.16),transparent_34%),#071018]">
+        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(34,211,238,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(34,211,238,0.04)_1px,transparent_1px)] bg-[size:28px_28px] opacity-35" />
         <div className="text-center">
-          <span className="text-xs tracking-[0.2em] text-muted-foreground uppercase">
+          <span className="text-xs tracking-[0.2em] text-cyan-200/80 uppercase">
             Total Events
           </span>
-          <strong className="mt-2 block font-mono text-6xl text-cyan-300">
+          <strong className="mt-2 block font-mono text-6xl text-cyan-200 drop-shadow-[0_0_18px_rgba(34,211,238,0.45)]">
             {(data[0]?.value ?? 0).toLocaleString('en-US')}
           </strong>
         </div>
       </div>
+    )
+  }
+
+  if (useThreatRanking) {
+    return (
+      <ThreatRankingChart
+        data={data}
+        aggregationField={aggregationField}
+      />
     )
   }
 
@@ -139,12 +292,40 @@ export function AggregationChart({
           </AreaChart>
         ) : (
           <BarChart data={data} margin={{ top: 24, right: 12, left: -12 }}>
-            <CartesianGrid vertical={false} stroke="var(--border)" />
+            <defs>
+              {data.map((item, index) => {
+                const severityColor = SEVERITY_COLORS[item.key.toLowerCase()]
+                const color = severityColor ?? RANK_COLORS[index] ?? '#22D3EE'
+                return (
+                  <linearGradient
+                    key={`bar-gradient-${item.key}`}
+                    id={`searchBarGradient-${index}`}
+                    x1="0"
+                    y1="0"
+                    x2="0"
+                    y2="1"
+                  >
+                    <stop offset="5%" stopColor={color} stopOpacity={0.98} />
+                    <stop offset="95%" stopColor={color} stopOpacity={0.55} />
+                  </linearGradient>
+                )
+              })}
+              <filter id="searchBarGlow" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="2" result="coloredBlur" />
+                <feMerge>
+                  <feMergeNode in="coloredBlur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+            </defs>
+            <CartesianGrid vertical={false} stroke="#164e63" opacity={0.35} />
             <XAxis
               dataKey="key"
               tickLine={false}
               axisLine={false}
               tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }}
+              interval={0}
+              minTickGap={12}
             />
             <YAxis
               tickLine={false}
@@ -152,23 +333,29 @@ export function AggregationChart({
               tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }}
             />
             <Tooltip
-              cursor={{ fill: 'var(--secondary)', opacity: 0.45 }}
-              contentStyle={{
-                background: 'var(--card)',
-                border: '1px solid var(--border)',
-                borderRadius: 10,
-              }}
+              cursor={{ fill: '#22d3ee', opacity: 0.08 }}
+              content={<BucketTooltip total={totalValue} />}
             />
             <Bar
               dataKey="value"
-              fill="var(--critical)"
               isAnimationActive={false}
-              radius={[6, 6, 0, 0]}
+              radius={[8, 8, 0, 0]}
+              filter="url(#searchBarGlow)"
             >
+              {data.map((item, index) => {
+                const severityColor = SEVERITY_COLORS[item.key.toLowerCase()]
+                return (
+                  <Cell
+                    key={`bar-fill-${item.key}`}
+                    fill={severityColor ?? `url(#searchBarGradient-${index})`}
+                  />
+                )
+              })}
               <LabelList
                 dataKey="value"
                 position="top"
-                fill="var(--muted-foreground)"
+                formatter={(value) => formatNumber(value as number | string | undefined)}
+                fill="#cbd5e1"
                 fontSize={11}
               />
             </Bar>
