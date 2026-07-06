@@ -1,6 +1,6 @@
 import '@testing-library/jest-dom/vitest'
 
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { EventDetailDrawer } from '@/components/soc/event-detail-drawer'
@@ -82,5 +82,25 @@ describe('EventDetailDrawer RBAC rendering', () => {
 
     expect(screen.queryByText(/raw log locked/i)).not.toBeInTheDocument()
     expect(screen.getByRole('tab', { name: /raw log/i })).toBeEnabled()
+  })
+
+  it('closes from the centered modal close button', () => {
+    const onOpenChange = vi.fn()
+
+    render(
+      <EventDetailDrawer
+        event={eventDetail}
+        status="success"
+        error={null}
+        canViewRawLog
+        open
+        onOpenChange={onOpenChange}
+        onRetry={vi.fn()}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /close event details/i }))
+
+    expect(onOpenChange).toHaveBeenCalledWith(false)
   })
 })
