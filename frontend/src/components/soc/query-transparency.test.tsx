@@ -91,4 +91,20 @@ describe("QueryTransparency", () => {
       }),
     );
   });
+
+  it("shows the Compiled DSL read-only badge only once", async () => {
+    render(
+      <QueryTransparency
+        searchPlan={searchPlan}
+        generatedDsl={{ query: { match_all: {} } }}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("tab", { name: /compiled dsl/i }));
+
+    await waitFor(() =>
+      expect(screen.getByText("compiled_dsl.json")).toBeInTheDocument(),
+    );
+    expect(screen.getAllByText("Read-only")).toHaveLength(1);
+  });
 });

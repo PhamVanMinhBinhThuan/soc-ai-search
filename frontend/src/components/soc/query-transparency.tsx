@@ -33,13 +33,11 @@ import { QueryBreakdown } from './query-breakdown'
 function JsonViewer({
   value,
   label,
-  readOnly = false,
   onCopy,
   copyStatus,
 }: {
   value: unknown
   label: string
-  readOnly?: boolean
   onCopy: () => void
   copyStatus: 'idle' | 'copied' | 'failed'
 }) {
@@ -52,11 +50,6 @@ function JsonViewer({
           <span className="size-2.5 rounded-full bg-emerald-400/90" />
         </div>
         <span className="font-mono text-xs text-slate-400">{label}</span>
-        {readOnly ? (
-          <span className="ml-auto rounded-full border border-amber-300/20 bg-amber-300/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-200">
-            Read-only
-          </span>
-        ) : null}
         <Button
           variant="outline"
           size="sm"
@@ -400,6 +393,7 @@ export function QueryTransparency({
             <TabsList className="h-auto max-w-full justify-start overflow-x-auto rounded-full border border-slate-700/50 bg-slate-950/55 p-1 text-slate-400 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
               <TabsTrigger
                 value="breakdown"
+                onClick={() => setActiveTab('breakdown')}
                 className="gap-2 rounded-full px-3 py-2 text-xs font-semibold text-slate-400 data-[state=active]:bg-cyan-300/15 data-[state=active]:text-cyan-50 data-[state=active]:shadow-[0_0_20px_-10px_#60a5fa]"
               >
                 <ListTree className="size-4" />
@@ -407,6 +401,7 @@ export function QueryTransparency({
               </TabsTrigger>
               <TabsTrigger
                 value="plan"
+                onClick={() => setActiveTab('plan')}
                 className="gap-2 rounded-full px-3 py-2 text-xs font-semibold text-slate-400 data-[state=active]:bg-cyan-300/15 data-[state=active]:text-cyan-50 data-[state=active]:shadow-[0_0_20px_-10px_#60a5fa]"
               >
                 <FileJson2 className="size-4" />
@@ -414,6 +409,7 @@ export function QueryTransparency({
               </TabsTrigger>
               <TabsTrigger
                 value="dsl"
+                onClick={() => setActiveTab('dsl')}
                 className="gap-2 rounded-full px-3 py-2 text-xs font-semibold text-slate-400 data-[state=active]:bg-cyan-300/15 data-[state=active]:text-cyan-50 data-[state=active]:shadow-[0_0_20px_-10px_#60a5fa]"
               >
                 <Code2 className="size-4" />
@@ -494,7 +490,6 @@ export function QueryTransparency({
             <div className="mx-auto max-w-5xl rounded-[1.6rem] border border-cyan-200/15 bg-cyan-300/[0.025] p-2 shadow-[0_0_0_1px_rgba(34,211,238,0.06),0_24px_90px_-58px_rgba(34,211,238,0.95)]">
               <JsonViewer
                 label="compiled_dsl.json"
-                readOnly
                 value={generatedDsl}
                 copyStatus={
                   copyState?.type === 'dsl' ? copyState.status : 'idle'

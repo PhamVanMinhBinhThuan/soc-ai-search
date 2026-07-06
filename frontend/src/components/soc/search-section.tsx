@@ -46,13 +46,20 @@ export function SearchSection({
 }) {
   const canSubmit = question.trim().length > 0 && !isLoading
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const latestQuestionRef = useRef(question)
+
+  useEffect(() => {
+    latestQuestionRef.current = question
+  }, [question])
 
   useEffect(() => {
     if (focusSignal > 0) {
-      textareaRef.current?.focus()
-      textareaRef.current?.setSelectionRange(question.length, question.length)
+      const input = textareaRef.current
+      input?.focus()
+      const end = latestQuestionRef.current.length
+      input?.setSelectionRange(end, end)
     }
-  }, [focusSignal, question.length])
+  }, [focusSignal])
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -87,20 +94,19 @@ export function SearchSection({
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_15%_0%,rgba(34,211,238,0.14),transparent_34%),radial-gradient(circle_at_92%_18%,rgba(168,85,247,0.14),transparent_30%)]" />
         <div className="pointer-events-none absolute inset-0 opacity-[0.12] [background-image:linear-gradient(rgba(34,211,238,0.42)_1px,transparent_1px),linear-gradient(90deg,rgba(34,211,238,0.42)_1px,transparent_1px)] [background-size:28px_28px]" />
 
-        <form
-          onSubmit={handleSubmit}
-          className="relative flex flex-col gap-3 rounded-2xl border border-cyan-400/20 bg-slate-800/45 px-3 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_0_28px_-22px_#22d3ee] transition focus-within:border-cyan-300/55 focus-within:bg-cyan-950/20 sm:flex-row sm:items-center"
-        >
-          <Search className="hidden size-4 shrink-0 text-slate-400 sm:block" />
-          <Textarea
-            ref={textareaRef}
-            value={question}
-            onChange={(event) => onQuestionChange(event.target.value)}
-            onKeyDown={handleQuestionKeyDown}
-            aria-label="Natural language search question"
-            placeholder="Ask about SOC events, e.g. Show the top 5 source IPs with the most events in the last 30 days"
-            className="min-h-10 min-w-0 flex-1 resize-none border-0 bg-transparent px-0 py-2 text-sm leading-5 text-slate-50 shadow-none placeholder:text-slate-500 focus-visible:ring-0"
-          />
+        <form onSubmit={handleSubmit} className="relative flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="flex min-w-0 flex-1 items-start gap-3 rounded-2xl border border-cyan-400/20 bg-slate-800/45 px-3 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_0_28px_-22px_#22d3ee] transition focus-within:border-cyan-300/55 focus-within:bg-cyan-950/20">
+            <Search className="mt-3 hidden size-4 shrink-0 text-slate-400 sm:block" />
+            <Textarea
+              ref={textareaRef}
+              value={question}
+              onChange={(event) => onQuestionChange(event.target.value)}
+              onKeyDown={handleQuestionKeyDown}
+              aria-label="Natural language search question"
+              placeholder="Ask about SOC events, e.g. Show the top 5 source IPs with the most events in the last 30 days"
+              className="min-h-10 min-w-0 flex-1 resize-none border-0 bg-transparent px-0 py-2 text-sm leading-5 text-slate-50 shadow-none placeholder:text-slate-500 focus-visible:ring-0"
+            />
+          </div>
           <div className="flex shrink-0 items-center justify-end gap-2">
             {currentQueryId && canPin && (
               <Button
@@ -118,7 +124,7 @@ export function SearchSection({
               type="submit"
               disabled={!canSubmit}
               title="Run natural-language search"
-              className="h-10 rounded-xl bg-gradient-to-r from-violet-500 via-fuchsia-500 to-cyan-400 px-5 text-sm font-semibold text-white shadow-[0_0_24px_-8px_#a78bfa] hover:from-violet-400 hover:to-cyan-300 disabled:opacity-55"
+              className="h-10 rounded-xl border border-cyan-200/35 bg-cyan-400/90 px-5 text-sm font-semibold text-slate-950 shadow-[0_0_22px_-12px_#22d3ee] hover:border-cyan-100/70 hover:bg-cyan-300 disabled:opacity-55"
             >
               {isLoading ? (
                 <LoaderCircle className="animate-spin" />
@@ -168,7 +174,7 @@ export function SearchSection({
               type="button"
               aria-label="Recent Queries"
               onClick={onOpenRecentQueries}
-              className="inline-flex items-center gap-1.5 rounded-full border border-cyan-400/20 bg-zinc-950/80 px-3 py-1.5 text-xs font-semibold text-slate-200 transition-colors hover:border-cyan-300/45 hover:bg-cyan-400/10 hover:text-cyan-100"
+              className="inline-flex items-center gap-1.5 rounded-full border border-cyan-300/40 bg-slate-900/80 px-3 py-1.5 text-xs font-semibold text-cyan-50 shadow-[0_0_20px_-12px_#22d3ee] transition-colors hover:border-cyan-200/60 hover:bg-cyan-400/15 hover:text-white"
             >
               <History className="size-3" />
               Recent Queries

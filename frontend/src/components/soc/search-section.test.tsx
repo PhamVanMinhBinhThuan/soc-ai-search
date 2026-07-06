@@ -79,6 +79,43 @@ describe("SearchSection suggestions", () => {
     await waitFor(() => expect(searchBox).toHaveFocus());
     expect(onSubmit).not.toHaveBeenCalled();
   });
+
+  it("does not force the caret to the end while typing in the middle of the question", () => {
+    function CaretHarness() {
+      const [question, setQuestion] = useState("Show failed login");
+
+      return (
+        <SearchSection
+          question={question}
+          scenarios={[]}
+          isLoading={false}
+          isMockMode={false}
+          onQuestionChange={setQuestion}
+          onSubmitQuestion={vi.fn()}
+          onSelectSuggestion={vi.fn()}
+          focusSignal={1}
+        />
+      );
+    }
+
+    render(<CaretHarness />);
+
+    const searchBox = screen.getByRole("textbox", {
+      name: /natural language search question/i,
+    }) as HTMLTextAreaElement;
+
+    searchBox.focus();
+    searchBox.setSelectionRange(5, 5);
+    fireEvent.change(searchBox, {
+      target: {
+        value: "Show all failed login",
+        selectionStart: 8,
+        selectionEnd: 8,
+      },
+    });
+
+    expect(searchBox.selectionStart).toBe(8);
+  });
 });
 
 describe("SearchSection additional buttons", () => {
