@@ -7,6 +7,7 @@ import {
   ScrollText,
   Search,
   ShieldHalf,
+  UserRound,
 } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 
@@ -137,23 +138,18 @@ export function SocSidebar({
               Events Search
             </span>
           </div>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                type="button"
-                aria-label="Collapse sidebar"
-                aria-expanded={expanded}
-                onClick={() => setExpanded(false)}
-                className={cn(
-                  'absolute -right-1.5 top-1/2 flex size-8 -translate-y-1/2 shrink-0 items-center justify-center rounded-xl border border-cyan-300/15 bg-slate-950/90 text-slate-400 shadow-[0_10px_28px_-18px_#22d3ee] transition-colors hover:border-cyan-300/45 hover:bg-cyan-400/10 hover:text-cyan-100',
-                  expanded ? 'opacity-100' : 'pointer-events-none opacity-0',
-                )}
-              >
-                <ChevronLeft className="size-3.5" />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="right">Collapse sidebar</TooltipContent>
-          </Tooltip>
+          <button
+            type="button"
+            aria-label="Collapse sidebar"
+            aria-expanded={expanded}
+            onClick={() => setExpanded(false)}
+            className={cn(
+              'absolute right-3 top-1/2 flex size-8 -translate-y-1/2 shrink-0 items-center justify-center rounded-full border border-zinc-800 bg-zinc-950/80 text-zinc-400 transition-colors hover:border-cyan-300/35 hover:bg-zinc-900 hover:text-cyan-100',
+              expanded ? 'opacity-100' : 'pointer-events-none opacity-0',
+            )}
+          >
+            <ChevronLeft className="size-4" />
+          </button>
         </div>
 
         <nav className="flex flex-col gap-1.5 px-3">
@@ -279,16 +275,17 @@ export function SocSidebar({
           ) : null}
         </nav>
 
-        <div className="mt-auto border-t border-cyan-300/10 px-3 pt-3">
+        <div className="mt-auto border-t border-cyan-300/14 px-3 pt-3">
           <div
             className={cn(
-              'flex flex-col rounded-2xl border border-cyan-300/15 bg-[linear-gradient(180deg,rgba(15,23,42,0.72),rgba(3,7,18,0.72))] shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_0_22px_-18px_rgba(34,211,238,0.95)] backdrop-blur',
+              'flex flex-col rounded-2xl border border-cyan-300/18 bg-[linear-gradient(180deg,rgba(15,23,42,0.78),rgba(3,7,18,0.76))] shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_0_22px_-18px_rgba(34,211,238,0.95)] backdrop-blur',
               expanded ? 'gap-2 p-2' : 'items-center gap-2 border-transparent bg-transparent p-0 shadow-none',
             )}
           >
             <div className={cn('flex min-w-0 items-center', expanded ? 'w-full gap-2' : 'justify-center')}>
-              <div className="flex size-10 shrink-0 items-center justify-center rounded-full border border-cyan-300/20 bg-cyan-400/10 text-sm font-semibold text-cyan-50 ring-1 ring-cyan-400/20 shadow-[0_0_18px_-10px_rgba(34,211,238,0.9)]">
-                {initials}
+              <div className="relative flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-cyan-300/25 bg-[radial-gradient(circle_at_35%_25%,rgba(255,255,255,0.22),transparent_24%),linear-gradient(135deg,rgba(34,211,238,0.26),rgba(15,23,42,0.92))] text-cyan-50 ring-1 ring-cyan-400/20 shadow-[0_0_18px_-10px_rgba(34,211,238,0.9)]">
+                <UserRound className="size-5 opacity-95" />
+                <span className="sr-only">{initials}</span>
               </div>
               <div
                 className={cn(
@@ -312,7 +309,7 @@ export function SocSidebar({
                   aria-label="Sign Out"
                   onClick={onLogout}
                   className={cn(
-                    'flex h-9 shrink-0 items-center rounded-xl border border-transparent text-slate-400 transition-colors hover:border-rose-300/20 hover:bg-rose-400/10 hover:text-rose-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-300/30',
+                    'flex h-9 shrink-0 items-center rounded-xl border border-cyan-300/16 bg-slate-900/65 text-slate-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition-colors hover:border-rose-300/28 hover:bg-rose-400/10 hover:text-rose-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-300/30',
                     expanded ? 'w-full justify-center gap-2 px-3' : 'w-10 justify-center',
                   )}
                 >

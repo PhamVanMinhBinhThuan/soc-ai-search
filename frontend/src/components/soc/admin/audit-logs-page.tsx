@@ -264,18 +264,17 @@ export function AuditLogsPage() {
                 })}
               </div>
             ) : (
-              <table className="w-full border-collapse text-left text-sm">
-                <thead className="sticky top-0 z-10 bg-[linear-gradient(90deg,rgba(34,211,238,0.11),rgba(168,85,247,0.05)),#0B0E13]/95 backdrop-blur">
-                  <tr className="border-b border-cyan-400/18">
-                    <th className="px-3 py-2.5 text-[11px] font-bold uppercase tracking-[0.16em] text-cyan-100/65">Timestamp</th>
-                    <th className="px-3 py-2.5 text-[11px] font-bold uppercase tracking-[0.16em] text-cyan-100/65">User</th>
-                    <th className="px-3 py-2.5 text-[11px] font-bold uppercase tracking-[0.16em] text-cyan-100/65">Question</th>
-                    <th className="px-3 py-2.5 text-right text-[11px] font-bold uppercase tracking-[0.16em] text-cyan-100/65">Results</th>
-                    <th className="px-3 py-2.5 text-[11px] font-bold uppercase tracking-[0.16em] text-cyan-100/65">Mode</th>
-                    <th className="px-3 py-2.5 text-[11px] font-bold uppercase tracking-[0.16em] text-cyan-100/65">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-cyan-400/10">
+              <div className="px-3 py-3">
+                <div className="sticky top-0 z-10 mb-2 grid grid-cols-[minmax(7rem,0.75fr)_minmax(7rem,0.7fr)_minmax(18rem,2.5fr)_minmax(5rem,0.55fr)_minmax(7rem,0.7fr)_minmax(7rem,0.7fr)_2rem] gap-3 rounded-xl border border-cyan-300/15 bg-[linear-gradient(90deg,rgba(34,211,238,0.10),rgba(168,85,247,0.04)),rgba(11,14,19,0.96)] px-3 py-2.5 text-[11px] font-bold uppercase tracking-[0.16em] text-cyan-100/70 shadow-[0_14px_40px_-30px_rgba(34,211,238,0.95),inset_0_1px_0_rgba(255,255,255,0.05)] ring-1 ring-white/[0.03] backdrop-blur">
+                  <span>Timestamp</span>
+                  <span>User</span>
+                  <span>Question</span>
+                  <span className="text-right">Results</span>
+                  <span>Mode</span>
+                  <span>Status</span>
+                  <span className="sr-only">Action</span>
+                </div>
+                <div className="space-y-2">
                   {items.map((item) => {
                     const isActive = item.query_id === selectedId
                     const date = new Date(item.created_at)
@@ -287,43 +286,54 @@ export function AuditLogsPage() {
                     })
 
                     return (
-                      <tr
+                      <div
                         key={item.query_id}
+                        role="button"
+                        tabIndex={0}
                         onClick={() => setSelectedId(isActive ? null : item.query_id)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault()
+                            setSelectedId(isActive ? null : item.query_id)
+                          }
+                        }}
                         className={cn(
-                          "group cursor-pointer border-b border-l-2 border-b-cyan-400/10 border-l-transparent bg-[linear-gradient(90deg,rgba(34,211,238,0.018),rgba(8,10,15,0.1))] transition hover:bg-cyan-400/[0.075] hover:shadow-[0_0_22px_-16px_rgba(34,211,238,0.9)]",
-                          isActive && "border-l-cyan-300 bg-cyan-400/[0.11] shadow-[inset_0_0_0_1px_rgba(34,211,238,0.24),0_0_26px_-16px_rgba(34,211,238,0.95)]",
+                          "group relative grid min-h-[4.35rem] w-full cursor-pointer grid-cols-[minmax(7rem,0.75fr)_minmax(7rem,0.7fr)_minmax(18rem,2.5fr)_minmax(5rem,0.55fr)_minmax(7rem,0.7fr)_minmax(7rem,0.7fr)_2rem] items-center gap-3 overflow-hidden rounded-xl border px-3 py-2.5 text-left outline-none transition-all focus-visible:border-cyan-300/70 focus-visible:ring-2 focus-visible:ring-cyan-300/25",
+                          isActive
+                            ? "border-cyan-300/65 bg-[linear-gradient(90deg,rgba(34,211,238,0.22),rgba(15,23,42,0.76))] shadow-[0_0_34px_-13px_rgba(34,211,238,0.98),inset_0_1px_0_rgba(255,255,255,0.10)] ring-1 ring-cyan-100/10"
+                            : "border-cyan-300/18 bg-[linear-gradient(90deg,rgba(34,211,238,0.10),rgba(15,23,42,0.58))] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] ring-1 ring-white/[0.025] hover:border-cyan-300/42 hover:bg-[linear-gradient(90deg,rgba(34,211,238,0.15),rgba(15,23,42,0.72))] hover:shadow-[0_0_28px_-16px_rgba(34,211,238,0.95)]",
                         )}
                       >
-                        <td className="whitespace-nowrap px-3 py-3 font-mono text-xs text-zinc-500">
+                        <span className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-200/30 to-transparent opacity-70" />
+                        <span className="whitespace-nowrap font-mono text-xs text-zinc-500">
                           <span className="block text-zinc-400">{dateStr}</span>
                           <span>{timeStr}</span>
-                        </td>
-                        <td className="px-3 py-3 text-sm text-zinc-300">{item.user_identity}</td>
-                        <td className="px-3 py-2.5">
-                          <span className={cn(
-                            "flex min-h-9 items-center rounded-xl border px-3 py-2 text-sm font-semibold text-zinc-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition",
-                            isActive
-                              ? "border-cyan-300/35 bg-cyan-400/[0.08] shadow-[0_0_18px_-12px_rgba(34,211,238,0.9),inset_0_1px_0_rgba(255,255,255,0.06)]"
-                              : "border-cyan-400/12 bg-[#111827]/45 group-hover:border-cyan-400/28 group-hover:bg-cyan-400/[0.055]",
-                          )}>
+                        </span>
+                        <span className="min-w-0 truncate text-sm font-semibold text-zinc-300">
+                          {item.user_identity}
+                        </span>
+                        <span className="min-w-0 text-sm font-semibold leading-snug text-zinc-100">
+                          <span className="line-clamp-2">
                             <QuestionSummary question={item.question} compact />
                           </span>
-                        </td>
-                        <td className="whitespace-nowrap px-3 py-3 text-right font-mono text-xs text-zinc-400">
+                        </span>
+                        <span className="whitespace-nowrap text-right font-mono text-xs text-zinc-300">
                           {item.result_count?.toLocaleString() ?? "-"}
-                        </td>
-                        <td className="px-3 py-3">
+                        </span>
+                        <span>
                           <ModeBadge mode={item.mode} />
-                        </td>
-                        <td className="px-3 py-3">
+                        </span>
+                        <span>
                           <StatusBadge status={item.status} />
-                        </td>
-                      </tr>
+                        </span>
+                        <span className="flex justify-end">
+                          <ChevronRight className="size-4 text-zinc-600 opacity-0 transition-opacity group-hover:opacity-100" />
+                        </span>
+                      </div>
                     )
                   })}
-                </tbody>
-              </table>
+                </div>
+              </div>
             )}
           </div>
 
