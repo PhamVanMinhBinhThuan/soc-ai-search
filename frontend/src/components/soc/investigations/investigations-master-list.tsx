@@ -145,13 +145,13 @@ export function InvestigationsMasterList({
           </div>
         ) : expanded ? (
           <div className="px-3 py-3">
-            <div className="sticky top-0 z-10 mb-2 grid grid-cols-[2.1rem_minmax(7rem,0.8fr)_minmax(18rem,2.8fr)_minmax(5rem,0.55fr)_minmax(7rem,0.7fr)_minmax(7rem,0.7fr)_2rem] gap-3 rounded-xl border border-cyan-300/15 bg-[linear-gradient(90deg,rgba(34,211,238,0.10),rgba(168,85,247,0.04)),rgba(11,14,19,0.96)] px-3 py-2.5 text-[11px] font-bold uppercase tracking-[0.16em] text-cyan-100/70 shadow-[0_14px_40px_-30px_rgba(34,211,238,0.95),inset_0_1px_0_rgba(255,255,255,0.05)] ring-1 ring-white/[0.03] backdrop-blur">
+            <div className="sticky top-0 z-10 mb-2 grid grid-cols-[2.1rem_10rem_minmax(22rem,1fr)_6rem_8rem_8rem_2rem] gap-3 rounded-xl border border-cyan-300/15 bg-[linear-gradient(90deg,rgba(34,211,238,0.10),rgba(168,85,247,0.04)),rgba(11,14,19,0.96)] px-3 py-2.5 text-[11px] font-bold uppercase tracking-[0.14em] text-cyan-100/70 shadow-[0_14px_40px_-30px_rgba(34,211,238,0.95),inset_0_1px_0_rgba(255,255,255,0.05)] ring-1 ring-white/[0.03] backdrop-blur">
               <span className="sr-only">Pinned</span>
-              <span>Timestamp</span>
-              <span>Question</span>
+              <span className="min-w-0 truncate">Timestamp</span>
+              <span className="min-w-0 truncate">Question</span>
               <span className="text-right">Results</span>
-              <span>Mode</span>
-              <span>Status</span>
+              <span className="text-center">Mode</span>
+              <span className="text-center">Status</span>
               <span className="sr-only">Action</span>
             </div>
             <div className="space-y-2">
@@ -181,7 +181,7 @@ export function InvestigationsMasterList({
                       }
                     }}
                     className={cn(
-                      "group relative grid min-h-[4.35rem] w-full cursor-pointer grid-cols-[2.1rem_minmax(7rem,0.8fr)_minmax(18rem,2.8fr)_minmax(5rem,0.55fr)_minmax(7rem,0.7fr)_minmax(7rem,0.7fr)_2rem] items-center gap-3 overflow-hidden rounded-xl border px-3 py-2.5 text-left outline-none transition-all focus-visible:border-cyan-300/70 focus-visible:ring-2 focus-visible:ring-cyan-300/25",
+                      "group relative grid min-h-[4.35rem] w-full cursor-pointer grid-cols-[2.1rem_10rem_minmax(22rem,1fr)_6rem_8rem_8rem_2rem] items-center gap-3 overflow-hidden rounded-xl border px-3 py-2.5 text-left outline-none transition-all focus-visible:border-cyan-300/70 focus-visible:ring-2 focus-visible:ring-cyan-300/25",
                       isActive
                         ? "border-cyan-300/65 bg-[linear-gradient(90deg,rgba(34,211,238,0.22),rgba(15,23,42,0.76))] shadow-[0_0_34px_-13px_rgba(34,211,238,0.98),inset_0_1px_0_rgba(255,255,255,0.10)] ring-1 ring-cyan-100/10"
                         : "border-cyan-300/18 bg-[linear-gradient(90deg,rgba(34,211,238,0.10),rgba(15,23,42,0.58))] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] ring-1 ring-white/[0.025] hover:border-cyan-300/42 hover:bg-[linear-gradient(90deg,rgba(34,211,238,0.15),rgba(15,23,42,0.72))] hover:shadow-[0_0_28px_-16px_rgba(34,211,238,0.95)]",
@@ -219,10 +219,10 @@ export function InvestigationsMasterList({
                     <span className="whitespace-nowrap text-right font-mono text-xs text-zinc-300">
                       {item.result_count?.toLocaleString() ?? "-"}
                     </span>
-                    <span>
+                    <span className="flex justify-center">
                       <ModeBadge mode={item.mode} />
                     </span>
-                    <span>
+                    <span className="flex justify-center">
                       <StatusBadge status={item.status} />
                     </span>
                     <span className="flex justify-end">
