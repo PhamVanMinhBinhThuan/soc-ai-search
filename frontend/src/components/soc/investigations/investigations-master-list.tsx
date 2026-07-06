@@ -146,13 +146,13 @@ export function InvestigationsMasterList({
         ) : expanded ? (
           <div className="px-3 py-3">
             <div className="sticky top-0 z-10 mb-2 grid grid-cols-[2.1rem_10rem_minmax(22rem,1fr)_6rem_8rem_8rem_2rem] gap-3 rounded-xl border border-cyan-300/15 bg-[linear-gradient(90deg,rgba(34,211,238,0.10),rgba(168,85,247,0.04)),rgba(11,14,19,0.96)] px-3 py-2.5 text-[11px] font-bold uppercase tracking-[0.14em] text-cyan-100/70 shadow-[0_14px_40px_-30px_rgba(34,211,238,0.95),inset_0_1px_0_rgba(255,255,255,0.05)] ring-1 ring-white/[0.03] backdrop-blur">
-              <span className="sr-only">Pinned</span>
+              <span aria-hidden="true" />
               <span className="min-w-0 truncate">Timestamp</span>
               <span className="min-w-0 truncate">Question</span>
               <span className="text-right">Results</span>
               <span className="text-center">Mode</span>
               <span className="text-center">Status</span>
-              <span className="sr-only">Action</span>
+              <span aria-hidden="true" />
             </div>
             <div className="space-y-2">
               {items.map((item) => {

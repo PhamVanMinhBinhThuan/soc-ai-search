@@ -272,7 +272,7 @@ export function AuditLogsPage() {
                   <span className="text-right">Results</span>
                   <span className="text-center">Mode</span>
                   <span className="text-center">Status</span>
-                  <span className="sr-only">Action</span>
+                  <span aria-hidden="true" />
                 </div>
                 <div className="space-y-2">
                   {items.map((item) => {
