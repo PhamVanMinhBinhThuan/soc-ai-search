@@ -42,7 +42,7 @@ class CsvExportControllerTest {
                 .andExpect(header().string(
                         "Content-Disposition",
                         org.hamcrest.Matchers.containsString(
-                                "soc-search-11111111-1111-1111-1111-111111111111.csv")))
+                                "soc-ai-search.csv")))
                 .andReturn();
 
         mockMvc.perform(asyncDispatch(result))

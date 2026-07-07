@@ -28,37 +28,9 @@ function sanitizeFilename(value: string) {
     : `${filename || 'soc-ai-search'}.csv`
 }
 
-function decodeFilenameStar(value: string) {
-  const encoded = value.replace(/^UTF-8''/i, '')
-  try {
-    return decodeURIComponent(encoded)
-  } catch {
-    return encoded
-  }
-}
 
-function filenameFromDisposition(disposition: string | null) {
-  if (disposition) {
-    const filenameStar = disposition.match(
-      /filename\*\s*=\s*([^;]+)/i,
-    )?.[1]
-    if (filenameStar) {
-      return sanitizeFilename(
-        decodeFilenameStar(filenameStar.trim().replace(/^"|"$/g, '')),
-      )
-    }
 
-    const filename = disposition.match(
-      /filename\s*=\s*(?:"([^"]+)"|([^;]+))/i,
-    )
-    const value = filename?.[1] ?? filename?.[2]
-    if (value) {
-      return sanitizeFilename(value.trim())
-    }
-  }
 
-  return `soc-ai-search.csv`
-}
 
 export async function exportSearchCsv(
   queryId: string,
@@ -112,7 +84,7 @@ export async function exportSearchCsv(
 
   return {
     blob: await response.blob(),
-    filename: filenameFromDisposition(response.headers.get('content-disposition')),
+    filename: 'soc-ai-search.csv',
     truncated:
       response.headers.get('x-export-truncated')?.toLowerCase() ===
       'true',

@@ -45,7 +45,7 @@ public class CsvExportController {
                     + "Search exports are capped at 10,000 rows; aggregation exports contain current buckets.")
     public ResponseEntity<StreamingResponseBody> export(@PathVariable UUID queryId) {
         var prepared = exportService.prepare(queryId);
-        var filename = "soc-search-" + queryId + ".csv";
+        var filename = "soc-ai-search.csv";
 
         return ResponseEntity.ok()
                 .contentType(CSV_MEDIA_TYPE)

@@ -28,7 +28,7 @@ describe('exportSearchCsv', () => {
       '00000000-0000-4000-8000-000000000001',
     )
 
-    expect(result.filename).toBe('soc-search-export-.csv')
+    expect(result.filename).toBe('soc-ai-search.csv')
     expect(result.truncated).toBe(true)
     expect(await result.blob.text()).toBe(csv)
     expect(fetchMock).toHaveBeenCalledTimes(1)
