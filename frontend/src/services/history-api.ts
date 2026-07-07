@@ -204,7 +204,7 @@ export async function exportAuditLogs(
 
   return {
     blob: await response.blob(),
-    filename: filenameFromDisposition(response.headers.get('content-disposition')) ?? 'soc-audit-logs.csv',
+    filename: filenameFromDisposition(response.headers.get('content-disposition')) ?? 'soc-ai-search-audit.csv',
     truncated: response.headers.get('X-Export-Truncated') === 'true',
   }
 }

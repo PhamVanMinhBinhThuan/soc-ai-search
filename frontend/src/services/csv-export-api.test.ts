@@ -50,9 +50,7 @@ describe('exportSearchCsv', () => {
       '00000000-0000-4000-8000-000000000099',
     )
 
-    expect(result.filename).toBe(
-      'soc-search-00000000-0000-4000-8000-000000000099.csv',
-    )
+    expect(result.filename).toBe('soc-ai-search.csv')
     expect(result.truncated).toBe(false)
   })
 

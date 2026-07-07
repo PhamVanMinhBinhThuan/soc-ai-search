@@ -25,7 +25,7 @@ function sanitizeFilename(value: string) {
 
   return filename.toLowerCase().endsWith('.csv')
     ? filename
-    : `${filename || 'soc-search-export'}.csv`
+    : `${filename || 'soc-ai-search'}.csv`
 }
 
 function decodeFilenameStar(value: string) {
@@ -37,10 +37,7 @@ function decodeFilenameStar(value: string) {
   }
 }
 
-function filenameFromDisposition(
-  disposition: string | null,
-  queryId: string,
-) {
+function filenameFromDisposition(disposition: string | null) {
   if (disposition) {
     const filenameStar = disposition.match(
       /filename\*\s*=\s*([^;]+)/i,
@@ -60,7 +57,7 @@ function filenameFromDisposition(
     }
   }
 
-  return `soc-search-${queryId}.csv`
+  return `soc-ai-search.csv`
 }
 
 export async function exportSearchCsv(
@@ -115,10 +112,7 @@ export async function exportSearchCsv(
 
   return {
     blob: await response.blob(),
-    filename: filenameFromDisposition(
-      response.headers.get('content-disposition'),
-      queryId,
-    ),
+    filename: filenameFromDisposition(response.headers.get('content-disposition')),
     truncated:
       response.headers.get('x-export-truncated')?.toLowerCase() ===
       'true',

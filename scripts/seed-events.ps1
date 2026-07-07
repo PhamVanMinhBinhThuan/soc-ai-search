@@ -496,7 +496,7 @@ if ($GenerateOnly) {
     $writer = [System.IO.StreamWriter]::new($resolvedOutputPath, $false, [System.Text.UTF8Encoding]::new($false))
     try {
         for ($i = 1; $i -le $Count; $i++) {
-            $eventId = "seed-$Seed-$i"
+            $eventId = [System.Guid]::NewGuid().ToString()
             $event = New-SyntheticEvent -Number $i -BaseTime $baseTime -Random $random
             Add-ScenarioCounters -Counters $counters -Event $event -BaseTime $baseTime
 
@@ -583,7 +583,7 @@ $builder = [System.Text.StringBuilder]::new()
 $batchCount = 0
 
 for ($i = 1; $i -le $Count; $i++) {
-    $eventId = "seed-$Seed-$i"
+    $eventId = [System.Guid]::NewGuid().ToString()
     $event = New-SyntheticEvent -Number $i -BaseTime $baseTime -Random $random
     Add-ScenarioCounters -Counters $counters -Event $event -BaseTime $baseTime
 
