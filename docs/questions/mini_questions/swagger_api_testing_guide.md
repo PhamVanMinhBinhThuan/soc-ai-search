@@ -1,66 +1,463 @@
-# Hướng Dẫn Test API Qua Swagger UI
+# Swagger API Testing Guide
 
-Tài liệu này hướng dẫn cách kiểm thử trực tiếp các API quan trọng của hệ thống bằng công cụ Swagger UI, giúp bạn dễ dàng demo cho hội đồng thấy hệ thống backend hoạt động độc lập và hoàn chỉnh như thế nào.
+Tài liệu này dùng để test nhanh các API quan trọng của SOC AI Search bằng Swagger UI.
 
-## 1. Cách Lấy Token (Authentication Token)
-Hệ thống sử dụng Keycloak để bảo mật API. Để gọi API trên Swagger, bạn cần có một `access_token` hợp lệ. Cách dễ nhất để lấy token là thông qua giao diện Web Frontend:
+## 1. Mở Swagger UI
 
-1. Mở trang web ứng dụng của bạn (VD: `http://localhost:3000` hoặc domain thật).
-2. Đăng nhập bằng tài khoản **Analyst** hoặc **Admin**.
-3. Nhấn phím **F12** để mở Developer Tools của trình duyệt.
-4. Chuyển sang tab **Network** (Mạng) và thử thực hiện một thao tác bất kỳ (như gõ một câu tìm kiếm).
-5. Bấm vào một Request gửi đi (ví dụ request `/api/v1/search/query`).
-6. Tìm mục **Request Headers**, bạn sẽ thấy dòng:
-   `Authorization: Bearer eyJhbGciOiJSUzI1Ni...`
-7. Hãy copy toàn bộ đoạn mã dài ngoằng đằng sau chữ `Bearer ` (Bắt đầu từ chữ `ey...`). Đây chính là token của bạn.
+Local:
 
-## 2. Xác Thực Trên Swagger UI
-1. Truy cập vào trang Swagger UI của Backend (VD: `http://localhost:8080/swagger-ui/index.html` hoặc link API public của bạn).
-2. Tìm và bấm vào nút **Authorize** (biểu tượng ổ khóa) ở góc phải trên cùng.
-3. Dán (Paste) đoạn token vừa copy ở Bước 1 vào ô trống. *(Lưu ý: Thường Swagger chỉ cần dán token, nhưng nếu báo lỗi, hãy thử gõ chữ `Bearer ` rồi dán khoảng trắng và token vào)*.
-4. Bấm nút **Authorize** → **Close**. Giờ thì toàn bộ các API bên dưới đã được cấp quyền của bạn!
+```text
+http://localhost:8080/swagger-ui.html
+```
 
----
+Public domain:
 
-## 3. Các API Quan Trọng Nên Test Demo
+```text
+https://api.soc-ai-search.app/swagger-ui.html
+```
 
-Dưới đây là 3 API quan trọng nhất thể hiện rõ nghiệp vụ của hệ thống:
+Nếu backend bật Keycloak auth, cần bấm **Authorize** trong Swagger và nhập access token.
 
-### API 1: Truy vấn ngôn ngữ tự nhiên (Natural Language Search)
-- **Endpoint:** `POST /api/v1/search/query`
-- **Mục đích:** Gửi câu hỏi vào và xem AI phân tích, Backend trả về kết quả.
-- **Cách test:**
-  1. Bấm vào API `POST /api/v1/search/query` → Chọn **Try it out**.
-  2. Điền JSON payload vào khung Request body:
-     ```json
-     {
-       "question": "Show me failed login attempts from China in the last 24h",
-       "use_mock_llm": false 
-     }
-     ```
-  3. Bấm **Execute**.
-- **Kết quả kỳ vọng:** Kéo xuống phần Response, bạn sẽ thấy JSON trả về gồm 3 phần cực kỳ rõ ràng để giải thích cho hội đồng:
-  - `"search_plan"`: JSON do AI sinh ra.
-  - `"generated_dsl"`: Câu lệnh Elastic mà Backend tự dịch.
-  - `"events"`: Danh sách kết quả lấy từ Database.
+## 2. Lấy access token để test API protected
 
-### API 2: Lấy lịch sử điều tra (Audit Logs / History)
-- **Endpoint:** `GET /api/v1/search/history`
-- **Mục đích:** Lấy lịch sử những gì user đã query.
-- **Cách test:**
-  1. Bấm vào `GET /api/v1/search/history` → Chọn **Try it out**.
-  2. Điền thông số phân trang (ví dụ `page = 0`, `size = 10`).
-  3. Bấm **Execute**.
-- **Kết quả kỳ vọng:** Danh sách các query đã được lưu lại trong PostgreSQL. Hội đồng sẽ thấy các record kèm thời gian và thông tin user, chứng minh hệ thống có tính năng Audit chuẩn xác. Nhớ copy một cái `id` trong danh sách này để test API số 3 nhé.
+Cách đơn giản:
 
-### API 3: Xuất File CSV (Export) an toàn
-- **Endpoint:** `GET /api/v1/search/export/{queryId}`
-- **Mục đích:** Export dữ liệu an toàn dựa trên ID truy vấn, thay vì gửi câu DSL từ Frontend (Chống hack).
-- **Cách test:**
-  1. Bấm vào `GET /api/v1/search/export/{queryId}` → Chọn **Try it out**.
-  2. Ở tham số `queryId`, dán vào cái `id` (chuỗi UUID) mà bạn vừa copy ở API thứ 2.
-  3. Bấm **Execute**.
-- **Kết quả kỳ vọng:** Swagger sẽ trả về một Response báo file đang được download (Media type: `text/csv`). Việc chỉ truyền `queryId` chứng minh hệ thống bắt Backend phải tự động móc (replay) lại SearchPlan cũ để đảm bảo an toàn tuyệt đối, chứ không phụ thuộc dữ liệu từ Client gửi lên.
+1. Đăng nhập web frontend.
+2. Mở DevTools bằng `F12`.
+3. Vào tab **Network**.
+4. Thực hiện một request bất kỳ, ví dụ search.
+5. Chọn request gửi đến API.
+6. Copy header:
 
----
-*Mẹo khi Demo: Nếu hội đồng muốn kiểm chứng xem hệ thống có chống AI bậy bạ không, hãy thử nhét các mã độc SQL Injection vào ô "question" ở API số 1. API sẽ vẫn chạy mượt mà và trả về "Không có kết quả" do cơ chế Validate và Elastic Client đã xử lý escape ký tự.*
+```text
+Authorization: Bearer <access_token>
+```
+
+Trong Swagger, bấm **Authorize** rồi dán token. Nếu Swagger yêu cầu đầy đủ scheme thì dán cả:
+
+```text
+Bearer <access_token>
+```
+
+## 3. Natural Language Search
+
+Endpoint đúng hiện tại:
+
+```http
+POST /api/v1/search
+```
+
+Không có endpoint `POST /api/v1/search/query`.
+
+Mục đích:
+
+- Nhận câu hỏi tự nhiên.
+- Gọi LLM sinh `SearchPlan`.
+- Backend parse, validate, compile DSL.
+- Query Elasticsearch.
+- Lưu history/audit.
+
+Payload mẫu:
+
+```json
+{
+  "question": "Show failed login attempts from China in the last 24h",
+  "page": 0,
+  "size": 10
+}
+```
+
+Payload tiếng Việt:
+
+```json
+{
+  "question": "Số event theo giờ trong 24h qua",
+  "page": 0,
+  "size": 10
+}
+```
+
+Payload top N:
+
+```json
+{
+  "question": "Top 5 IP có nhiều event nhất trong 30 ngày qua",
+  "page": 0,
+  "size": 10
+}
+```
+
+Payload có audit question tùy chọn:
+
+```json
+{
+  "question": "Show account lockout events for admin or vpn.user in the last 2 days",
+  "audit_question": "[AI Corrected] Original question: account lockout | Feedback: include admin and vpn.user",
+  "page": 0,
+  "size": 10
+}
+```
+
+Kết quả cần quan sát:
+
+- `query_id`
+- `validated_search_plan`
+- `generated_dsl`
+- `total`
+- `events` hoặc `aggregation`
+- `summary`
+- `summary_source`
+
+## 4. Execute SearchPlan
+
+Endpoint:
+
+```http
+POST /api/v1/search/plan
+```
+
+Query params quan trọng:
+
+| Param | Ý nghĩa |
+|---|---|
+| `include_summary` | `true` thì backend sinh AI summary; `false` thì không gọi summary. |
+| `audit` | `true` thì lưu history/audit; `false` thì không lưu. |
+| `summary_question` | Câu hỏi dùng làm context cho summary và audit. |
+
+Ví dụ chạy SearchPlan search:
+
+```json
+{
+  "mode": "search",
+  "filters": {
+    "timestamp": { "from": "now-24h", "to": "now" },
+    "event_type": ["failed_login"],
+    "country_code": ["CN"]
+  },
+  "aggregation": null,
+  "message_query": null,
+  "sort": [
+    { "field": "timestamp", "order": "desc" }
+  ],
+  "page": 0,
+  "size": 10
+}
+```
+
+Gợi ý query params khi test:
+
+```text
+include_summary=true
+audit=true
+summary_question=[Edited SearchPlan] Original question: Show failed login attempts from China in the last 24h
+```
+
+Ví dụ filter/sort không gọi summary và không cần lưu audit:
+
+```text
+include_summary=false
+audit=false
+```
+
+Ví dụ aggregation top N:
+
+```json
+{
+  "mode": "aggregation",
+  "filters": {
+    "timestamp": { "from": "now-30d", "to": "now" }
+  },
+  "aggregation": {
+    "type": "top_n",
+    "field": "ip",
+    "top_n": 5,
+    "interval": null,
+    "order_by": "value",
+    "order": "desc"
+  },
+  "message_query": null,
+  "sort": null,
+  "page": 0,
+  "size": 10
+}
+```
+
+Ví dụ aggregation time-series:
+
+```json
+{
+  "mode": "aggregation",
+  "filters": {
+    "timestamp": { "from": "now-24h", "to": "now" }
+  },
+  "aggregation": {
+    "type": "date_histogram",
+    "field": null,
+    "top_n": null,
+    "interval": "hour",
+    "order_by": null,
+    "order": null
+  },
+  "message_query": null,
+  "sort": null,
+  "page": 0,
+  "size": 10
+}
+```
+
+## 5. Search History / Investigations
+
+Endpoint:
+
+```http
+GET /api/v1/search/history
+```
+
+Quyền:
+
+- `SOC_ANALYST`
+- `SOC_ADMIN`
+
+Params mẫu:
+
+```text
+page=0
+size=10
+question=failed login
+mode=search
+status=SUCCESS
+pinned=true
+sort=created_at,desc
+```
+
+Ý nghĩa:
+
+- Lấy history của user hiện tại.
+- Hỗ trợ search theo question.
+- Có thể lọc theo pinned, mode, status, thời gian.
+
+Lấy chi tiết một query:
+
+```http
+GET /api/v1/search/history/{queryId}
+```
+
+Pin/unpin query:
+
+```http
+PATCH /api/v1/search/history/{queryId}/pin
+```
+
+Body:
+
+```json
+{
+  "pinned": true
+}
+```
+
+## 6. System Audit Logs
+
+Endpoint:
+
+```http
+GET /api/v1/audit-logs
+```
+
+Quyền:
+
+- `SOC_ADMIN`
+
+Params mẫu:
+
+```text
+page=0
+size=10
+question=account lockout
+identity=admin
+mode=aggregation
+status=SUCCESS
+sort=created_at,desc
+```
+
+Ý nghĩa:
+
+- Admin xem audit toàn hệ thống.
+- Search question và user identity tách riêng.
+- Hỗ trợ filter mode/status/time range.
+
+Export audit CSV:
+
+```http
+GET /api/v1/audit-logs/export
+```
+
+Params export dùng giống filter audit. Nếu không truyền filter thì export toàn bộ audit logs trong giới hạn backend.
+
+## 7. CSV Export kết quả query
+
+Endpoint:
+
+```http
+GET /api/v1/search/{queryId}/export.csv
+```
+
+Quyền:
+
+- `SOC_ANALYST`
+- `SOC_ADMIN`
+
+Cách test:
+
+1. Gọi `GET /api/v1/search/history`.
+2. Copy `query_id` của một record.
+3. Gọi `GET /api/v1/search/{queryId}/export.csv`.
+
+Ý nghĩa bảo mật:
+
+- Frontend chỉ gửi `query_id`.
+- Backend lấy SearchPlan đã lưu trong PostgreSQL.
+- Backend validate/compile lại rồi query Elasticsearch.
+- Client không được gửi DSL tự do để export.
+
+## 8. Correct or Refine Query
+
+Endpoint:
+
+```http
+POST /api/v1/search/refine
+```
+
+Mục đích:
+
+- AI viết lại câu hỏi dựa trên feedback của user.
+- Endpoint này không chạy search và không ghi audit.
+
+Payload mẫu:
+
+```json
+{
+  "original_question": "Show failed login events",
+  "current_question": "Show failed login events",
+  "current_search_plan": {
+    "mode": "search",
+    "filters": {
+      "timestamp": { "from": "now-24h", "to": "now" },
+      "event_type": ["failed_login"]
+    },
+    "aggregation": null,
+    "message_query": null,
+    "sort": [
+      { "field": "timestamp", "order": "desc" }
+    ],
+    "page": 0,
+    "size": 10
+  },
+  "refinement": "Limit to China and last 7 days"
+}
+```
+
+Kết quả mong đợi:
+
+- API trả về câu hỏi tự nhiên đã được refine.
+- Frontend dùng câu hỏi mới để chạy lại `/api/v1/search`.
+
+## 9. AI Follow-up Suggestions
+
+Endpoint:
+
+```http
+POST /api/v1/suggestions/follow-up
+```
+
+Mục đích:
+
+- Sinh gợi ý câu hỏi điều tra tiếp theo.
+- Không chạy search.
+- Không ghi audit.
+
+Payload mẫu cho search result:
+
+```json
+{
+  "question": "Show failed login attempts from China in the last 24h",
+  "search_plan": {
+    "mode": "search",
+    "filters": {
+      "timestamp": { "from": "now-24h", "to": "now" },
+      "event_type": ["failed_login"],
+      "country_code": ["CN"]
+    },
+    "aggregation": null,
+    "message_query": null,
+    "sort": [
+      { "field": "timestamp", "order": "desc" }
+    ],
+    "page": 0,
+    "size": 10
+  },
+  "result_count": 180,
+  "mode": "search",
+  "sample_events": [
+    {
+      "event_type": "failed_login",
+      "severity": "high",
+      "user": "admin",
+      "host": "vpn-gw-01",
+      "ip": "203.0.113.45",
+      "country_code": "CN"
+    }
+  ],
+  "aggregation_buckets": []
+}
+```
+
+Payload mẫu cho aggregation:
+
+```json
+{
+  "question": "Top 5 IP có nhiều event nhất trong 30 ngày qua",
+  "search_plan": {
+    "mode": "aggregation",
+    "filters": {
+      "timestamp": { "from": "now-30d", "to": "now" }
+    },
+    "aggregation": {
+      "type": "top_n",
+      "field": "ip",
+      "top_n": 5,
+      "interval": null,
+      "order_by": "value",
+      "order": "desc"
+    },
+    "message_query": null,
+    "sort": null,
+    "page": 0,
+    "size": 10
+  },
+  "result_count": 5,
+  "mode": "aggregation",
+  "sample_events": [],
+  "aggregation_buckets": [
+    { "key": "203.0.113.45", "value": 1599 },
+    { "key": "10.10.1.15", "value": 1589 }
+  ]
+}
+```
+
+## 10. Health Check
+
+Endpoint:
+
+```http
+GET /api/v1/health/live
+```
+
+Mục đích:
+
+- Kiểm tra backend còn sống.
+- Dùng trong smoke test sau deploy.
+
+## Câu trả lời ngắn khi bảo vệ
+
+Swagger giúp em test backend độc lập với UI. API chính là `POST /api/v1/search` cho câu hỏi tự nhiên và `POST /api/v1/search/plan` cho SearchPlan đã có. Các API protected dùng JWT từ Keycloak. Export CSV không nhận DSL từ client mà chỉ nhận `query_id`, sau đó backend replay SearchPlan đã lưu để đảm bảo an toàn.
