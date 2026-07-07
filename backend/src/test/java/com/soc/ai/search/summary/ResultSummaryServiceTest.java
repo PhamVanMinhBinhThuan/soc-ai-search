@@ -20,6 +20,7 @@ import com.soc.ai.search.search.execution.ChartMetadata;
 import com.soc.ai.search.search.execution.ChartType;
 import com.soc.ai.search.search.execution.SearchEvent;
 import com.soc.ai.search.search.execution.SearchPlanSearchResponse;
+import com.soc.ai.search.search.plan.AggregationPlan;
 import com.soc.ai.search.search.plan.AggregationType;
 import com.soc.ai.search.search.plan.SearchFilters;
 import com.soc.ai.search.search.plan.SearchMode;
@@ -82,7 +83,7 @@ class ResultSummaryServiceTest {
                 "gemini-test",
                 3));
 
-        var result = service().summarizeAggregation("top ip", aggregationResponse(true));
+        var result = service().summarizeAggregation("top ip", aggregationPlan(), aggregationResponse(true));
 
         assertThat(result.source()).isEqualTo(SummarySource.LLM);
         verify(queryService, never()).load(any());
@@ -91,7 +92,7 @@ class ResultSummaryServiceTest {
 
     @Test
     void emptyAggregationUsesFallbackWithoutCallingLlm() {
-        var result = service().summarizeAggregation("top ip", aggregationResponse(false));
+        var result = service().summarizeAggregation("top ip", aggregationPlan(), aggregationResponse(false));
 
         assertThat(result.source()).isEqualTo(SummarySource.FALLBACK);
         assertThat(result.summary()).contains("No aggregation buckets");
@@ -140,6 +141,7 @@ class ResultSummaryServiceTest {
                 new SummaryPromptBuilder(),
                 new SummaryTextValidator(),
                 new DeterministicSummaryGenerator(),
+                new SummaryLanguageDetector(),
                 llmClient);
     }
 
@@ -179,6 +181,16 @@ class ResultSummaryServiceTest {
         return new SearchPlan(
                 SearchMode.SEARCH,
                 new SearchFilters(new TimeRange("now-24h", "now"), null, null, null, null, null, null),
+                0,
+                5);
+    }
+
+    private SearchPlan aggregationPlan() {
+        return new SearchPlan(
+                SearchMode.AGGREGATION,
+                new SearchFilters(new TimeRange("now-24h", "now"), null, null, null, null, null, null, null),
+                new AggregationPlan(AggregationType.TOP_N, "ip", 5, null),
+                null,
                 0,
                 5);
     }

@@ -82,6 +82,7 @@ public class NaturalLanguageSearchService {
                 var aggregationResponse = searchPlanExecutor.aggregate(searchPlan);
                 var summaryResult = resultSummaryService.summarizeAggregation(
                         request.question(),
+                        searchPlan,
                         aggregationResponse);
                 var response = aggregationResponse(
                         queryId,

@@ -12,7 +12,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.soc.ai.search.search.execution.AggregationResultItem;
 import com.soc.ai.search.search.execution.AggregationSearchResponse;
 import com.soc.ai.search.search.execution.SearchEvent;
+import com.soc.ai.search.search.plan.AggregationPlan;
+import com.soc.ai.search.search.plan.AggregationType;
+import com.soc.ai.search.search.plan.SearchFilters;
 import com.soc.ai.search.search.plan.SearchMode;
+import com.soc.ai.search.search.plan.SearchPlan;
+import com.soc.ai.search.search.plan.SortPlan;
+import com.soc.ai.search.search.plan.TimeRange;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -32,8 +38,10 @@ public class SummaryPayloadBuilder {
         this.objectMapper = objectMapper;
     }
 
-    public SummaryPayload search(long total, SearchSummaryData data) {
+    public SummaryPayload search(SummaryLanguage language, SearchPlan plan, long total, SearchSummaryData data) {
         return fit(new SummaryPayload(
+                language,
+                queryContext(plan),
                 SearchMode.SEARCH,
                 total,
                 limitBuckets(data.topUsers(), 5),
@@ -43,14 +51,17 @@ public class SummaryPayloadBuilder {
                 sampleEvents(data.sampleEvents()),
                 null,
                 null,
+                null,
                 null));
     }
 
-    public SummaryPayload searchFallback(long total, List<SearchEvent> pageEvents) {
+    public SummaryPayload searchFallback(SummaryLanguage language, SearchPlan plan, long total, List<SearchEvent> pageEvents) {
         var samples = pageEvents == null ? List.<SearchEvent>of() : pageEvents.stream()
                 .limit(MAX_SAMPLE_EVENTS)
                 .toList();
         return fit(new SummaryPayload(
+                language,
+                queryContext(plan),
                 SearchMode.SEARCH,
                 total,
                 counts(samples, SearchEvent::user),
@@ -60,19 +71,25 @@ public class SummaryPayloadBuilder {
                 sampleEvents(samples),
                 null,
                 null,
+                null,
                 null));
     }
 
-    public SummaryPayload aggregation(AggregationSearchResponse response) {
-        var results = response.aggregationResults() == null
+    public SummaryPayload aggregation(SummaryLanguage language, SearchPlan plan, AggregationSearchResponse response) {
+        var allResults = response.aggregationResults() == null
                 ? List.<AggregationResultItem>of()
-                : response.aggregationResults().stream()
+                : response.aggregationResults();
+        var results = response.aggregationType() == AggregationType.DATE_HISTOGRAM
+                ? null
+                : allResults.stream()
                         .limit(MAX_AGGREGATION_RESULTS)
                         .map(item -> new AggregationResultItem(
                                 sanitizeAndLimit(item.key(), MAX_VALUE_LENGTH),
                                 item.value()))
                         .toList();
         return fit(new SummaryPayload(
+                language,
+                queryContext(plan),
                 SearchMode.AGGREGATION,
                 response.total(),
                 null,
@@ -82,6 +99,7 @@ public class SummaryPayloadBuilder {
                 null,
                 response.aggregationType(),
                 response.chartMetadata(),
+                aggregationStats(allResults),
                 results));
     }
 
@@ -98,7 +116,7 @@ public class SummaryPayloadBuilder {
     }
 
     private SummaryPayload fit(SummaryPayload payload) {
-        var samples = mutable(payload.sampleEvents());
+        var samples = mutable(payload.recentSampleEvents());
         var aggregationResults = mutable(payload.aggregationResults());
         var topUsers = mutable(payload.topUsers());
         var topHosts = mutable(payload.topHosts());
@@ -120,11 +138,25 @@ public class SummaryPayloadBuilder {
             } else if (!severities.isEmpty()) {
                 severities.remove(severities.size() - 1);
             } else {
-                return new SummaryPayload(payload.mode(), payload.total(), null, null, null, null, null,
-                        payload.aggregationType(), payload.chartMetadata(), null);
+                return new SummaryPayload(
+                        payload.outputLanguage(),
+                        payload.queryContext(),
+                        payload.mode(),
+                        payload.total(),
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        payload.aggregationType(),
+                        payload.chartMetadata(),
+                        payload.aggregationStats(),
+                        null);
             }
 
             candidate = new SummaryPayload(
+                    payload.outputLanguage(),
+                    payload.queryContext(),
                     payload.mode(),
                     payload.total(),
                     nullableCopy(topUsers),
@@ -134,9 +166,81 @@ public class SummaryPayloadBuilder {
                     nullableCopy(samples),
                     payload.aggregationType(),
                     payload.chartMetadata(),
+                    payload.aggregationStats(),
                     nullableCopy(aggregationResults));
         }
         return candidate;
+    }
+
+    private SummaryQueryContext queryContext(SearchPlan plan) {
+        if (plan == null) {
+            return null;
+        }
+        SearchFilters filters = plan.filters();
+        TimeRange timestamp = filters == null ? null : filters.timestamp();
+        AggregationPlan aggregation = plan.aggregation();
+        SortPlan sort = plan.sort() == null || plan.sort().isEmpty() ? null : plan.sort().get(0);
+
+        return new SummaryQueryContext(
+                plan.mode() == null ? null : plan.mode().jsonValue(),
+                timestamp == null ? null : timestamp.from(),
+                timestamp == null ? null : timestamp.to(),
+                filters == null ? null : limitStrings(filters.source(), 10),
+                filters == null ? null : limitStrings(filters.severity(), 10),
+                filters == null ? null : limitStrings(filters.eventType(), 10),
+                filters == null ? null : limitStrings(filters.user(), 10),
+                filters == null ? null : limitStrings(filters.host(), 10),
+                filters == null ? null : limitStrings(filters.ip(), 10),
+                filters == null ? null : limitStrings(filters.countryCode(), 10),
+                sanitizeAndLimit(plan.messageQuery(), MAX_VALUE_LENGTH),
+                sort == null ? null : sanitizeAndLimit(sort.field(), MAX_VALUE_LENGTH),
+                sort == null || sort.order() == null ? null : sort.order().jsonValue(),
+                aggregation == null || aggregation.type() == null ? null : aggregation.type().jsonValue(),
+                aggregation == null ? null : sanitizeAndLimit(aggregation.field(), MAX_VALUE_LENGTH),
+                aggregation == null ? null : aggregation.topN(),
+                aggregation == null || aggregation.interval() == null ? null : aggregation.interval().jsonValue(),
+                aggregation == null || aggregation.orderBy() == null ? null : aggregation.orderBy().jsonValue(),
+                aggregation == null || aggregation.order() == null ? null : aggregation.order().jsonValue());
+    }
+
+    private List<String> limitStrings(List<String> values, int limit) {
+        if (values == null || values.isEmpty()) {
+            return null;
+        }
+        return values.stream()
+                .limit(limit)
+                .map(value -> sanitizeAndLimit(value, MAX_VALUE_LENGTH))
+                .toList();
+    }
+
+    private SummaryAggregationStats aggregationStats(List<AggregationResultItem> results) {
+        if (results == null || results.isEmpty()) {
+            return null;
+        }
+        long sum = 0;
+        AggregationResultItem max = null;
+        AggregationResultItem min = null;
+        for (var result : results) {
+            sum += result.value();
+            if (max == null || result.value() > max.value()) {
+                max = result;
+            }
+            if (min == null || result.value() < min.value()) {
+                min = result;
+            }
+        }
+        return new SummaryAggregationStats(
+                results.size(),
+                sum,
+                bucket(max),
+                bucket(min));
+    }
+
+    private SummaryBucket bucket(AggregationResultItem item) {
+        if (item == null) {
+            return null;
+        }
+        return new SummaryBucket(sanitizeAndLimit(item.key(), MAX_VALUE_LENGTH), item.value());
     }
 
     private List<SummarySampleEvent> sampleEvents(List<SearchEvent> events) {

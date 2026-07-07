@@ -231,14 +231,14 @@ class SearchControllerTest {
                 .andExpect(jsonPath("$.chart_metadata.chart_type").value("NUMBER"));
 
         verify(searchPlanExecutor).execute(any(SearchPlan.class));
-        verify(resultSummaryService, never()).summarizeAggregation(any(), any());
+        verify(resultSummaryService, never()).summarizeAggregation(any(), any(), any());
     }
 
     @Test
     void aggregationSearchPlanIncludesSummaryWhenRequested() throws Exception {
         when(queryIdGenerator.generate()).thenReturn(QUERY_ID);
         when(searchPlanExecutor.execute(any(SearchPlan.class))).thenReturn(aggregationResponse());
-        when(resultSummaryService.summarizeAggregation(any(), any()))
+        when(resultSummaryService.summarizeAggregation(any(), any(), any()))
                 .thenReturn(new SummaryResult("Aggregation summary sentence. Second sentence. Third sentence.",
                         SummarySource.LLM,
                         6));
@@ -256,7 +256,10 @@ class SearchControllerTest {
                 .andExpect(jsonPath("$.summary").value("Aggregation summary sentence. Second sentence. Third sentence."))
                 .andExpect(jsonPath("$.summary_source").value("llm"));
 
-        verify(resultSummaryService).summarizeAggregation(eq("Top 5 IP có nhiều event nhất tháng này"), any());
+        verify(resultSummaryService).summarizeAggregation(
+                eq("Top 5 IP có nhiều event nhất tháng này"),
+                any(),
+                any());
     }
 
     private SearchPlanSearchResponse responseWithOneEvent() {

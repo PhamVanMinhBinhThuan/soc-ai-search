@@ -9,11 +9,15 @@ import org.springframework.stereotype.Component;
 public class DeterministicSummaryGenerator {
 
     public String generate(SummaryPayload payload) {
-        return generate(payload, null);
+        return generate(payload, SummaryLanguage.EN);
     }
 
     public String generate(SummaryPayload payload, String originalQuestion) {
-        if (isVietnamese(originalQuestion)) {
+        return generate(payload, isVietnamese(originalQuestion) ? SummaryLanguage.VI : SummaryLanguage.EN);
+    }
+
+    public String generate(SummaryPayload payload, SummaryLanguage language) {
+        if (language == SummaryLanguage.VI) {
             return vietnamese(payload);
         }
         if (payload.mode() == com.soc.ai.search.search.plan.SearchMode.AGGREGATION) {

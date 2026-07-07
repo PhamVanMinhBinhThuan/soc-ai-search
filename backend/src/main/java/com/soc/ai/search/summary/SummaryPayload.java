@@ -13,14 +13,17 @@ import com.soc.ai.search.search.plan.SearchMode;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public record SummaryPayload(
+        SummaryLanguage outputLanguage,
+        SummaryQueryContext queryContext,
         SearchMode mode,
         long total,
         List<SummaryBucket> topUsers,
         List<SummaryBucket> topHosts,
         List<SummaryBucket> topIps,
         List<SummaryBucket> severityDistribution,
-        List<SummarySampleEvent> sampleEvents,
+        List<SummarySampleEvent> recentSampleEvents,
         AggregationType aggregationType,
         ChartMetadata chartMetadata,
+        SummaryAggregationStats aggregationStats,
         List<AggregationResultItem> aggregationResults) {
 }

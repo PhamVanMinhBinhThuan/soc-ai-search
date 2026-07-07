@@ -11,8 +11,15 @@ import com.soc.ai.search.search.execution.AggregationSearchResponse;
 import com.soc.ai.search.search.execution.ChartMetadata;
 import com.soc.ai.search.search.execution.ChartType;
 import com.soc.ai.search.search.execution.SearchEvent;
+import com.soc.ai.search.search.plan.AggregationPlan;
 import com.soc.ai.search.search.plan.AggregationType;
+import com.soc.ai.search.search.plan.HistogramInterval;
+import com.soc.ai.search.search.plan.SearchFilters;
 import com.soc.ai.search.search.plan.SearchMode;
+import com.soc.ai.search.search.plan.SearchPlan;
+import com.soc.ai.search.search.plan.SortOrder;
+import com.soc.ai.search.search.plan.SortPlan;
+import com.soc.ai.search.search.plan.TimeRange;
 import org.junit.jupiter.api.Test;
 
 class SummaryPayloadBuilderTest {
@@ -31,17 +38,22 @@ class SummaryPayloadBuilderTest {
                 List.of(new SummaryBucket("high", 30)),
                 events);
 
-        var payload = builder.search(100, data);
+        var payload = builder.search(SummaryLanguage.EN, searchPlan(), 100, data);
         var json = builder.toJson(payload);
 
-        assertThat(payload.sampleEvents()).hasSize(5);
+        assertThat(payload.outputLanguage()).isEqualTo(SummaryLanguage.EN);
+        assertThat(payload.queryContext().timeFrom()).isEqualTo("now-24h");
+        assertThat(payload.queryContext().eventType()).containsExactly("failed_login");
+        assertThat(payload.queryContext().sortField()).isEqualTo("timestamp");
+        assertThat(payload.queryContext().sortOrder()).isEqualTo("desc");
+        assertThat(payload.recentSampleEvents()).hasSize(5);
         assertThat(json.length()).isLessThanOrEqualTo(SummaryPayloadBuilder.MAX_PAYLOAD_CHARACTERS);
         assertThat(json).contains("token=[REDACTED]");
         assertThat(json).doesNotContain("super-secret-value", "\"raw\"");
     }
 
     @Test
-    void aggregationPayloadUsesOnlyFirstTenBuckets() {
+    void topNAggregationKeepsBoundedBucketsAndComputesStatsFromAllBuckets() {
         var results = IntStream.range(0, 20)
                 .mapToObj(index -> new AggregationResultItem("bucket-" + index, 100 - index))
                 .toList();
@@ -54,13 +66,79 @@ class SummaryPayloadBuilderTest {
                 results,
                 new ChartMetadata(ChartType.BAR, "ip", "Count"));
 
-        var payload = builder.aggregation(response);
+        var payload = builder.aggregation(SummaryLanguage.EN, topNPlan(), response);
 
         assertThat(payload.aggregationResults()).hasSize(10);
+        assertThat(payload.aggregationStats().totalBuckets()).isEqualTo(20);
+        assertThat(payload.aggregationStats().sum()).isEqualTo(1810);
+        assertThat(payload.aggregationStats().maxBucket()).isEqualTo(new SummaryBucket("bucket-0", 100));
+        assertThat(payload.aggregationStats().minBucket()).isEqualTo(new SummaryBucket("bucket-19", 81));
         assertThat(payload.topUsers()).isNull();
-        assertThat(payload.sampleEvents()).isNull();
+        assertThat(payload.recentSampleEvents()).isNull();
         assertThat(builder.toJson(payload)).hasSizeLessThanOrEqualTo(
                 SummaryPayloadBuilder.MAX_PAYLOAD_CHARACTERS);
+    }
+
+    @Test
+    void dateHistogramOmitsAggregationResultsAndKeepsStats() {
+        var results = IntStream.range(0, 25)
+                .mapToObj(index -> new AggregationResultItem("2026-07-07T%02d:00:00Z".formatted(index), index))
+                .toList();
+        var response = new AggregationSearchResponse(
+                SearchMode.AGGREGATION,
+                AggregationType.DATE_HISTOGRAM,
+                java.util.Map.of(),
+                300,
+                10,
+                results,
+                new ChartMetadata(ChartType.LINE, "Time", "Event Count"));
+
+        var payload = builder.aggregation(SummaryLanguage.EN, dateHistogramPlan(), response);
+
+        assertThat(payload.aggregationResults()).isNull();
+        assertThat(payload.aggregationStats().totalBuckets()).isEqualTo(25);
+        assertThat(payload.aggregationStats().sum()).isEqualTo(300);
+        assertThat(payload.aggregationStats().maxBucket()).isEqualTo(new SummaryBucket("2026-07-07T24:00:00Z", 24));
+        assertThat(payload.aggregationStats().minBucket()).isEqualTo(new SummaryBucket("2026-07-07T00:00:00Z", 0));
+    }
+
+    private SearchPlan searchPlan() {
+        return new SearchPlan(
+                SearchMode.SEARCH,
+                new SearchFilters(
+                        new TimeRange("now-24h", "now"),
+                        null,
+                        null,
+                        List.of("failed_login"),
+                        List.of("admin"),
+                        null,
+                        null,
+                        List.of("CN")),
+                null,
+                null,
+                List.of(new SortPlan("timestamp", SortOrder.DESC)),
+                0,
+                10);
+    }
+
+    private SearchPlan topNPlan() {
+        return new SearchPlan(
+                SearchMode.AGGREGATION,
+                new SearchFilters(new TimeRange("now-30d", "now"), null, null, null, null, null, null, null),
+                new AggregationPlan(AggregationType.TOP_N, "ip", 5, null),
+                null,
+                0,
+                10);
+    }
+
+    private SearchPlan dateHistogramPlan() {
+        return new SearchPlan(
+                SearchMode.AGGREGATION,
+                new SearchFilters(new TimeRange("now-24h", "now"), null, null, null, null, null, null, null),
+                new AggregationPlan(AggregationType.DATE_HISTOGRAM, null, null, HistogramInterval.HOUR),
+                null,
+                0,
+                10);
     }
 
     private SearchEvent event(int index, String message) {

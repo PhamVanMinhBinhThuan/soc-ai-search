@@ -368,6 +368,7 @@ class NaturalLanguageSearchServiceTest {
                         4));
         when(resultSummaryService.summarizeAggregation(
                 any(String.class),
+                any(SearchPlan.class),
                 any(AggregationSearchResponse.class)))
                 .thenReturn(new SummaryResult(
                         "First aggregation sentence. Second aggregation sentence. Third aggregation sentence.",

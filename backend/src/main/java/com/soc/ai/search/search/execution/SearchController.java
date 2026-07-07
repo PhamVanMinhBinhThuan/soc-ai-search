@@ -87,6 +87,7 @@ public class SearchController {
                 } else {
                     var summary = resultSummaryService.summarizeAggregation(
                             effectiveSummaryQuestion,
+                            searchPlan,
                             aggregationResponse);
                     executionResponse = SearchPlanExecutionResponse.fromAggregation(
                             queryId,

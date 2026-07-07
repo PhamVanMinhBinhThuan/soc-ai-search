@@ -25,9 +25,9 @@ Backend sẽ parse, validate, rồi compile `SearchPlan` thành Elasticsearch DS
 | Trường | Kiểu | Ý nghĩa |
 |---|---|---|
 | `mode` | `"search"` hoặc `"aggregation"` | Chọn chế độ lấy event logs hay thống kê dữ liệu. |
-| `filters` | object | Điều kiện lọc event, ví dụ thời gian, severity, event_type, user, host, IP, country. |
+| `filters` | object | Điều kiện lọc event: thời gian, severity, event_type, user, host, IP, country. |
 | `aggregation` | object hoặc `null` | Kế hoạch thống kê. Chỉ dùng khi `mode = "aggregation"`. |
-| `message_query` | string hoặc `null` | Tìm kiếm text trong trường message. |
+| `message_query` | string hoặc `null` | Tìm kiếm full-text trong trường message. |
 | `sort` | array hoặc `null` | Sắp xếp kết quả search, ví dụ theo `timestamp` hoặc `severity`. |
 | `page` | number | Trang kết quả. Backend/API có thể override khi chạy query. |
 | `size` | number | Số dòng mỗi trang, giới hạn tối đa 100. Backend/API có thể override. |
@@ -58,7 +58,7 @@ Backend sẽ parse, validate, rồi compile `SearchPlan` thành Elasticsearch DS
 | `ip` | array string | Một hoặc nhiều IPv4. |
 | `country_code` | array string | Mã quốc gia ISO-3166 alpha-2, ví dụ `CN`, `VN`, `US`. |
 
-Các field không dùng có thể để `null` hoặc bỏ qua tùy context.
+Field nào không liên quan đến câu hỏi thì có thể để `null` hoặc bỏ qua. Backend chỉ compile các filter có giá trị thật vào Elasticsearch DSL.
 
 ## Aggregation
 
@@ -260,6 +260,135 @@ SearchPlan:
 
 Ý nghĩa: đếm tổng số event critical từ Việt Nam trong 7 ngày gần nhất.
 
+## LLM hiểu SearchPlan bằng cách nào?
+
+LLM không tự biết cấu trúc `SearchPlan` từ database hay từ Elasticsearch. Backend chủ động đưa cấu trúc này vào prompt thông qua:
+
+```text
+backend/src/main/java/com/soc/ai/search/llm/prompt/SearchPlanPromptBuilder.java
+```
+
+Trong `SearchPlanPromptBuilder`, backend tạo system prompt có schema, rule, allowlist và ví dụ. Một số câu quan trọng trong prompt:
+
+```text
+You convert a natural language SOC event search question into one JSON SearchPlan.
+```
+
+Nghĩa là backend giao nhiệm vụ rất rõ: chuyển câu hỏi tự nhiên thành đúng một JSON `SearchPlan`.
+
+```text
+Return exactly one raw JSON object.
+Do not return markdown, code fences, prose, explanations, or comments.
+Do not return Elasticsearch DSL.
+Do not add fields outside the SearchPlan schema.
+```
+
+Các câu này ép LLM không trả lời văn bản dài, không trả markdown, không sinh Elasticsearch DSL và không thêm field ngoài schema.
+
+Prompt cũng đưa thẳng schema mẫu:
+
+```json
+{
+  "mode": "search",
+  "filters": {
+    "timestamp": { "from": "now-24h", "to": "now" },
+    "source": ["windows-auth"],
+    "severity": ["high", "critical"],
+    "event_type": ["failed_login"],
+    "user": ["admin", "vpn.user"],
+    "host": ["host-001"],
+    "ip": ["203.0.113.10"],
+    "country_code": ["CN"]
+  },
+  "message_query": "malware detected",
+  "page": 0,
+  "size": 20
+}
+```
+
+Với aggregation, prompt cũng có schema riêng:
+
+```json
+{
+  "mode": "aggregation",
+  "filters": {
+    "timestamp": { "from": "now-7d", "to": "now" },
+    "event_type": ["failed_login"]
+  },
+  "aggregation": {
+    "type": "group_by",
+    "field": "user",
+    "top_n": 10,
+    "interval": "hour"
+  },
+  "page": 0,
+  "size": 20
+}
+```
+
+Prompt còn liệt kê rule nghiệp vụ:
+
+```text
+Supported modes are "search" and "aggregation".
+type must be one of count, group_by, top_n, date_histogram.
+interval must be one of minute, hour, day.
+date_histogram must include interval and always uses timestamp internally.
+Do not add .keyword to any field.
+```
+
+Để giảm hallucination, prompt cũng đưa allowlist:
+
+```text
+Allowed fields:
+- timestamp.from
+- timestamp.to
+- source
+- severity
+- event_type
+- user
+- host
+- ip
+- country_code
+- message_query
+- aggregation.type
+- aggregation.field
+- aggregation.top_n
+- aggregation.interval
+- page
+- size
+```
+
+Với aggregation field:
+
+```text
+Aggregation field allowlist:
+- source
+- severity
+- event_type
+- user
+- host
+- ip
+- country_code
+```
+
+Prompt còn đưa giá trị demo có thật để LLM dễ sinh đúng dữ liệu mock:
+
+- severity: `low`, `medium`, `high`, `critical`
+- source: `windows-auth`, `vpn`, `firewall`, `edr`, `proxy`, `dns`
+- event_type: `failed_login`, `account_lockout`, `malware_detected`, ...
+- users: `admin`, `vpn.user`, `finance.user`, ...
+- country_code: `VN`, `CN`, `US`, `RU`, `SG`, `DE`
+- IP: `203.0.113.45`, `198.51.100.200`, ...
+
+Ví dụ mapping trong prompt:
+
+```text
+"failed login", "login thất bại", "đăng nhập thất bại" -> event_type ["failed_login"]
+"account lockout", "khóa tài khoản" -> event_type ["account_lockout"]
+```
+
+Vì vậy, LLM sinh được `SearchPlan` là nhờ backend đưa cho nó một hợp đồng đầu ra rất rõ: schema, rule, allowlist, giá trị hợp lệ và ví dụ mapping. Tuy nhiên, output của LLM vẫn được xem là dữ liệu chưa tin cậy. Sau đó backend vẫn phải parse, validate và compile lại trước khi query Elasticsearch.
+
 ## Câu trả lời ngắn khi bảo vệ
 
-`SearchPlan` là contract trung gian giữa ngôn ngữ tự nhiên và Elasticsearch DSL. LLM chỉ sinh SearchPlan theo schema giới hạn. Backend parse, validate, kiểm tra allowlist, rồi compiler mới sinh DSL cuối cùng. Nhờ vậy frontend và LLM không thể gửi DSL tự do để bypass rule bảo mật.
+`SearchPlan` là contract trung gian giữa ngôn ngữ tự nhiên và Elasticsearch DSL. LLM hiểu contract này nhờ prompt do backend tạo ra, trong đó có schema, rule, allowlist và ví dụ. Nhưng backend không tin tuyệt đối vào LLM: mọi SearchPlan đều phải qua parser, validator và compiler trước khi sinh Elasticsearch DSL cuối cùng.
