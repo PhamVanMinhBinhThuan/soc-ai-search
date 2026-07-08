@@ -476,3 +476,23 @@ Hai field này có thể không nằm trong `generated_dsl` trả về UI, nhưn
 ## 12. Câu trả lời ngắn khi bảo vệ
 
 Backend xử lý SearchPlan theo ba lớp bảo vệ. Thứ nhất, `SearchPlanJsonParser` ép output LLM phải là một JSON object thuần, đúng schema và không có field lạ. Thứ hai, `SearchPlanValidator` kiểm tra rule nghiệp vụ như mode, aggregation type, field allowlist, time range và giá trị nguy hiểm. Thứ ba, `SearchPlanCompiler` chỉ compile SearchPlan đã hợp lệ thành Elasticsearch DSL an toàn như `bool.filter`, `range`, `terms`, `match`, `terms aggregation` và `date_histogram`. Nhờ vậy LLM chỉ hỗ trợ hiểu câu hỏi, còn truy vấn cuối cùng luôn do backend kiểm soát.
+
+## Event ID parse, validate và compile
+
+Với `filters.event_id`, pipeline xử lý như sau:
+
+1. **Parse:** JSON parser map `event_id` từ snake_case vào field `eventId` của `SearchFilters`. Field này có thể nhận một UUID hoặc danh sách UUID nhờ deserializer linh hoạt.
+2. **Validate:** `SearchPlanValidator` kiểm tra danh sách không rỗng, từng item không blank, từng item parse được bằng `UUID.fromString(...)`, và tổng số lượng không vượt quá 20.
+3. **Compile:** `SearchPlanCompiler` chuyển `filters.event_id` thành Elasticsearch `terms` query trên field `event_id`.
+
+Ví dụ lỗi bị reject:
+
+```json
+{
+  "filters": {
+    "event_id": ["not-a-uuid"]
+  }
+}
+```
+
+Lý do: `event_id` phải là UUID đầy đủ, không hỗ trợ partial ID, wildcard hoặc regexp.

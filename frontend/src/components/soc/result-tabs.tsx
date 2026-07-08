@@ -70,6 +70,7 @@ const SEARCH_SORT_OPTIONS: {
   { label: "Highest severity first", field: "severity", order: "desc" },
   { label: "Lowest severity first", field: "severity", order: "asc" },
 ];
+const MAX_EVENT_ID_FILTERS = 20;
 
 const AggregationChart = lazy(() =>
   import("@/components/soc/aggregation-chart").then((module) => ({
@@ -507,6 +508,15 @@ function parseEntityInput(value: string) {
   return values.length > 0 ? values : null;
 }
 
+function parseEventIdInput(value: string) {
+  const values = value
+    .split(/[\n,]/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+  return values.length > 0 ? values : null;
+}
+
 function ResultControls({
   mode,
   searchPlan,
@@ -528,6 +538,9 @@ function ResultControls({
   const [eventTypes, setEventTypes] = useState<string[]>(
     currentFilters.event_type ?? [],
   );
+  const [eventId, setEventId] = useState(
+    formatEntityInput(currentFilters.event_id),
+  );
   const [source, setSource] = useState(formatEntityInput(currentFilters.source));
   const [user, setUser] = useState(formatEntityInput(currentFilters.user));
   const [host, setHost] = useState(formatEntityInput(currentFilters.host));
@@ -540,6 +553,9 @@ function ResultControls({
   );
   const [searchSort, setSearchSort] = useState(initialSearchSortValue);
   const [controlsExpanded, setControlsExpanded] = useState(false);
+  const eventIdValues = parseEventIdInput(eventId);
+  const eventIdLimitExceeded =
+    eventIdValues !== null && eventIdValues.length > MAX_EVENT_ID_FILTERS;
 
   if (!onApply || mode !== "search") {
     return null;
@@ -547,6 +563,7 @@ function ResultControls({
 
   const buildCommonFilters = () => ({
     ...(searchPlan.filters ?? {}),
+    event_id: eventIdValues,
     severity: severity.length > 0 ? severity : null,
     event_type: eventTypes.length > 0 ? eventTypes : null,
     source: parseEntityInput(source),
@@ -679,6 +696,23 @@ function ResultControls({
                 placeholder="Message contains"
                 className="rounded-xl border border-cyan-400/20 bg-zinc-950/75 px-3 py-2.5 text-sm outline-none transition placeholder:text-muted-foreground focus:border-cyan-300/60 lg:col-span-2"
               />
+              <div className="lg:col-span-3">
+                <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
+                  Advanced: Event ID
+                </label>
+                <textarea
+                  value={eventId}
+                  onChange={(event) => setEventId(event.target.value)}
+                  placeholder="Paste up to 20 UUIDs, separated by commas"
+                  rows={2}
+                  className="w-full resize-none rounded-xl border border-cyan-400/20 bg-zinc-950/75 px-3 py-2.5 font-mono text-xs outline-none transition placeholder:font-sans placeholder:text-muted-foreground focus:border-cyan-300/60"
+                />
+                {eventIdLimitExceeded ? (
+                  <p className="mt-1 text-xs text-amber-200">
+                    Event ID filter supports at most {MAX_EVENT_ID_FILTERS} values.
+                  </p>
+                ) : null}
+              </div>
             </div>
 
             <div className="mt-4 flex justify-end gap-2">
@@ -688,6 +722,7 @@ function ResultControls({
                 onClick={() => {
                   setSeverity([]);
                   setEventTypes([]);
+                  setEventId("");
                   setSource("");
                   setUser("");
                   setHost("");
@@ -703,6 +738,7 @@ function ResultControls({
                 variant="outline"
                 size="sm"
                 onClick={applySearchControls}
+                disabled={eventIdLimitExceeded}
                 className="border-cyan-300/35 bg-cyan-400/10 text-cyan-100 hover:bg-cyan-400/20"
               >
                 Apply Filters

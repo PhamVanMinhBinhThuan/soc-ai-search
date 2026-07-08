@@ -47,6 +47,54 @@ class ElasticsearchSearchResponseMapperTest {
     }
 
     @Test
+    void prefersSourceEventIdAndFallsBackToElasticsearchId() throws Exception {
+        var response = objectMapper.readTree("""
+                {
+                  "hits": {
+                    "total": { "value": 2, "relation": "eq" },
+                    "hits": [
+                      {
+                        "_id": "legacy-id",
+                        "_source": {
+                          "event_id": "6f1d4c8e-1d93-4a27-9e87-9b7a9e9d8a12",
+                          "timestamp": "2026-06-06T10:00:00Z",
+                          "source": "windows-auth",
+                          "severity": "high",
+                          "event_type": "failed_login",
+                          "user": "admin",
+                          "host": "host-001",
+                          "ip": "203.0.113.10",
+                          "country_code": "CN",
+                          "message": "Failed login attempt from CN"
+                        }
+                      },
+                      {
+                        "_id": "fallback-id",
+                        "_source": {
+                          "timestamp": "2026-06-06T10:01:00Z",
+                          "source": "windows-auth",
+                          "severity": "high",
+                          "event_type": "failed_login",
+                          "user": "admin",
+                          "host": "host-001",
+                          "ip": "203.0.113.10",
+                          "country_code": "CN",
+                          "message": "Failed login attempt from CN"
+                        }
+                      }
+                    ]
+                  }
+                }
+                """);
+
+        var result = mapper.map(response);
+
+        assertThat(result.events())
+                .extracting(SearchEvent::eventId)
+                .containsExactly("6f1d4c8e-1d93-4a27-9e87-9b7a9e9d8a12", "fallback-id");
+    }
+
+    @Test
     void mapsNoResultSearchToEmptyEvents() throws Exception {
         var response = objectMapper.readTree("""
                 {

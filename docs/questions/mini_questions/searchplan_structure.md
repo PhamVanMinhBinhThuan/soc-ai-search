@@ -389,6 +389,119 @@ Ví dụ mapping trong prompt:
 
 Vì vậy, LLM sinh được `SearchPlan` là nhờ backend đưa cho nó một hợp đồng đầu ra rất rõ: schema, rule, allowlist, giá trị hợp lệ và ví dụ mapping. Tuy nhiên, output của LLM vẫn được xem là dữ liệu chưa tin cậy. Sau đó backend vẫn phải parse, validate và compile lại trước khi query Elasticsearch.
 
+## Nếu hội đồng hỏi: "Em làm như thế nào để AI tạo ra đúng cấu trúc SearchPlan?"
+
+Có thể trả lời theo 4 ý chính:
+
+### 1. Backend không để AI tự đoán format
+
+Em không chỉ gửi câu hỏi người dùng thẳng cho AI rồi mong AI tự hiểu. Backend tạo một **system prompt có cấu trúc** trong:
+
+```text
+backend/src/main/java/com/soc/ai/search/llm/prompt/SearchPlanPromptBuilder.java
+```
+
+Prompt giao nhiệm vụ rất rõ:
+
+```text
+You convert a natural language SOC event search question into one JSON SearchPlan.
+```
+
+Nghĩa là AI chỉ có một nhiệm vụ: chuyển câu hỏi tự nhiên thành đúng một JSON `SearchPlan`.
+
+### 2. Prompt định nghĩa rõ output được phép
+
+Trong prompt, backend yêu cầu:
+
+```text
+Return exactly one raw JSON object.
+Do not return markdown, code fences, prose, explanations, or comments.
+Do not return Elasticsearch DSL.
+Do not add fields outside the SearchPlan schema.
+```
+
+Ý nghĩa:
+
+- AI không được trả lời văn bản giải thích.
+- Không được bọc markdown.
+- Không được sinh Elasticsearch DSL.
+- Không được thêm field lạ ngoài schema.
+- Output phải là JSON object thuần để backend parse được.
+
+### 3. Prompt đưa schema, rule, allowlist và giá trị mock
+
+Backend đưa trực tiếp schema mẫu vào prompt, ví dụ:
+
+```json
+{
+  "mode": "search",
+  "filters": {
+    "timestamp": { "from": "now-24h", "to": "now" },
+    "source": ["windows-auth"],
+    "severity": ["high", "critical"],
+    "event_type": ["failed_login"],
+    "user": ["admin", "vpn.user"],
+    "host": ["host-001"],
+    "ip": ["203.0.113.10"],
+    "country_code": ["CN"]
+  },
+  "message_query": "malware detected",
+  "page": 0,
+  "size": 20
+}
+```
+
+Prompt cũng liệt kê:
+
+- `mode` chỉ gồm `search` hoặc `aggregation`.
+- `aggregation.type` chỉ gồm `count`, `group_by`, `top_n`, `date_histogram`.
+- `aggregation.field` chỉ được nằm trong allowlist: `source`, `severity`, `event_type`, `user`, `host`, `ip`, `country_code`.
+- `severity` chỉ gồm `low`, `medium`, `high`, `critical`.
+- `event_type` chỉ gồm các giá trị mock như `failed_login`, `account_lockout`, `malware_detected`, ...
+- `source`, `user`, `host`, `ip`, `country_code` cũng có danh sách demo cụ thể.
+
+Nhờ vậy AI có “khung trả lời” và các giá trị hợp lệ để chọn, thay vì tự bịa field hoặc value.
+
+### 4. Backend vẫn parse, validate và compile lại
+
+Dù prompt đã rất chặt, backend vẫn không tin tuyệt đối vào AI. Sau khi LLM trả về SearchPlan:
+
+```text
+LLM output
+  -> SearchPlanJsonParser parse JSON
+  -> SearchPlanValidator kiểm tra rule nghiệp vụ
+  -> SearchPlanCompiler sinh Elasticsearch DSL
+```
+
+Nếu AI trả markdown, prose, field lạ, time range sai, aggregation sai hoặc DSL trực tiếp thì backend sẽ reject.
+
+Nói ngắn gọn:
+
+> Em làm cho AI sinh đúng SearchPlan bằng cách đưa contract vào prompt: schema, output rules, allowlist, giá trị hợp lệ và ví dụ mapping. Nhưng AI chỉ là bước đề xuất. Backend vẫn parse, validate và compile lại để đảm bảo SearchPlan hợp lệ trước khi query Elasticsearch.
+
 ## Câu trả lời ngắn khi bảo vệ
 
 `SearchPlan` là contract trung gian giữa ngôn ngữ tự nhiên và Elasticsearch DSL. LLM hiểu contract này nhờ prompt do backend tạo ra, trong đó có schema, rule, allowlist và ví dụ. Nhưng backend không tin tuyệt đối vào LLM: mọi SearchPlan đều phải qua parser, validator và compiler trước khi sinh Elasticsearch DSL cuối cùng.
+
+## Event ID filter trong SearchPlan
+
+Hệ thống hiện hỗ trợ thêm `event_id` trong `filters` để tra cứu chính xác một hoặc một vài event cụ thể. `event_id` là danh sách UUID và được giới hạn tối đa 20 giá trị trong một SearchPlan.
+
+Ví dụ:
+
+```json
+{
+  "mode": "search",
+  "filters": {
+    "event_id": ["6f1d4c8e-1d93-4a27-9e87-9b7a9e9d8a12"],
+    "timestamp": { "from": "now-7d", "to": "now" }
+  },
+  "aggregation": null,
+  "message_query": null,
+  "sort": [{ "field": "timestamp", "order": "desc" }],
+  "page": 0,
+  "size": 10
+}
+```
+
+Lý do giới hạn 20 giá trị: `event_id` là định danh chính xác, thường dùng để trace một số event cụ thể chứ không phải để gửi hàng nghìn ID trong một request. Giới hạn này giúp request nhỏ, dễ kiểm soát và tránh lạm dụng query.

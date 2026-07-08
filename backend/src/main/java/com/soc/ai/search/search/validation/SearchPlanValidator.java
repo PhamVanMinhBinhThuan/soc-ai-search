@@ -9,6 +9,7 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.regex.Pattern;
 
 import com.soc.ai.search.search.plan.AggregationPlan;
@@ -28,6 +29,7 @@ public class SearchPlanValidator {
     private static final int MAX_RELATIVE_HOURS = 720;
     private static final int MAX_RELATIVE_DAYS = 90;
     private static final int MAX_ENTITY_FILTER_VALUES = 10;
+    private static final int MAX_EVENT_ID_FILTER_VALUES = 20;
 
     private static final Set<String> AGGREGATION_FIELD_ALLOWLIST = Set.of(
             "source",
@@ -224,6 +226,7 @@ public class SearchPlanValidator {
         }
 
         validateTimeRange(filters.timestamp(), errors);
+        validateEventIds(filters.eventId(), errors);
         validateEntityValues("filters.source", filters.source(), errors);
         rejectDangerousValues("filters.event_type", filters.eventType(), errors);
         validateEntityValues("filters.user", filters.user(), errors);
@@ -360,6 +363,32 @@ public class SearchPlanValidator {
         for (var value : values) {
             if (value != null && !value.isBlank() && !IPV4_PATTERN.matcher(value).matches()) {
                 errors.add("filters.ip: must contain only valid IPv4 addresses");
+            }
+        }
+    }
+
+    private void validateEventIds(List<String> values, List<String> errors) {
+        if (values == null) {
+            return;
+        }
+        if (values.isEmpty()) {
+            errors.add("filters.event_id: must not be empty");
+            return;
+        }
+        if (values.size() > MAX_EVENT_ID_FILTER_VALUES) {
+            errors.add("filters.event_id: must contain at most " + MAX_EVENT_ID_FILTER_VALUES + " values");
+        }
+
+        for (var value : values) {
+            if (value == null || value.isBlank()) {
+                errors.add("filters.event_id: values must not be blank");
+                continue;
+            }
+            rejectDangerousValue("filters.event_id", value, errors);
+            try {
+                UUID.fromString(value.trim());
+            } catch (IllegalArgumentException exception) {
+                errors.add("filters.event_id: values must be valid UUIDs");
             }
         }
     }

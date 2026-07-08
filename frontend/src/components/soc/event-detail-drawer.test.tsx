@@ -25,7 +25,7 @@ const eventDetail: EventDetailResponseDto = {
 }
 
 describe('EventDetailDrawer RBAC rendering', () => {
-  it('shows formatted fields without event id or index', () => {
+  it('shows formatted fields with event id but without index', () => {
     render(
       <EventDetailDrawer
         event={eventDetail}
@@ -38,7 +38,8 @@ describe('EventDetailDrawer RBAC rendering', () => {
       />,
     )
 
-    expect(screen.queryByText(/event_id/i)).not.toBeInTheDocument()
+    expect(screen.getByText(/event id/i)).toBeInTheDocument()
+    expect(screen.getByText('seed-42-1001')).toBeInTheDocument()
     expect(screen.queryByText('soc-events-v1')).not.toBeInTheDocument()
     expect(screen.getByText('13/06/2026, 03:42 PM')).toBeInTheDocument()
   })

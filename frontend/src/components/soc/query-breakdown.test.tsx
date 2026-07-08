@@ -69,6 +69,7 @@ describe("QueryBreakdown", () => {
           filters: {
             ...searchPlan.filters,
             source: ["vpn", "windows-auth"],
+            event_id: ["6f1d4c8e-1d93-4a27-9e87-9b7a9e9d8a12"],
             user: ["admin", "vpn.user"],
             host: ["vpn-gw-01", "web-01"],
             ip: ["203.0.113.45", "198.51.100.200"],
@@ -78,6 +79,7 @@ describe("QueryBreakdown", () => {
     );
 
     expect(screen.getByText("vpn, windows-auth")).toBeInTheDocument();
+    expect(screen.getByText("6f1d4c8e-1d93-4a27-9e87-9b7a9e9d8a12")).toBeInTheDocument();
     expect(screen.getByText("admin, vpn.user")).toBeInTheDocument();
     expect(screen.getByText("vpn-gw-01, web-01")).toBeInTheDocument();
     expect(screen.getByText("203.0.113.45, 198.51.100.200")).toBeInTheDocument();

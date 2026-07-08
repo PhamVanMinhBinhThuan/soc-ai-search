@@ -88,6 +88,7 @@ function New-EventObject {
     $raw = "ts=$timestampText source=$Source event_type=$EventType severity=$Severity user=$User host=$HostName ip=$Ip country_code=$CountryCode message=""$Message"" synthetic=true"
 
     return [ordered]@{
+        event_id = $null
         timestamp = $timestampText
         source = $Source
         severity = $Severity
@@ -498,6 +499,7 @@ if ($GenerateOnly) {
         for ($i = 1; $i -le $Count; $i++) {
             $eventId = [System.Guid]::NewGuid().ToString()
             $event = New-SyntheticEvent -Number $i -BaseTime $baseTime -Random $random
+            $event.event_id = $eventId
             Add-ScenarioCounters -Counters $counters -Event $event -BaseTime $baseTime
 
             $bulkLines = New-BulkLines -EventId $eventId -Event $event -Index $Index
@@ -585,6 +587,7 @@ $batchCount = 0
 for ($i = 1; $i -le $Count; $i++) {
     $eventId = [System.Guid]::NewGuid().ToString()
     $event = New-SyntheticEvent -Number $i -BaseTime $baseTime -Random $random
+    $event.event_id = $eventId
     Add-ScenarioCounters -Counters $counters -Event $event -BaseTime $baseTime
 
     $bulkLines = New-BulkLines -EventId $eventId -Event $event -Index $Index

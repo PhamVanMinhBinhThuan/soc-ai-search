@@ -127,6 +127,7 @@ class SearchPlanCompilerTest {
                                 SEARCH,
                                 new SearchFilters(
                                         new TimeRange("now-24h", "now"),
+                                        null,
                                         List.of("vpn", "windows-auth"),
                                         List.of("high"),
                                         List.of("failed_login"),
@@ -142,6 +143,26 @@ class SearchPlanCompilerTest {
                             assertTerms(searchSpec, "host", List.of("vpn-gw-01", "web-01"));
                             assertTerms(searchSpec, "ip", List.of("203.0.113.45", "198.51.100.200"));
                         }),
+                Arguments.of(
+                        "event_id uses terms filter",
+                        new SearchPlan(
+                                SEARCH,
+                                new SearchFilters(
+                                        new TimeRange("now-24h", "now"),
+                                        List.of("6f1d4c8e-1d93-4a27-9e87-9b7a9e9d8a12"),
+                                        null,
+                                        null,
+                                        null,
+                                        null,
+                                        null,
+                                        null,
+                                        null),
+                                0,
+                                20),
+                        (DslAssertion) searchSpec -> assertTerms(
+                                searchSpec,
+                                "event_id",
+                                List.of("6f1d4c8e-1d93-4a27-9e87-9b7a9e9d8a12"))),
                 Arguments.of(
                         "message query uses match in bool must",
                         new SearchPlan(

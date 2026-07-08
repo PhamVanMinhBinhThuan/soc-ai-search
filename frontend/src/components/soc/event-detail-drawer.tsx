@@ -2,8 +2,10 @@ import {
   AlertCircle,
   Braces,
   Clock3,
+  Copy,
   FileText,
   Globe2,
+  Hash,
   LockKeyhole,
   Monitor,
   Network,
@@ -67,6 +69,12 @@ function Field({ icon: Icon, label, value, mono = true }: FieldProps) {
       </span>
     </div>
   )
+}
+
+function copyToClipboard(value: string) {
+  if (navigator.clipboard) {
+    void navigator.clipboard.writeText(value)
+  }
 }
 
 function formatEventTimestamp(value: string) {
@@ -249,6 +257,23 @@ export function EventDetailDrawer({
               value="formatted"
               className="mt-3 min-h-0 overflow-y-auto rounded-xl border border-slate-400/16 bg-slate-950/24 p-3 shadow-inner shadow-black/25"
             >
+              <Field
+                icon={Hash}
+                label="Event ID"
+                value={
+                  <span className="inline-flex min-w-0 items-center justify-end gap-2">
+                    <span className="min-w-0 truncate">{event.event_id}</span>
+                    <button
+                      type="button"
+                      className="grid size-7 shrink-0 place-items-center rounded-lg border border-cyan-300/20 bg-cyan-300/10 text-cyan-100 transition hover:border-cyan-200/45 hover:bg-cyan-300/20 focus-visible:ring-2 focus-visible:ring-cyan-300/50 focus-visible:outline-none"
+                      aria-label="Copy event ID"
+                      onClick={() => copyToClipboard(event.event_id)}
+                    >
+                      <Copy className="size-3.5" />
+                    </button>
+                  </span>
+                }
+              />
               <Field
                 icon={Clock3}
                 label="Timestamp"

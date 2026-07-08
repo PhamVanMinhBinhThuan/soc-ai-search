@@ -12,6 +12,7 @@ public class SearchPlanPromptBuilder {
     private static final List<String> ALLOWED_FIELDS = List.of(
             "timestamp.from",
             "timestamp.to",
+            "event_id",
             "source",
             "severity",
             "event_type",
@@ -148,9 +149,10 @@ public class SearchPlanPromptBuilder {
                 - Prefer structured filters over message_query when the intent matches a supported source, event_type, severity, user, host, ip, or country_code.
                 - Use message_query only for free-text phrases that cannot be represented by structured fields.
                 - Use filters.source for source/vendor/log-origin filters such as windows-auth, vpn, firewall, edr, proxy, or dns.
+                - Use filters.event_id only when the user explicitly provides one or more full UUID event IDs. Do not invent event IDs. Do not use partial IDs, wildcard IDs, or non-UUID values.
                 - Use aggregation.field = "source" only when the user asks to group/top/count by source.
-                - filters.source, filters.user, filters.host, and filters.ip may be a string or an array of strings.
-                - If the user asks for multiple sources/users/hosts/IPs, use an array. Values inside one field mean OR.
+                - filters.event_id, filters.source, filters.user, filters.host, and filters.ip may be a string or an array of strings.
+                - If the user asks for multiple event IDs/sources/users/hosts/IPs, use an array. Values inside one field mean OR.
                 - Different filter fields still mean AND.
                 - message_query remains one string, never an array.
                 - For relative time, preserve the user's requested amount:
@@ -164,6 +166,7 @@ public class SearchPlanPromptBuilder {
                   "mode": "search",
                   "filters": {
                     "timestamp": { "from": "now-24h", "to": "now" },
+                    "event_id": ["6f1d4c8e-1d93-4a27-9e87-9b7a9e9d8a12"],
                     "source": ["windows-auth"],
                     "severity": ["high", "critical"],
                     "event_type": ["failed_login"],

@@ -40,6 +40,7 @@ type BreakdownRow = {
 };
 
 const FIELD_LABELS: Record<string, string> = {
+  event_id: "Event ID",
   source: "Source",
   severity: "Severity",
   event_type: "Event type",
@@ -217,6 +218,7 @@ function buildRows(searchPlan: SearchPlanDto, chartMetadata?: ChartMetadataDto |
   }
 
   const filterRows: Array<[keyof NonNullable<SearchPlanDto["filters"]>, string]> = [
+    ["event_id", "Event ID"],
     ["source", "Source"],
     ["severity", "Severity"],
     ["event_type", "Event type"],
@@ -374,6 +376,9 @@ function FieldIcon({ field }: { field: string }) {
   }
   if (field === "Event type" || field === "Severity") {
     return <Filter className={className} />;
+  }
+  if (field === "Event ID") {
+    return <Hash className={className} />;
   }
 
   return <Search className={className} />;

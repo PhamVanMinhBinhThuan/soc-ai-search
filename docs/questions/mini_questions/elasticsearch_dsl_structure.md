@@ -506,8 +506,251 @@ Giải thích:
 }
 ```
 
-## 11. Câu trả lời ngắn khi bảo vệ
+## 11. Request/response Elasticsearch thực tế trông như thế nào?
+
+Elasticsearch không truy vấn bằng SQL như PostgreSQL. Backend gửi request HTTP đến Elasticsearch, body là JSON DSL.
+
+Ví dụ nếu PostgreSQL viết:
+
+```sql
+SELECT *
+FROM events
+WHERE event_type = 'failed_login'
+ORDER BY timestamp DESC
+LIMIT 10;
+```
+
+Thì Elasticsearch sẽ nhận request dạng:
+
+```http
+POST /soc-events-v1/_search
+Content-Type: application/json
+```
+
+Body:
+
+```json
+{
+  "query": {
+    "bool": {
+      "filter": [
+        {
+          "term": {
+            "event_type": "failed_login"
+          }
+        }
+      ]
+    }
+  },
+  "sort": [
+    {
+      "timestamp": {
+        "order": "desc"
+      }
+    }
+  ],
+  "from": 0,
+  "size": 10
+}
+```
+
+### Cấu trúc request DSL thường gặp
+
+```json
+{
+  "query": {},
+  "from": 0,
+  "size": 10,
+  "sort": [],
+  "aggs": {}
+}
+```
+
+| Field | Ý nghĩa |
+|---|---|
+| `query` | Điều kiện tìm kiếm/lọc dữ liệu. |
+| `from` | Offset phân trang. |
+| `size` | Số document cần lấy. Với aggregation thường là `0`. |
+| `sort` | Quy tắc sắp xếp kết quả. |
+| `aggs` | Phần thống kê/aggregation. |
+
+### Response search event logs
+
+Response gốc của Elasticsearch khá nhiều metadata:
+
+```json
+{
+  "took": 7,
+  "timed_out": false,
+  "hits": {
+    "total": {
+      "value": 180,
+      "relation": "eq"
+    },
+    "hits": [
+      {
+        "_index": "soc-events-v1",
+        "_id": "seed-20260604-3129",
+        "_score": null,
+        "_source": {
+          "event_id": "seed-20260604-3129",
+          "timestamp": "2026-07-07T01:16:07Z",
+          "source": "vpn",
+          "severity": "medium",
+          "event_type": "failed_login",
+          "user": "admin",
+          "host": "vpn-gw-01",
+          "ip": "203.0.113.45",
+          "country_code": "CN",
+          "message": "Failed login from CN targeting admin"
+        }
+      }
+    ]
+  }
+}
+```
+
+| Field | Ý nghĩa |
+|---|---|
+| `took` | Elasticsearch xử lý query mất bao nhiêu ms. |
+| `timed_out` | Query có bị timeout không. |
+| `hits.total.value` | Tổng số document phù hợp. |
+| `hits.hits` | Danh sách document trả về ở page hiện tại. |
+| `_index` | Index chứa document. |
+| `_id` | ID nội bộ/document ID. |
+| `_source` | Dữ liệu event thật mà hệ thống cần lấy ra. |
+
+Backend sẽ lấy `_source` và map thành DTO đơn giản hơn cho frontend:
+
+```json
+{
+  "total": 180,
+  "page": 0,
+  "size": 10,
+  "events": [
+    {
+      "event_id": "seed-20260604-3129",
+      "timestamp": "2026-07-07T01:16:07Z",
+      "source": "vpn",
+      "severity": "medium",
+      "event_type": "failed_login",
+      "user": "admin",
+      "host": "vpn-gw-01",
+      "ip": "203.0.113.45",
+      "country_code": "CN",
+      "message": "Failed login from CN targeting admin"
+    }
+  ]
+}
+```
+
+### Response aggregation
+
+Ví dụ Top 5 IP:
+
+```json
+{
+  "took": 5,
+  "timed_out": false,
+  "hits": {
+    "total": {
+      "value": 910,
+      "relation": "eq"
+    },
+    "hits": []
+  },
+  "aggregations": {
+    "top_values": {
+      "buckets": [
+        {
+          "key": "203.0.113.45",
+          "doc_count": 188
+        },
+        {
+          "key": "198.51.100.200",
+          "doc_count": 149
+        }
+      ]
+    }
+  }
+}
+```
+
+Ý nghĩa:
+
+| Field | Ý nghĩa |
+|---|---|
+| `aggregations.top_values` | Kết quả aggregation có tên `top_values` do backend đặt trong DSL. |
+| `buckets` | Danh sách nhóm kết quả. |
+| `key` | Giá trị của bucket, ví dụ một IP. |
+| `doc_count` | Số event thuộc bucket đó. |
+
+Backend map response aggregation thành dạng đơn giản hơn:
+
+```json
+{
+  "aggregation_results": [
+    {
+      "key": "203.0.113.45",
+      "value": 188
+    },
+    {
+      "key": "198.51.100.200",
+      "value": 149
+    }
+  ]
+}
+```
+
+### Elasticsearch khác PostgreSQL ở đâu?
+
+| PostgreSQL | Elasticsearch |
+|---|---|
+| Truy vấn bằng SQL. | Truy vấn bằng JSON DSL qua HTTP. |
+| Response thường là rows/columns. | Response là JSON gồm metadata, `hits`, `_source`, `aggregations`. |
+| Mạnh về transaction, dữ liệu quan hệ, audit/history. | Mạnh về search log, full-text search, filter và aggregation time-series. |
+
+Trong đồ án, frontend không gọi Elasticsearch trực tiếp. Backend che phần response phức tạp này đi:
+
+```text
+Frontend gửi SearchPlan
+  -> Backend validate SearchPlan
+  -> SearchPlanCompiler sinh Elasticsearch DSL
+  -> Executor gọi Elasticsearch
+  -> Mapper chuẩn hóa response thành events/aggregation_results/total/chart_metadata
+  -> Frontend render table/chart
+```
+
+Vì vậy frontend không cần hiểu `_index`, `_score`, `hits.hits` hay `aggregations.*.buckets`; frontend chỉ dùng response đã được backend chuẩn hóa.
+
+## 12. Câu trả lời ngắn khi bảo vệ
 
 DSL là JSON query thực thi thật trên Elasticsearch. Tuy nhiên hệ thống không cho frontend hoặc LLM gửi DSL tự do. Backend chỉ nhận `SearchPlan` đã validate, sau đó `SearchPlanCompiler` tự sinh DSL bằng các thành phần an toàn như `bool.filter`, `range`, `terms`, `match`, `terms aggregation` và `date_histogram`.
 
 Trong aggregation, các key như `top_values`, `count_by_field`, `events_over_time` là tên do backend đặt. Còn `terms` và `date_histogram` là loại aggregation chuẩn của Elasticsearch DSL. Cách này giúp backend đọc response ổn định và kiểm soát toàn bộ truy vấn cuối cùng.
+
+## Event ID trong Elasticsearch DSL
+
+Trong Elasticsearch, `_id` là document id kỹ thuật. Hệ thống cũng lưu cùng UUID đó vào `_source.event_id` với mapping `keyword` để có thể filter bằng DSL như các field keyword khác.
+
+SearchPlan:
+
+```json
+{
+  "filters": {
+    "event_id": ["6f1d4c8e-1d93-4a27-9e87-9b7a9e9d8a12"]
+  }
+}
+```
+
+DSL backend sinh ra:
+
+```json
+{
+  "terms": {
+    "event_id": ["6f1d4c8e-1d93-4a27-9e87-9b7a9e9d8a12"]
+  }
+}
+```
+
+Vì `event_id` là `keyword`, Elasticsearch so khớp chính xác UUID, không tokenize như field `text`. Backend vẫn backward-compatible: nếu document cũ chưa có `_source.event_id`, search response có thể fallback về `_id`.

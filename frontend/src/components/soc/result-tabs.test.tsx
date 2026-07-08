@@ -342,6 +342,14 @@ describe("ResultTabs filter and sort controls", () => {
     fireEvent.change(screen.getByPlaceholderText("User"), {
       target: { value: "admin, vpn.user" },
     });
+    fireEvent.change(
+      screen.getByPlaceholderText(/paste up to 20 uuids/i),
+      {
+        target: {
+          value: "6f1d4c8e-1d93-4a27-9e87-9b7a9e9d8a12",
+        },
+      },
+    );
     fireEvent.change(screen.getByDisplayValue("Newest first"), {
       target: { value: "severity:desc" },
     });
@@ -353,6 +361,7 @@ describe("ResultTabs filter and sort controls", () => {
         page: 0,
         filters: expect.objectContaining({
           severity: ["critical"],
+          event_id: ["6f1d4c8e-1d93-4a27-9e87-9b7a9e9d8a12"],
           source: ["vpn", "windows-auth"],
           user: ["admin", "vpn.user"],
         }),
@@ -379,6 +388,7 @@ describe("ResultTabs filter and sort controls", () => {
     expect(screen.queryByText("Severity")).not.toBeInTheDocument();
     expect(screen.queryByText("Event Type")).not.toBeInTheDocument();
     expect(screen.queryByPlaceholderText("User")).not.toBeInTheDocument();
+    expect(screen.queryByPlaceholderText(/paste up to 20 uuids/i)).not.toBeInTheDocument();
   });
 
   it("does not render filter controls for count aggregation results", () => {

@@ -71,6 +71,7 @@ export type SearchFiltersDto = {
     from: string;
     to: string;
   } | null;
+  event_id?: string[] | null;
   severity?: Severity[] | null;
   event_type?: string[] | null;
   source?: string | string[] | null;

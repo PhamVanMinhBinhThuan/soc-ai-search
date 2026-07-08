@@ -16,8 +16,12 @@ public class ElasticsearchSearchResponseMapper {
 
         for (var hit : hits.path("hits")) {
             var source = hit.path("_source");
+            var eventId = text(source.path("event_id"));
+            if (eventId == null || eventId.isBlank()) {
+                eventId = text(hit.path("_id"));
+            }
             events.add(new SearchEvent(
-                    text(hit.path("_id")),
+                    eventId,
                     text(source.path("timestamp")),
                     text(source.path("source")),
                     text(source.path("severity")),

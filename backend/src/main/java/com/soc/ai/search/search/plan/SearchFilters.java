@@ -13,6 +13,8 @@ import jakarta.validation.constraints.Pattern;
 public record SearchFilters(
         @Valid TimeRange timestamp,
         @JsonDeserialize(using = FlexibleStringListDeserializer.class)
+        List<@NotBlank @Pattern(regexp = "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$", message = "must be a valid UUID") String> eventId,
+        @JsonDeserialize(using = FlexibleStringListDeserializer.class)
         List<@NotBlank @Pattern(regexp = "^[a-z0-9._-]+$", message = "must contain only lowercase letters, numbers, dot, underscore, or hyphen") String> source,
         List<@NotBlank @Pattern(regexp = "low|medium|high|critical", message = "must be one of low, medium, high, critical") String> severity,
         List<@NotBlank String> eventType,
@@ -32,7 +34,19 @@ public record SearchFilters(
             String host,
             String ip,
             List<String> countryCode) {
-        this(timestamp, null, severity, eventType, singleValue(user), singleValue(host), singleValue(ip), countryCode);
+        this(timestamp, null, null, severity, eventType, singleValue(user), singleValue(host), singleValue(ip), countryCode);
+    }
+
+    public SearchFilters(
+            TimeRange timestamp,
+            List<String> source,
+            List<String> severity,
+            List<String> eventType,
+            List<String> user,
+            List<String> host,
+            List<String> ip,
+            List<String> countryCode) {
+        this(timestamp, null, source, severity, eventType, user, host, ip, countryCode);
     }
 
     private static List<String> singleValue(String value) {

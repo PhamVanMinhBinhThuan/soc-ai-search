@@ -32,8 +32,9 @@ public class EventDetailService {
             }
 
             var source = response.source();
+            var eventIdFromSource = value(source, "event_id");
             return new EventDetailResponse(
-                    response.id(),
+                    eventIdFromSource == null || eventIdFromSource.isBlank() ? response.id() : eventIdFromSource,
                     response.index() == null ? elasticsearchProperties.indexEvents() : response.index(),
                     value(source, "timestamp"),
                     value(source, "source"),

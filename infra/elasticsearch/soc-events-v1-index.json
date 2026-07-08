@@ -5,6 +5,9 @@
       "timestamp": {
         "type": "date"
       },
+      "event_id": {
+        "type": "keyword"
+      },
       "source": {
         "type": "keyword"
       },

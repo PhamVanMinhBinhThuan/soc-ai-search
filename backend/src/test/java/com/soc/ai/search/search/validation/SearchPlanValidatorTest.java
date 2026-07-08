@@ -94,6 +94,7 @@ class SearchPlanValidatorTest {
                         SEARCH,
                         new SearchFilters(
                                 new TimeRange("now-24h", "now"),
+                                null,
                                 List.of("vpn", "windows-auth"),
                                 List.of("high"),
                                 List.of("failed_login"),
@@ -101,6 +102,20 @@ class SearchPlanValidatorTest {
                                 List.of("vpn-gw-01", "web-01"),
                                 List.of("203.0.113.45", "198.51.100.200"),
                                 List.of("CN")),
+                        0,
+                        20)),
+                Arguments.of("event_id UUID filter", new SearchPlan(
+                        SEARCH,
+                        new SearchFilters(
+                                new TimeRange("now-24h", "now"),
+                                List.of("6f1d4c8e-1d93-4a27-9e87-9b7a9e9d8a12"),
+                                null,
+                                null,
+                                null,
+                                null,
+                                null,
+                                null,
+                                null),
                         0,
                         20)),
                 Arguments.of("safe search sort", new SearchPlan(
@@ -153,6 +168,30 @@ class SearchPlanValidatorTest {
                 Arguments.of("too many user values", withUsers(List.of(
                         "u01", "u02", "u03", "u04", "u05", "u06", "u07", "u08", "u09", "u10", "u11")),
                         "at most 10"),
+                Arguments.of("invalid event_id", withEventIds(List.of("not-a-uuid")), "event_id"),
+                Arguments.of("blank event_id list item", withEventIds(List.of("6f1d4c8e-1d93-4a27-9e87-9b7a9e9d8a12", " ")), "event_id"),
+                Arguments.of("too many event_id values", withEventIds(List.of(
+                        "00000000-0000-4000-8000-000000000001",
+                        "00000000-0000-4000-8000-000000000002",
+                        "00000000-0000-4000-8000-000000000003",
+                        "00000000-0000-4000-8000-000000000004",
+                        "00000000-0000-4000-8000-000000000005",
+                        "00000000-0000-4000-8000-000000000006",
+                        "00000000-0000-4000-8000-000000000007",
+                        "00000000-0000-4000-8000-000000000008",
+                        "00000000-0000-4000-8000-000000000009",
+                        "00000000-0000-4000-8000-000000000010",
+                        "00000000-0000-4000-8000-000000000011",
+                        "00000000-0000-4000-8000-000000000012",
+                        "00000000-0000-4000-8000-000000000013",
+                        "00000000-0000-4000-8000-000000000014",
+                        "00000000-0000-4000-8000-000000000015",
+                        "00000000-0000-4000-8000-000000000016",
+                        "00000000-0000-4000-8000-000000000017",
+                        "00000000-0000-4000-8000-000000000018",
+                        "00000000-0000-4000-8000-000000000019",
+                        "00000000-0000-4000-8000-000000000020",
+                        "00000000-0000-4000-8000-000000000021")), "at most 20"),
                 Arguments.of("invalid multi-value IP", withIps(List.of("203.0.113.45", "999.999.999.999")), "IPv4"),
                 Arguments.of("blank message query", withMessageQuery(" "), "messageQuery"),
                 Arguments.of("message query too long", withMessageQuery("a".repeat(201)), "messageQuery"),
@@ -345,12 +384,31 @@ class SearchPlanValidatorTest {
                 SEARCH,
                 new SearchFilters(
                         filters.timestamp(),
+                        filters.eventId(),
                         filters.source(),
                         filters.severity(),
                         filters.eventType(),
                         filters.user(),
                         filters.host(),
                         ips,
+                        filters.countryCode()),
+                0,
+                20);
+    }
+
+    private static SearchPlan withEventIds(List<String> eventIds) {
+        var filters = validFilters();
+        return new SearchPlan(
+                SEARCH,
+                new SearchFilters(
+                        filters.timestamp(),
+                        eventIds,
+                        filters.source(),
+                        filters.severity(),
+                        filters.eventType(),
+                        filters.user(),
+                        filters.host(),
+                        filters.ip(),
                         filters.countryCode()),
                 0,
                 20);
