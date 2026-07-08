@@ -399,6 +399,13 @@ function App() {
       response?.original_question || submittedRequest?.question || question,
     );
 
+  const currentRunnableQuestion = () => {
+    const rawQuestion =
+      response?.original_question || submittedRequest?.question || question;
+    const aiCorrected = parseAiCorrectedQuestion(rawQuestion);
+    return aiCorrected?.rewritten ?? stripAuditQuestionPrefix(rawQuestion);
+  };
+
   const derivedAuditQuestion = (label: "Edited SearchPlan" | "Filtered Result") =>
     `[${label}] Original question: ${currentOriginalQuestion()}`;
 
@@ -746,7 +753,7 @@ function App() {
                       generatedDsl={response.generated_dsl}
                       chartMetadata={response.chart_metadata}
                       canEditPlan={canEditPlan}
-                      currentQuestion={currentOriginalQuestion()}
+                      currentQuestion={currentRunnableQuestion()}
                       originalQuestion={currentOriginalQuestion()}
                       onApplyQueryUpdate={({
                         rewrittenQuestion,
