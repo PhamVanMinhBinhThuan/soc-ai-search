@@ -106,7 +106,9 @@ public class AuditQueryController {
 
     @GetMapping(value = "/api/v1/audit-logs/export", produces = "text/csv")
     @PreAuthorize("@rbacPermissionService.authDisabled() or hasRole('SOC_ADMIN')")
-    @Operation(summary = "Export filtered application audit logs as CSV", description = "Requires SOC_ADMIN.")
+    @Operation(
+            summary = "Export filtered application audit logs as CSV",
+            description = "Requires SOC_ADMIN. Audit exports are capped at 10,000 rows and expose X-Export-Truncated=true when more rows matched the filter.")
     public ResponseEntity<StreamingResponseBody> exportAuditLogs(
             @RequestParam(required = false) AuditStatus status,
             @RequestParam(required = false) String mode,

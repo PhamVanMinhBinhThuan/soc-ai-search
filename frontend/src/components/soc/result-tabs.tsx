@@ -698,7 +698,7 @@ function ResultControls({
               />
               <div className="lg:col-span-3">
                 <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
-                  Advanced: Event ID
+                  Event ID
                 </label>
                 <textarea
                   value={eventId}

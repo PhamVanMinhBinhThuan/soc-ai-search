@@ -403,7 +403,11 @@ function FilterSelect({
         className="h-10 w-full appearance-none rounded-xl border border-cyan-400/20 bg-cyan-950/10 px-3 pr-8 text-sm font-medium text-zinc-100 outline-none shadow-[0_0_22px_-18px_rgba(34,211,238,0.9)] transition hover:border-cyan-400/35 focus:border-cyan-300/70 focus:ring-2 focus:ring-cyan-400/15"
       >
         {options.map((option) => (
-          <option key={option.value} value={option.value}>
+          <option
+            key={option.value}
+            value={option.value}
+            className="bg-zinc-100 text-zinc-950"
+          >
             {option.label}
           </option>
         ))}
