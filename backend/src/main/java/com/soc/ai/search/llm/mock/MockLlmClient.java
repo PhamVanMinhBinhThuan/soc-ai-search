@@ -70,8 +70,24 @@ public class MockLlmClient implements LlmClient {
             return failedLoginByUserAggregationPlan();
         }
 
+        if (containsTopAccountLockoutUsers(normalized)) {
+            return topAccountLockoutUsersAggregationPlan();
+        }
+
+        if (containsTopMalwareHosts(normalized)) {
+            return topMalwareHostsAggregationPlan();
+        }
+
         if (containsTopIpAlerts(normalized)) {
             return topIpAlertsAggregationPlan(extractTopN(normalized, 10), extractLastDays(normalized, 30));
+        }
+
+        if (containsAccountLockoutTrend(normalized)) {
+            return accountLockoutTrendAggregationPlan();
+        }
+
+        if (containsMalwareTrend(normalized)) {
+            return malwareTrendAggregationPlan();
         }
 
         if (containsEventsByHour(normalized)) {
@@ -92,6 +108,10 @@ public class MockLlmClient implements LlmClient {
 
         if (containsFailedLoginAdmin(normalized)) {
             return failedLoginAdminPlan();
+        }
+
+        if (containsHighCriticalFailedLoginChina(normalized)) {
+            return highCriticalFailedLoginChinaPlan();
         }
 
         if (containsFailedLoginChina(normalized)) {
@@ -138,9 +158,33 @@ public class MockLlmClient implements LlmClient {
                 && (value.contains("alert") || value.contains("event"));
     }
 
+    private boolean containsTopAccountLockoutUsers(String value) {
+        return value.contains("top")
+                && value.contains("user")
+                && value.contains("account")
+                && value.contains("lockout");
+    }
+
+    private boolean containsTopMalwareHosts(String value) {
+        return value.contains("top")
+                && value.contains("host")
+                && value.contains("malware");
+    }
+
     private boolean containsEventsByHour(String value) {
         return (value.contains("so event") || value.contains("event count") || value.contains("events"))
                 && (value.contains("theo gio") || value.contains("by hour") || value.contains("per hour"));
+    }
+
+    private boolean containsAccountLockoutTrend(String value) {
+        return value.contains("account")
+                && value.contains("lockout")
+                && (value.contains("trend") || value.contains("by hour") || value.contains("per hour"));
+    }
+
+    private boolean containsMalwareTrend(String value) {
+        return value.contains("malware")
+                && (value.contains("trend") || value.contains("by day") || value.contains("by hour") || value.contains("per day"));
     }
 
     private boolean containsCriticalSevenDays(String value) {
@@ -156,6 +200,13 @@ public class MockLlmClient implements LlmClient {
         return value.contains("failed login")
                 && value.contains("admin")
                 && value.contains("vpn.user");
+    }
+
+    private boolean containsHighCriticalFailedLoginChina(String value) {
+        return (value.contains("failed login") || containsVietnameseFailedLogin(value))
+                && (value.contains("china") || value.contains(" cn") || value.contains("trung quoc"))
+                && value.contains("high")
+                && value.contains("critical");
     }
 
     private boolean containsEdrEvents(String value) {
@@ -193,6 +244,22 @@ public class MockLlmClient implements LlmClient {
                   "mode": "search",
                   "filters": {
                     "timestamp": { "from": "now-24h", "to": "now" },
+                    "event_type": ["failed_login"],
+                    "country_code": ["CN"]
+                  },
+                  "page": 0,
+                  "size": 20
+                }
+                """;
+    }
+
+    private String highCriticalFailedLoginChinaPlan() {
+        return """
+                {
+                  "mode": "search",
+                  "filters": {
+                    "timestamp": { "from": "now-24h", "to": "now" },
+                    "severity": ["high", "critical"],
                     "event_type": ["failed_login"],
                     "country_code": ["CN"]
                   },
@@ -335,6 +402,72 @@ public class MockLlmClient implements LlmClient {
                     "type": "group_by",
                     "field": "user",
                     "top_n": 10
+                  }
+                }
+                """;
+    }
+
+    private String topAccountLockoutUsersAggregationPlan() {
+        return """
+                {
+                  "mode": "aggregation",
+                  "filters": {
+                    "timestamp": { "from": "now-7d", "to": "now" },
+                    "event_type": ["account_lockout"]
+                  },
+                  "aggregation": {
+                    "type": "top_n",
+                    "field": "user",
+                    "top_n": 5
+                  }
+                }
+                """;
+    }
+
+    private String topMalwareHostsAggregationPlan() {
+        return """
+                {
+                  "mode": "aggregation",
+                  "filters": {
+                    "timestamp": { "from": "now-30d", "to": "now" },
+                    "event_type": ["malware_detected"]
+                  },
+                  "aggregation": {
+                    "type": "top_n",
+                    "field": "host",
+                    "top_n": 5
+                  }
+                }
+                """;
+    }
+
+    private String accountLockoutTrendAggregationPlan() {
+        return """
+                {
+                  "mode": "aggregation",
+                  "filters": {
+                    "timestamp": { "from": "now-7d", "to": "now" },
+                    "event_type": ["account_lockout"]
+                  },
+                  "aggregation": {
+                    "type": "date_histogram",
+                    "interval": "hour"
+                  }
+                }
+                """;
+    }
+
+    private String malwareTrendAggregationPlan() {
+        return """
+                {
+                  "mode": "aggregation",
+                  "filters": {
+                    "timestamp": { "from": "now-30d", "to": "now" },
+                    "event_type": ["malware_detected"]
+                  },
+                  "aggregation": {
+                    "type": "date_histogram",
+                    "interval": "day"
                   }
                 }
                 """;

@@ -28,6 +28,35 @@ Lưu ý:
 
 ---
 
+## Scenario Diversity Update
+
+Seed data now uses controlled SOC scenarios instead of flat repeated rows. The important demo scenarios are:
+
+- Failed login / brute force: varied `user`, `host`, `ip`, `severity`, `message`, mostly `country_code=CN` with related attacker IPs.
+- Account lockout: varied `admin`, `vpn.user`, `finance.user`, `jdoe`, multiple hosts and source IPs.
+- Malware detected: varied endpoint hosts, users and malware families.
+- Firewall block: varied suspicious source IPs and countries.
+- Privilege escalation: varied privileged users and hosts.
+- Suspicious outbound / large transfer / data exfiltration: finance and service-account oriented scenarios.
+- Normal noise: successful login, DNS, process start and file access events.
+
+Additional high-value demo questions:
+
+| Label | Question | Expected |
+| --- | --- | --- |
+| High/Critical failed login from China | `Show high or critical failed login events from China in the last 24h` | Raw events: `failed_login`, `severity=high/critical`, `country_code=CN` |
+| Top lockout users | `Show top users affected by account lockout in the last 7 days` | Bar chart: top users by `account_lockout` |
+| Top malware hosts | `Show top hosts with malware detections in the last 30 days` | Bar chart: top hosts by `malware_detected` |
+| Account lockout trend | `Show account lockout trend by hour in the last 7 days` | Line chart: lockout trend |
+| Malware trend by day | `Show malware detected trend by day in the last 30 days` | Line chart: daily malware trend |
+| Large transfer finance | `Show large transfer events for finance.user in the last 30 days` | Raw events: `large_transfer`, `user=finance.user` |
+| DNS query activity | `Show DNS query events in the last 24 hours` | Raw events: `dns_query`, source `dns` |
+| Process start EDR | `Show process start events from EDR in the last 7 days` | Raw events: `process_start`, source `edr` |
+| Outbound trend | `Show suspicious outbound trend by day in the last 30 days` | Line chart: outbound trend |
+| Top outbound countries | `Show top countries for suspicious outbound activity in the last 30 days` | Bar chart: top countries by outbound events |
+
+---
+
 ## 1. Quick Search - Raw Events
 
 Các câu hỏi này nên trả về bảng raw events.
@@ -44,6 +73,10 @@ Các câu hỏi này nên trả về bảng raw events.
 | EDR events | `Show EDR events in the last 7 days` | Raw events from `source=edr` |
 | Windows auth admin | `Show windows-auth events for admin in the last 24h` | Raw events from `source=windows-auth`, `user=admin` |
 | Suspicious outbound finance | `Show suspicious outbound activity for finance.user in the last 30 days` | Raw events: proxy/outbound activity |
+| Large transfer finance | `Show large transfer events for finance.user in the last 30 days` | Raw events: `large_transfer`, `user=finance.user` |
+| Data exfiltration | `Show data exfiltration events in the last 30 days` | Raw events: `data_exfiltration` |
+| DNS query activity | `Show DNS query events in the last 24 hours` | Raw events: `dns_query` |
+| Process start from EDR | `Show process start events from EDR in the last 7 days` | Raw events: `process_start`, source `edr` |
 
 Recommended tags:
 
@@ -66,6 +99,8 @@ Các câu hỏi này nên trả về số lượng hoặc aggregation count.
 | Count account lockouts | `Count account lockout events in the last 7 days` | Number/count |
 | Count malware events | `Count malware detected events in the last 30 days` | Number/count |
 | Count firewall blocks | `Count firewall block events in the last 30 days` | Number/count |
+| Count large transfers | `Count large transfer events in the last 30 days` | Number/count |
+| Count successful logins | `Count successful login events in the last 24 hours` | Number/count |
 
 Recommended tags:
 
@@ -92,6 +127,8 @@ Các câu hỏi này nên trả về bar chart.
 | Events by host | `Group security events by host in the last 30 days` | Bar chart by `host` |
 | Account lockout by user | `Group account lockout events by user in the last 7 days` | Bar chart by `user` |
 | Malware by host | `Group malware detected events by host in the last 30 days` | Bar chart by `host` |
+| Outbound by country | `Group suspicious outbound events by country code in the last 30 days` | Bar chart by `country_code` |
+| Large transfer by user | `Group large transfer events by user in the last 30 days` | Bar chart by `user` |
 
 Recommended tags:
 
@@ -113,6 +150,8 @@ Các câu hỏi này nên trả về top buckets dạng bar chart.
 | Top hosts | `Show the top 5 hosts with the most events in the last 30 days` | Bar chart by `host` |
 | Top countries | `Show the top 5 countries with the most events in the last 30 days` | Bar chart by `country_code` |
 | Top event types | `Show the top 5 event types in the last 30 days` | Bar chart by `event_type` |
+| Top outbound countries | `Show top countries for suspicious outbound activity in the last 30 days` | Bar chart by `country_code` |
+| Top large-transfer users | `Show top users with large transfer events in the last 30 days` | Bar chart by `user` |
 
 Recommended tags:
 
@@ -137,6 +176,8 @@ Các câu hỏi này nên trả về line chart.
 | Critical trend | `Show critical event trend by hour in the last 24h` | Line chart with `severity=critical` |
 | Firewall trend | `Show firewall block trend by hour in the last 24h` | Line chart with `event_type=firewall_block` |
 | Malware trend | `Show malware detected events by hour in the last 24h` | Line chart with `event_type=malware_detected` |
+| Outbound trend | `Show suspicious outbound trend by day in the last 30 days` | Line chart with `event_type=suspicious_outbound` |
+| Process start trend | `Show process start trend by hour in the last 24 hours` | Line chart with `event_type=process_start` |
 | 12 hour events | `Show events by hour in the last 12 hours` | Line chart, `now-12h` |
 | 36 hour events | `Show events by hour in the last 36 hours` | Line chart, `now-36h` |
 
@@ -162,6 +203,7 @@ Các câu hỏi này dùng như kịch bản điều tra, không nhất thiết 
 | Privilege escalation investigation | `Investigate privilege escalation activity by admin in the last 30 days` | Privilege escalation raw events |
 | Malware investigation | `Investigate malware detected by EDR in the last 7 days` | EDR/malware raw events |
 | Data exfiltration investigation | `Investigate suspicious outbound and large transfer activity from finance.user in the last 30 days` | Proxy/exfiltration related raw events |
+| Service account outbound investigation | `Investigate service account outbound activity by svc.backup in the last 30 days` | Service account / proxy / outbound related raw events |
 | Firewall investigation | `Investigate firewall blocks from suspicious source IPs in the last 30 days` | Firewall block raw events |
 | Account lockout investigation | `Investigate account lockouts after failed logins in the last 7 days` | Account lockout events |
 

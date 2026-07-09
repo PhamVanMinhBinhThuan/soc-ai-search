@@ -1,5 +1,7 @@
 # Q2 - Mock data, Mock LLM và schema event
 
+> Update note: Seed data hiện đã được cải thiện theo hướng scenario diversity có kiểm soát. Thay vì chỉ có một số anchor event giống nhau, script seed hiện tạo nhiều biến thể user/host/IP/message/severity/timestamp cho các scenario như failed login, account lockout, malware, firewall block, privilege escalation và suspicious outbound. Tài liệu tra nhanh mới nhất nằm ở `docs/questions/mini_questions/dataset_mock_info.md`.
+
 ## Câu hỏi chính
 
 **Hiện tại hệ thống đang mock data ở đâu? Mock LLM ở đâu? Dữ liệu demo có những loại event nào và schema event gồm những field gì?**
