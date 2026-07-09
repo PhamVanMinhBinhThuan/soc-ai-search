@@ -162,6 +162,68 @@ Browser tải response thành file .csv
 - phù hợp với export nhiều dòng;
 - browser có thể nhận như file download.
 
+### Hệ thống dùng lệnh/cơ chế gì để stream CSV?
+
+Trong hệ thống này, stream CSV không phải là một lệnh terminal riêng. Backend dùng cơ chế có sẵn của Spring Boot/Spring MVC là `StreamingResponseBody`.
+
+Ý tưởng chính:
+
+```text
+Controller trả ResponseEntity<StreamingResponseBody>
+        ↓
+Service chuẩn bị một hàm ghi vào OutputStream
+        ↓
+CSV writer ghi header và từng dòng CSV vào OutputStream
+        ↓
+Spring gửi dữ liệu đó dần dần về browser
+```
+
+Các file chính:
+
+| Luồng | File | Vai trò |
+|---|---|---|
+| Search CSV controller | `backend/src/main/java/com/soc/ai/search/csv/CsvExportController.java` | Trả `ResponseEntity<StreamingResponseBody>` cho endpoint export search CSV. |
+| Search CSV service | `backend/src/main/java/com/soc/ai/search/csv/CsvExportService.java` | Tạo `PreparedCsvExport`, truyền lambda `outputStream -> streamSearch(...)` hoặc `outputStream -> streamAggregation(...)`. |
+| Search CSV writer | `backend/src/main/java/com/soc/ai/search/csv/CsvRowWriter.java` | Dùng `OutputStreamWriter` để ghi header, event rows hoặc aggregation rows. |
+| Audit CSV controller | `backend/src/main/java/com/soc/ai/search/audit/AuditQueryController.java` | Trả `ResponseEntity<StreamingResponseBody>` cho endpoint export audit CSV. |
+| Audit CSV service | `backend/src/main/java/com/soc/ai/search/audit/AuditQueryService.java` | Tạo `PreparedAuditCsvExport`, truyền lambda `outputStream -> streamAuditRows(...)`. |
+| Audit CSV writer | `backend/src/main/java/com/soc/ai/search/audit/AuditCsvWriter.java` | Ghi header và từng dòng audit log vào `OutputStream`. |
+
+Ví dụ phần quan trọng trong backend:
+
+```java
+public ResponseEntity<StreamingResponseBody> export(...) {
+    var prepared = exportService.prepare(queryId);
+    return ResponseEntity.ok()
+            .contentType(MediaType.parseMediaType("text/csv"))
+            .body(prepared.body());
+}
+```
+
+Trong service, phần stream thường có dạng:
+
+```java
+return new PreparedCsvExport(
+        prepared.truncated(),
+        outputStream -> streamSearch(queryId, prepared, outputStream)
+);
+```
+
+Và writer ghi vào HTTP response bằng:
+
+```java
+writer = new OutputStreamWriter(outputStream, StandardCharsets.UTF_8);
+```
+
+Frontend nhận response dưới dạng file bằng `response.blob()` trong:
+
+- `frontend/src/services/csv-export-api.ts`
+- `frontend/src/services/history-api.ts`
+
+Câu trả lời ngắn khi bảo vệ:
+
+> Em dùng `StreamingResponseBody` của Spring Boot để stream CSV. Controller trả về `ResponseEntity<StreamingResponseBody>`, service ghi từng dòng CSV vào `OutputStream`, còn frontend nhận response bằng `blob()` để tải file. Cách này tránh phải build toàn bộ file CSV trong RAM trước khi gửi.
+
 ---
 
 ## 6. Search export và Audit export có giống nhau không?
