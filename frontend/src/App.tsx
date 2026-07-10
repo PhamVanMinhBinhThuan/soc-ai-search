@@ -452,6 +452,9 @@ function App() {
         ...nextResponse,
         query_id: response.query_id,
         original_question: response.original_question,
+        summary: response.summary,
+        summary_source: response.summary_source,
+        summary_latency_ms: response.summary_latency_ms,
       });
       setIsCurrentQueryPinned(false);
       setActiveTab(nextResponse.mode === "aggregation" ? "analytics" : "raw");
