@@ -21,6 +21,7 @@ Script hỗ trợ:
 - Seed trực tiếp vào Elasticsearch.
 - Generate-only ra NDJSON.
 - Chọn số lượng event bằng `-Count`.
+- Chọn batch bulk insert bằng `-BatchSize`, mặc định `1000`.
 - Chọn thời gian gốc bằng `-BaseTimeUtc`.
 - Chọn seed random cố định bằng `-Seed`.
 
@@ -32,6 +33,45 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/seed-events.ps1 `
   -ElasticsearchUrl http://localhost:9200 `
   -Index soc-events-v1
 ```
+
+### Script mock data chạy như thế nào?
+
+Luồng chính của `scripts/seed-events.ps1`:
+
+1. Nhận tham số như `-Count`, `-BatchSize`, `-Seed`, `-BaseTimeUtc`, `-ElasticsearchUrl`, `-Index`.
+2. Tạo random generator bằng `-Seed`, nên cùng seed thì dữ liệu sinh ra ổn định hơn khi demo.
+3. Với mỗi event, gọi `New-SyntheticEvent` để chọn một SOC scenario: failed login, account lockout, firewall block, malware, privilege escalation, suspicious outbound hoặc normal noise.
+4. Trong từng scenario, script random có trọng số cho `user`, `host`, `ip`, `country_code`, `severity`, `message` và `timestamp`.
+5. Mỗi event được gán `event_id` dạng UUID. UUID này cũng được dùng làm Elasticsearch `_id` khi bulk insert.
+6. Script tạo NDJSON theo Elasticsearch Bulk API bằng `New-BulkLines`.
+7. Cứ đủ `-BatchSize` event thì gọi `_bulk` qua `Invoke-BulkPayload` để đẩy dữ liệu vào index `soc-events-v1`.
+8. Cuối cùng in `scenario_counters` để biết dataset có bao nhiêu event thuộc các nhóm demo chính.
+
+Nói ngắn khi bảo vệ:
+
+> Em không hardcode event trong backend. Em viết script seed riêng để sinh synthetic SOC events theo các scenario có kiểm soát. Script random có seed cố định, sinh event theo nhiều template và bulk insert vào Elasticsearch theo batch, nên vừa có tính đa dạng vừa đủ ổn định để demo.
+
+### Nếu chạy `-Count 50000` có được không?
+
+Có thể chạy được nếu Elasticsearch/VPS còn đủ tài nguyên. Script không giới hạn cứng ở `10000`; `10000` chỉ là default hợp lý cho MVP/demo.
+
+Ví dụ:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/seed-events.ps1 `
+  -Count 50000 `
+  -BatchSize 1000 `
+  -ElasticsearchUrl http://localhost:9200 `
+  -Index soc-events-v1
+```
+
+Lưu ý khi tăng lên `50000`:
+
+- Thời gian seed lâu hơn và Elasticsearch dùng nhiều disk/RAM hơn.
+- Dashboard/search/aggregation có thể nặng hơn nếu VPS yếu.
+- Nên giữ `-BatchSize 1000` hoặc giảm xuống `500` nếu VPS bị áp lực.
+- Nếu muốn dữ liệu mới không trộn với dữ liệu cũ, nên reset/recreate index trước khi seed lại.
+- Export CSV hiện giới hạn 10.000 dòng, nên dù dataset có 50.000 event thì export vẫn bị giới hạn theo thiết kế an toàn của MVP.
 
 ## 2. Schema event hiện tại
 
