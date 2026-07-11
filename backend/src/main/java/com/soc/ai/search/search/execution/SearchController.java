@@ -1,22 +1,18 @@
 package com.soc.ai.search.search.execution;
 
-import java.util.List;
 import java.util.UUID;
 
 import com.soc.ai.search.audit.QueryIdGenerator;
 import com.soc.ai.search.audit.SearchAuditService;
+import com.soc.ai.search.security.CurrentUserService;
 import com.soc.ai.search.search.plan.SearchPlan;
-import com.soc.ai.search.search.validation.SearchPlanValidationException;
 import com.soc.ai.search.summary.ResultSummaryService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.MethodArgumentNotValidException;
-import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -28,20 +24,25 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "Search", description = "Technical SearchPlan APIs")
 public class SearchController {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(SearchController.class);
+
     private final SearchPlanExecutor searchPlanExecutor;
     private final ResultSummaryService resultSummaryService;
     private final SearchAuditService searchAuditService;
     private final QueryIdGenerator queryIdGenerator;
+    private final CurrentUserService currentUserService;
 
     public SearchController(
             SearchPlanExecutor searchPlanExecutor,
             ResultSummaryService resultSummaryService,
             SearchAuditService searchAuditService,
-            QueryIdGenerator queryIdGenerator) {
+            QueryIdGenerator queryIdGenerator,
+            CurrentUserService currentUserService) {
         this.searchPlanExecutor = searchPlanExecutor;
         this.resultSummaryService = resultSummaryService;
         this.searchAuditService = searchAuditService;
         this.queryIdGenerator = queryIdGenerator;
+        this.currentUserService = currentUserService;
     }
 
     @PostMapping("/plan")
@@ -57,8 +58,16 @@ public class SearchController {
         var effectiveSummaryQuestion = effectiveSummaryQuestion(summaryQuestion);
         var queryId = queryIdGenerator.generate();
         var startedAt = System.nanoTime();
+        var identity = currentUserService.currentIdentity();
 
         try {
+            LOGGER.info(
+                    "Executing SearchPlan. query_id={} user_identity={} mode={} include_summary={} audit={}",
+                    queryId,
+                    identity,
+                    searchPlan.mode(),
+                    includeSummary,
+                    audit);
             var response = searchPlanExecutor.execute(searchPlan);
             SearchPlanExecutionResponse executionResponse;
 
@@ -114,8 +123,22 @@ public class SearchController {
                         executionResponse.latencyMs(),
                         executionResponse.summary());
             }
+            LOGGER.info(
+                    "SearchPlan execution completed. query_id={} user_identity={} mode={} total={} latency_ms={}",
+                    queryId,
+                    identity,
+                    executionResponse.mode(),
+                    executionResponse.total(),
+                    executionResponse.latencyMs());
             return executionResponse;
         } catch (RuntimeException exception) {
+            LOGGER.warn(
+                    "SearchPlan execution failed. query_id={} user_identity={} mode={} latency_ms={} error_type={}",
+                    queryId,
+                    identity,
+                    searchPlan.mode(),
+                    elapsedMs(startedAt),
+                    exception.getClass().getSimpleName());
             if (audit) {
                 searchAuditService.saveFailure(
                         queryId,
@@ -138,46 +161,5 @@ public class SearchController {
             return "Edited SearchPlan";
         }
         return summaryQuestion.strip();
-    }
-
-    @ExceptionHandler(SearchPlanValidationException.class)
-    ResponseEntity<SearchErrorResponse> handleSearchPlanValidation(SearchPlanValidationException exception) {
-        return ResponseEntity
-                .badRequest()
-                .body(new SearchErrorResponse("Invalid SearchPlan", exception.errors()));
-    }
-
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    ResponseEntity<SearchErrorResponse> handleBeanValidation(MethodArgumentNotValidException exception) {
-        var errors = exception.getBindingResult().getFieldErrors().stream()
-                .map(error -> error.getField() + ": " + error.getDefaultMessage())
-                .toList();
-        return ResponseEntity
-                .badRequest()
-                .body(new SearchErrorResponse("Invalid SearchPlan", errors));
-    }
-
-    @ExceptionHandler(HttpMessageNotReadableException.class)
-    ResponseEntity<SearchErrorResponse> handleUnreadableMessage(HttpMessageNotReadableException exception) {
-        String detailMessage = "Request body cannot be parsed";
-        Throwable cause = exception.getCause();
-        if (cause instanceof com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException unrecognized) {
-            detailMessage = "Validation failed: Unrecognized field '" + unrecognized.getPropertyName() + "'. This field is not in the allowlist.";
-        } else if (cause instanceof com.fasterxml.jackson.databind.JsonMappingException mappingEx) {
-            detailMessage = "Invalid JSON structure: " + mappingEx.getOriginalMessage();
-        } else if (cause != null) {
-            detailMessage = cause.getMessage();
-        }
-
-        return ResponseEntity
-                .badRequest()
-                .body(new SearchErrorResponse("Invalid request body", List.of(detailMessage)));
-    }
-
-    @ExceptionHandler(SearchExecutionException.class)
-    ResponseEntity<SearchErrorResponse> handleSearchExecution() {
-        return ResponseEntity
-                .status(HttpStatus.SERVICE_UNAVAILABLE)
-                .body(new SearchErrorResponse("Search dependency is unavailable", List.of("Elasticsearch search failed")));
     }
 }

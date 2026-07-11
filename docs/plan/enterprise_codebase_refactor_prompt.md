@@ -21,7 +21,7 @@ Nhiệm vụ của bạn là đọc kỹ source code hiện tại của dự án
 Dự án gồm:
 
 - Backend: Spring Boot Java 21.
-- Frontend: React, TypeScript, Vite, Tailwind.
+- Frontend: React, TypeScript, Vite, Tailwind CSS, shadcn/ui (Radix UI).
 - Database: PostgreSQL cho history/audit, Elasticsearch cho SOC events.
 - Auth/RBAC: Keycloak + Spring Security Resource Server.
 - LLM: Gemini / Anthropic / Mock provider.
@@ -94,6 +94,7 @@ Frontend:
 - `frontend/src/components/soc/history-sheet.tsx`
 - `frontend/src/components/soc/admin/audit-logs-page.tsx`
 - `frontend/src/components/soc/investigations/*`
+- `frontend/src/components/soc/investigations/investigations-master-list.tsx`
 - `frontend/src/components/soc/dashboard/*`
 - `frontend/src/components/soc/query-library-page.tsx`
 - `frontend/src/lib/query-library.ts`
@@ -396,6 +397,7 @@ Việc cần làm:
    - follow-up suggestion key update
    - active result tab decision
    - summary visible state
+   - pin/unpin investigation (`onTogglePin` / current query pin state)
 3. Tạo `use-event-detail.ts`.
 4. Tạo `use-search-history-modal.ts`.
 5. Tạo `use-search-export.ts`.
@@ -517,10 +519,11 @@ Việc cần làm:
    - CSV export;
    - audit export;
    - LLM provider failures.
-2. Không log prompt đầy đủ, token, API key, raw event sensitive content.
-3. Chuẩn hóa latency fields.
-4. Nếu thêm `request_id` thì dùng MDC/filter nhẹ, không làm phức tạp quá.
-5. Cập nhật docs nếu cần.
+2. Khi có authenticated user, log thêm `user_identity`, `preferred_username` hoặc JWT `subject` ở mức an toàn để hỗ trợ audit SOC.
+3. Không log prompt đầy đủ, token, API key, raw authorization header, raw event sensitive content hoặc secret.
+4. Chuẩn hóa latency fields.
+5. Nếu thêm `request_id` thì dùng MDC/filter nhẹ, không làm phức tạp quá.
+6. Cập nhật docs nếu cần.
 
 ## Acceptance Criteria
 

@@ -15,11 +15,11 @@ public record SearchPlan(
         @NotNull SearchMode mode,
         @Valid SearchFilters filters,
         @Valid AggregationPlan aggregation,
-        @Size(max = 200, message = "must be at most 200 characters")
+        @Size(max = SearchPlanContract.MAX_MESSAGE_QUERY_LENGTH, message = "must be at most 200 characters")
         @Pattern(regexp = ".*\\S.*", message = "must not be blank") String messageQuery,
         List<@Valid SortPlan> sort,
         @NotNull @Min(0) Integer page,
-        @NotNull @Min(1) @Max(100) Integer size) {
+        @NotNull @Min(1) @Max(SearchPlanContract.MAX_PAGE_SIZE) Integer size) {
 
     public SearchPlan(SearchMode mode, SearchFilters filters, AggregationPlan aggregation, String messageQuery, Integer page, Integer size) {
         this(mode, filters, aggregation, messageQuery, null, page, size);

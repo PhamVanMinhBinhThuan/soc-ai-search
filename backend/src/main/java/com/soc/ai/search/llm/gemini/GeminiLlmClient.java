@@ -1,9 +1,6 @@
 package com.soc.ai.search.llm.gemini;
 
-import java.io.IOException;
 import java.net.URI;
-import java.nio.charset.StandardCharsets;
-import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
@@ -11,6 +8,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.soc.ai.search.llm.LlmClient;
 import com.soc.ai.search.llm.LlmFollowUpSuggestionsRequest;
+import com.soc.ai.search.llm.LlmHttpSupport;
 import com.soc.ai.search.llm.LlmProperties;
 import com.soc.ai.search.llm.LlmQuestionRefinementRequest;
 import com.soc.ai.search.llm.LlmResponse;
@@ -52,7 +50,7 @@ public class GeminiLlmClient implements LlmClient {
         validateConfiguration();
 
         var startedAt = System.nanoTime();
-        var maxAttempts = Math.max(properties.maxAttempts(), 1);
+        var maxAttempts = LlmHttpSupport.maxAttempts(properties);
 
         for (var attempt = 1; attempt <= maxAttempts; attempt++) {
             try {
@@ -63,15 +61,15 @@ public class GeminiLlmClient implements LlmClient {
                         true);
                 var content = extractText(responseJson);
                 var model = extractModel(responseJson);
-                return new LlmResponse(content, model, elapsedMs(startedAt));
+                return new LlmResponse(content, model, LlmHttpSupport.elapsedMs(startedAt));
             } catch (RestClientResponseException exception) {
                 LOGGER.warn(
                         "Gemini request attempt {}/{} returned HTTP {}: {}",
                         attempt,
                         maxAttempts,
                         exception.getStatusCode().value(),
-                        providerErrorMessage(exception));
-                if (!shouldRetry(exception) || attempt == maxAttempts) {
+                        LlmHttpSupport.providerErrorMessage(exception, RESPONSE_MAPPER));
+                if (!LlmHttpSupport.shouldRetry(exception) || attempt == maxAttempts) {
                     throw mapResponseException(exception);
                 }
             } catch (ResourceAccessException exception) {
@@ -112,7 +110,7 @@ public class GeminiLlmClient implements LlmClient {
             return new LlmResponse(
                     extractText(responseJson),
                     extractModel(responseJson),
-                    elapsedMs(startedAt));
+                    LlmHttpSupport.elapsedMs(startedAt));
         } catch (RestClientResponseException exception) {
             throw mapResponseException(exception);
         } catch (ResourceAccessException exception) {
@@ -136,7 +134,7 @@ public class GeminiLlmClient implements LlmClient {
             return new LlmResponse(
                     extractText(responseJson),
                     extractModel(responseJson),
-                    elapsedMs(startedAt));
+                    LlmHttpSupport.elapsedMs(startedAt));
         } catch (RestClientResponseException exception) {
             throw mapResponseException(exception);
         } catch (ResourceAccessException exception) {
@@ -160,7 +158,7 @@ public class GeminiLlmClient implements LlmClient {
             return new LlmResponse(
                     extractText(responseJson),
                     extractModel(responseJson),
-                    elapsedMs(startedAt));
+                    LlmHttpSupport.elapsedMs(startedAt));
         } catch (RestClientResponseException exception) {
             throw mapResponseException(exception);
         } catch (ResourceAccessException exception) {
@@ -184,16 +182,11 @@ public class GeminiLlmClient implements LlmClient {
                 .retrieve()
                 .body(byte[].class);
 
-        if (responseBytes == null || responseBytes.length == 0) {
-            throw new GeminiLlmException("Gemini response is empty");
-        }
-
-        try {
-            var responseBody = new String(responseBytes, StandardCharsets.UTF_8);
-            return RESPONSE_MAPPER.readTree(responseBody);
-        } catch (IOException exception) {
-            throw new GeminiLlmException("Gemini response is not valid JSON", exception);
-        }
+        return LlmHttpSupport.parseJsonResponse(
+                responseBytes,
+                RESPONSE_MAPPER,
+                () -> new GeminiLlmException("Gemini response is empty"),
+                exception -> new GeminiLlmException("Gemini response is not valid JSON", exception));
     }
 
     private Map<String, Object> buildRequestBody(
@@ -216,7 +209,7 @@ public class GeminiLlmClient implements LlmClient {
     }
 
     private URI generateContentUri() {
-        return UriComponentsBuilder.fromUriString(trimTrailingSlash(properties.baseUrl()))
+        return UriComponentsBuilder.fromUriString(LlmHttpSupport.trimTrailingSlash(properties.baseUrl()))
                 .path("/models/{model}:generateContent")
                 .build(properties.model());
     }
@@ -249,10 +242,6 @@ public class GeminiLlmClient implements LlmClient {
         return properties.model().trim();
     }
 
-    private boolean shouldRetry(RestClientResponseException exception) {
-        return exception.getStatusCode().is5xxServerError();
-    }
-
     private RuntimeException mapResponseException(RestClientResponseException exception) {
         if (exception.getStatusCode().value() == 429) {
             return new GeminiRateLimitException("Gemini rate limit exceeded", exception);
@@ -269,48 +258,15 @@ public class GeminiLlmClient implements LlmClient {
         return new GeminiLlmException("Gemini request failed", exception);
     }
 
-    private String providerErrorMessage(RestClientResponseException exception) {
-        try {
-            var responseBody = exception.getResponseBodyAsString();
-            if (responseBody == null || responseBody.isBlank()) {
-                return exception.getStatusText();
-            }
-
-            var responseJson = RESPONSE_MAPPER.readTree(responseBody);
-            var message = responseJson.path("error").path("message");
-            return message.isTextual() && !message.asText().isBlank()
-                    ? message.asText()
-                    : exception.getStatusText();
-        } catch (Exception ignored) {
-            return exception.getStatusText();
-        }
-    }
-
     private void validateConfiguration() {
-        if (!hasText(properties.baseUrl())) {
-            throw new GeminiLlmException("Gemini base URL is not configured");
-        }
-        if (!hasText(properties.apiKey())) {
-            throw new GeminiLlmException("Gemini API key is not configured");
-        }
-        if (!hasText(properties.model())) {
-            throw new GeminiLlmException("Gemini model is not configured");
-        }
-    }
-
-    private String trimTrailingSlash(String value) {
-        var trimmed = value.trim();
-        while (trimmed.endsWith("/")) {
-            trimmed = trimmed.substring(0, trimmed.length() - 1);
-        }
-        return trimmed;
-    }
-
-    private boolean hasText(String value) {
-        return value != null && !value.isBlank();
-    }
-
-    private long elapsedMs(long startedAt) {
-        return Duration.ofNanos(System.nanoTime() - startedAt).toMillis();
+        LlmHttpSupport.requireText(
+                properties.baseUrl(),
+                () -> new GeminiLlmException("Gemini base URL is not configured"));
+        LlmHttpSupport.requireText(
+                properties.apiKey(),
+                () -> new GeminiLlmException("Gemini API key is not configured"));
+        LlmHttpSupport.requireText(
+                properties.model(),
+                () -> new GeminiLlmException("Gemini model is not configured"));
     }
 }

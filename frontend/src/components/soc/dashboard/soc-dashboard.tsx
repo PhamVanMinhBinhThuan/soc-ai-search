@@ -4,7 +4,8 @@ import { KpiCards } from "./kpi-cards"
 import { EventsOverTime } from "./events-over-time"
 import { SeverityDistribution } from "./severity-distribution"
 import { TopSourceIps } from "./top-source-ips"
-import type { DashboardMetricsDto, SearchPlanDto, SearchPlanResponseDto } from "@/types/soc"
+import { dashboardSearchPlans } from "./dashboard-searchplans"
+import type { DashboardMetricsDto, SearchPlanResponseDto } from "@/types/soc"
 import { executeSearchPlan } from "@/services/search-api"
 import { ApiError } from "@/services/api-client"
 
@@ -51,56 +52,14 @@ export function SocDashboard({
     setRefreshing(true)
     setDashboardError(null)
     
-    // We run 5 queries
-    const failedLoginsPlan: SearchPlanDto = {
-      mode: 'search',
-      page: 0,
-      size: 1,
-      message_query: null,
-      aggregation: null,
-      filters: { timestamp: { from: 'now-24h', to: 'now' }, event_type: ['failed_login'] },
-    }
-    const criticalPlan: SearchPlanDto = {
-      mode: 'search',
-      page: 0,
-      size: 1,
-      message_query: null,
-      aggregation: null,
-      filters: { timestamp: { from: 'now-24h', to: 'now' }, severity: ['critical', 'high'] },
-    }
-    const timePlan: SearchPlanDto = {
-      mode: 'aggregation',
-      page: 0,
-      size: 1,
-      message_query: null,
-      filters: { timestamp: { from: 'now-24h', to: 'now' } },
-      aggregation: { type: 'date_histogram', interval: 'hour' },
-    }
-    const severityPlan: SearchPlanDto = {
-      mode: 'aggregation',
-      page: 0,
-      size: 1,
-      message_query: null,
-      filters: { timestamp: { from: 'now-24h', to: 'now' } },
-      aggregation: { type: 'group_by', field: 'severity', top_n: 10 },
-    }
-    const topIpPlan: SearchPlanDto = {
-      mode: 'aggregation',
-      page: 0,
-      size: 1,
-      message_query: null,
-      filters: { timestamp: { from: 'now-24h', to: 'now' } },
-      aggregation: { type: 'top_n', field: 'ip', top_n: 5 },
-    }
-
     try {
       const dashboardQueryOptions = { audit: false }
       const [failedRes, critRes, timeRes, sevRes, topIpRes] = await Promise.allSettled([
-        executeSearchPlan(failedLoginsPlan, signal, dashboardQueryOptions),
-        executeSearchPlan(criticalPlan, signal, dashboardQueryOptions),
-        executeSearchPlan(timePlan, signal, dashboardQueryOptions),
-        executeSearchPlan(severityPlan, signal, dashboardQueryOptions),
-        executeSearchPlan(topIpPlan, signal, dashboardQueryOptions),
+        executeSearchPlan(dashboardSearchPlans.failedLogins, signal, dashboardQueryOptions),
+        executeSearchPlan(dashboardSearchPlans.criticalHigh, signal, dashboardQueryOptions),
+        executeSearchPlan(dashboardSearchPlans.eventsOverTime, signal, dashboardQueryOptions),
+        executeSearchPlan(dashboardSearchPlans.severityDistribution, signal, dashboardQueryOptions),
+        executeSearchPlan(dashboardSearchPlans.topSourceIps, signal, dashboardQueryOptions),
       ])
 
       if (signal?.aborted) return

@@ -7,6 +7,7 @@ import {
   getMockEventDetail,
   searchMockEvents,
 } from '@/services/mock-search-api'
+import { assertSearchPlanResponse } from '@/services/search-plan-response'
 import type {
   EventDetailResponseDto,
   NaturalLanguageSearchRequestDto,
@@ -126,8 +127,8 @@ export async function executeSearchPlan(
     },
     body: JSON.stringify(plan),
   })
-  // Let's assume the backend response matches SearchPlanResponseDto closely enough
-  return payload as SearchPlanResponseDto
+  assertSearchPlanResponse(payload)
+  return payload
 }
 
 export async function getEventDetail(

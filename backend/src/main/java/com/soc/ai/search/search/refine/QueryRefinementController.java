@@ -1,13 +1,9 @@
 package com.soc.ai.search.search.refine;
 
-import com.soc.ai.search.search.execution.SearchErrorResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.MethodArgumentNotValidException;
-import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -32,22 +28,5 @@ public class QueryRefinementController {
                     + "it does not execute search or write audit history.")
     public QueryRefinementResponse refine(@Valid @RequestBody QueryRefinementRequest request) {
         return service.refine(request);
-    }
-
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    ResponseEntity<SearchErrorResponse> handleBeanValidation(MethodArgumentNotValidException exception) {
-        var errors = exception.getBindingResult().getFieldErrors().stream()
-                .map(error -> error.getField() + ": " + error.getDefaultMessage())
-                .toList();
-        return ResponseEntity
-                .badRequest()
-                .body(new SearchErrorResponse("Invalid query refinement request", errors));
-    }
-
-    @ExceptionHandler(QueryRefinementException.class)
-    ResponseEntity<SearchErrorResponse> handleQueryRefinement(QueryRefinementException exception) {
-        return ResponseEntity
-                .badRequest()
-                .body(new SearchErrorResponse(exception.getMessage(), exception.errors()));
     }
 }

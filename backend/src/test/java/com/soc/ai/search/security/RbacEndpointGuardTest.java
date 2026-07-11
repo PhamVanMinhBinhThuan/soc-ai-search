@@ -104,6 +104,9 @@ class RbacEndpointGuardTest {
     private QueryRefinementService queryRefinementService;
 
     @MockitoBean
+    private CurrentUserService currentUserService;
+
+    @MockitoBean
     private JwtDecoder jwtDecoder;
 
     @BeforeEach

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect } from "react";
 import {
   Routes,
   Route,
@@ -21,7 +21,7 @@ import { FollowUpSuggestions } from "@/components/soc/follow-up-suggestions";
 import { HistorySheet } from "@/components/soc/history-sheet";
 import { AiSummaryCard } from "@/components/soc/metrics-summary";
 import { QueryTransparency } from "@/components/soc/query-transparency";
-import { ResultTabs, type ResultTab } from "@/components/soc/result-tabs";
+import { ResultTabs } from "@/components/soc/result-tabs";
 import { SearchSection } from "@/components/soc/search-section";
 import { AuditLogsPage } from "@/components/soc/admin/audit-logs-page";
 import { InvestigationsPage } from "@/components/soc/investigations/investigations-page";
@@ -34,65 +34,16 @@ import {
 } from "@/components/soc/search-status";
 import { SocSidebar } from "@/components/soc/soc-sidebar";
 import { Button } from "@/components/ui/button";
-import {
-  buildAiCorrectedAuditQuestion,
-  parseAiCorrectedQuestion,
-} from "@/lib/audit-question-format";
-import { initialScenario, mockScenarios } from "@/lib/mock-data";
-import { downloadMockCsv } from "@/lib/mock-presentation";
+import { pageFromPath, pathForPage } from "@/lib/app-routes";
+import { mockScenarios } from "@/lib/mock-data";
 import { setAuthTokenHandlers } from "@/services/api-client";
-import { toUiError } from "@/services/api-error-messages";
-import { downloadCsvBlob, exportSearchCsv } from "@/services/csv-export-api";
-import { getSearchHistory, togglePinHistory } from "@/services/history-api";
-import { initialMockResponse } from "@/services/mock-search-api";
-import {
-  getEventDetail,
-  isMockMode,
-  searchEvents,
-} from "@/services/search-api";
-import type {
-  DetailStatus,
-  EventDetailResponseDto,
-  ExportStatus,
-  HistoryStatus,
-  NaturalLanguageSearchRequestDto,
-  NaturalLanguageSearchResponseDto,
-  RequestStatus,
-  SearchHistoryItemDto,
-  SearchHistoryPageDto,
-  SearchPlanDto,
-  UiError,
-} from "@/types/soc";
+import { isMockMode } from "@/services/search-api";
+import { useEventDetail } from "@/hooks/use-event-detail";
+import { useSearchExport } from "@/hooks/use-search-export";
+import { useSearchHistoryModal } from "@/hooks/use-search-history-modal";
+import { useSearchWorkflow } from "@/hooks/use-search-workflow";
 
-const DEFAULT_SEARCH_PAGE_SIZE = 10;
 const HISTORY_PAGE_SIZE = 5;
-
-function stripAuditQuestionPrefix(value: string) {
-  const aiCorrected = parseAiCorrectedQuestion(value);
-  if (aiCorrected) {
-    return aiCorrected.original;
-  }
-
-  const marker = "Original question:";
-  const markerIndex = value.indexOf(marker);
-  if (markerIndex === -1) {
-    return value;
-  }
-  return value.slice(markerIndex + marker.length).trim();
-}
-
-const initialResponse = isMockMode ? initialMockResponse() : null;
-const initialRequest: NaturalLanguageSearchRequestDto | null = initialResponse
-  ? {
-      question: initialResponse.original_question,
-      page: initialResponse.page,
-      size: initialResponse.size,
-    }
-  : null;
-
-function isAbortError(error: unknown) {
-  return error instanceof DOMException && error.name === "AbortError";
-}
 
 function App() {
   const auth = useSocAuth();
@@ -106,71 +57,16 @@ function App() {
   const canUseRawLog = canViewRawLog(permissionContext);
   const canEditPlan = canEditSearchPlan(permissionContext);
   const canUseAuditLogs = canViewAuditLogs(permissionContext);
-  const [question, setQuestion] = useState(
-    isMockMode ? initialScenario.question : "",
-  );
-  const [submittedRequest, setSubmittedRequest] =
-    useState<NaturalLanguageSearchRequestDto | null>(initialRequest);
-  const [response, setResponse] =
-    useState<NaturalLanguageSearchResponseDto | null>(initialResponse);
-  const [summaryVisible, setSummaryVisible] = useState(
-    Boolean(initialResponse),
-  );
-  const [followUpSuggestionKey, setFollowUpSuggestionKey] = useState<
-    string | null
-  >(
-    initialResponse
-      ? `${initialResponse.query_id}:${initialResponse.original_question}`
-      : null,
-  );
-  const [searchFocusSignal, setSearchFocusSignal] = useState(0);
-  const [originalAiSearchPlan, setOriginalAiSearchPlan] = useState(
-    initialResponse?.search_plan,
-  );
-  const [isCurrentQueryPinned, setIsCurrentQueryPinned] = useState(false);
-  const [requestStatus, setRequestStatus] = useState<RequestStatus>(
-    initialResponse ? "success" : "idle",
-  );
-  const [searchError, setSearchError] = useState<UiError | null>(null);
-  const [activeTab, setActiveTab] = useState<ResultTab>(
-    initialResponse?.mode === "aggregation" ? "analytics" : "raw",
-  );
   const location = useLocation();
   const navigate = useNavigate();
-  const currentPath = location.pathname;
-  const activePage =
-    currentPath === "/dashboard"
-      ? "dashboard"
-      : currentPath === "/investigations"
-        ? "investigations"
-        : currentPath === "/audit-logs"
-          ? "audit-logs"
-          : currentPath === "/query-library"
-            ? "query-library"
-            : "search";
+  const activePage = pageFromPath(location.pathname);
 
-  const [detailOpen, setDetailOpen] = useState(false);
-  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
-  const [eventDetail, setEventDetail] = useState<EventDetailResponseDto | null>(
-    null,
-  );
-  const [detailStatus, setDetailStatus] = useState<DetailStatus>("idle");
-  const [detailError, setDetailError] = useState<UiError | null>(null);
-
-  const [historyOpen, setHistoryOpen] = useState(false);
-  const [historyResponse, setHistoryResponse] =
-    useState<SearchHistoryPageDto | null>(null);
-  const [historyStatus, setHistoryStatus] = useState<HistoryStatus>("idle");
-  const [historyError, setHistoryError] = useState<UiError | null>(null);
-  const [exportStatus, setExportStatus] = useState<ExportStatus>("idle");
-  const [exportMessage, setExportMessage] = useState<string | null>(null);
-
-  const searchAbortRef = useRef<AbortController | null>(null);
-  const detailAbortRef = useRef<AbortController | null>(null);
-  const historyAbortRef = useRef<AbortController | null>(null);
-  const exportAbortRef = useRef<AbortController | null>(null);
-  const historyOpenRef = useRef(false);
-  const historyPageRef = useRef(0);
+  const eventDetail = useEventDetail({ canViewEventDetail: canUseSearch });
+  const historyModal = useSearchHistoryModal({
+    canViewHistory: canUseHistory,
+    pageSize: HISTORY_PAGE_SIZE,
+  });
+  const searchExport = useSearchExport();
 
   useEffect(() => {
     setAuthTokenHandlers({
@@ -180,467 +76,57 @@ function App() {
     return () => setAuthTokenHandlers(null);
   }, [auth.accessToken, auth.refreshAccessToken]);
 
-  useEffect(
-    () => () => {
-      searchAbortRef.current?.abort();
-      detailAbortRef.current?.abort();
-      historyAbortRef.current?.abort();
-      exportAbortRef.current?.abort();
-    },
-    [],
-  );
-
-  const loadHistory = async (page: number) => {
-    if (!canUseHistory) {
-      setHistoryStatus("idle");
-      setHistoryError({
-        status: 403,
-        message: "You do not have permission to view search history.",
-        errors: [],
-      });
-      return;
-    }
-
-    historyAbortRef.current?.abort();
-    const controller = new AbortController();
-    historyAbortRef.current = controller;
-    setHistoryStatus("loading");
-    setHistoryError(null);
-
-    try {
-      const nextHistory = await getSearchHistory(
-        page,
-        HISTORY_PAGE_SIZE,
-        {},
-        controller.signal,
-      );
-      if (controller.signal.aborted) {
-        return;
-      }
-      setHistoryResponse(nextHistory);
-      setHistoryStatus(nextHistory.items.length === 0 ? "empty" : "success");
-    } catch (error) {
-      if (isAbortError(error)) {
-        return;
-      }
-      setHistoryError(toUiError(error));
-      setHistoryStatus("error");
-    } finally {
-      if (historyAbortRef.current === controller) {
-        historyAbortRef.current = null;
-      }
+  const reloadHistoryIfOpen = () => {
+    if (historyModal.openRef.current) {
+      void historyModal.load(historyModal.pageRef.current);
     }
   };
 
-  const handleTogglePinCurrentQuery = async (pinned: boolean) => {
-    if (!response?.query_id) return;
-    setIsCurrentQueryPinned(pinned);
-    try {
-      await togglePinHistory(response.query_id, pinned);
-      if (historyOpenRef.current && canUseHistory) {
-        void loadHistory(historyPageRef.current);
-      }
-    } catch (e) {
-      setIsCurrentQueryPinned(!pinned);
-      console.error(e);
-    }
-  };
-
-  const closeDetail = () => {
-    detailAbortRef.current?.abort();
-    detailAbortRef.current = null;
-    setDetailOpen(false);
-    setSelectedEventId(null);
-    setEventDetail(null);
-    setDetailError(null);
-    setDetailStatus("idle");
-  };
-
-  const executeSearch = async (request: NaturalLanguageSearchRequestDto) => {
-    const normalizedRequest = {
-      ...request,
-      question: request.question.trim(),
-    };
-
-    if (!normalizedRequest.question) {
-      setResponse(null);
-      setSummaryVisible(false);
-      setFollowUpSuggestionKey(null);
-      setSubmittedRequest(normalizedRequest);
-      setSearchError({
-        status: 400,
-        message: "Question must not be blank",
-        errors: [],
-      });
-      setRequestStatus("error");
-      return;
-    }
-
-    searchAbortRef.current?.abort();
-    exportAbortRef.current?.abort();
-    exportAbortRef.current = null;
-    const controller = new AbortController();
-    searchAbortRef.current = controller;
-    closeDetail();
-    setQuestion(normalizedRequest.question);
-    setSubmittedRequest(normalizedRequest);
-    setResponse(null);
-    setSummaryVisible(false);
-    setFollowUpSuggestionKey(null);
-    setOriginalAiSearchPlan(undefined);
-    setSearchError(null);
-    setExportStatus("idle");
-    setExportMessage(null);
-    setRequestStatus("loading");
-
-    try {
-      const nextResponse = await searchEvents(
-        normalizedRequest,
-        controller.signal,
-      );
-      if (controller.signal.aborted) {
-        return;
-      }
-
-      setResponse(nextResponse);
-      setSummaryVisible(true);
-      setFollowUpSuggestionKey(
-        `${nextResponse.query_id}:${stripAuditQuestionPrefix(nextResponse.original_question)}`,
-      );
-      setOriginalAiSearchPlan(nextResponse.search_plan);
-      setIsCurrentQueryPinned(false);
-      setActiveTab(nextResponse.mode === "aggregation" ? "analytics" : "raw");
-      const isEmpty =
-        nextResponse.mode === "search"
-          ? nextResponse.events.length === 0
-          : nextResponse.aggregation_results.length === 0;
-      setRequestStatus(isEmpty ? "empty" : "success");
-    } catch (error) {
-      if (isAbortError(error)) {
-        return;
-      }
-      setResponse(null);
-      setSummaryVisible(false);
-      setFollowUpSuggestionKey(null);
-      setOriginalAiSearchPlan(undefined);
-      setSearchError(toUiError(error));
-      setRequestStatus("error");
-    } finally {
-      if (searchAbortRef.current === controller) {
-        searchAbortRef.current = null;
-      }
-      if (
-        !controller.signal.aborted &&
-        historyOpenRef.current &&
-        canUseHistory
-      ) {
-        void loadHistory(historyPageRef.current);
-      }
-    }
-  };
-
-  const loadEventDetail = async (eventId: string) => {
-    if (!canUseSearch) {
-      setEventDetail(null);
-      setDetailError({
-        status: 403,
-        message: "You do not have permission to view event details.",
-        errors: [],
-      });
-      setDetailStatus("error");
-      return;
-    }
-
-    detailAbortRef.current?.abort();
-    const controller = new AbortController();
-    detailAbortRef.current = controller;
-    setEventDetail(null);
-    setDetailError(null);
-    setDetailStatus("loading");
-
-    try {
-      const detail = await getEventDetail(eventId, controller.signal);
-      if (controller.signal.aborted) {
-        return;
-      }
-      setEventDetail(detail);
-      setDetailStatus("success");
-    } catch (error) {
-      if (isAbortError(error)) {
-        return;
-      }
-      setDetailError(toUiError(error));
-      setDetailStatus("error");
-    } finally {
-      if (detailAbortRef.current === controller) {
-        detailAbortRef.current = null;
-      }
-    }
-  };
-
-  const openEventDetail = (eventId: string) => {
-    setSelectedEventId(eventId);
-    setDetailOpen(true);
-    void loadEventDetail(eventId);
-  };
-
-  const submitQuestion = (nextQuestion: string, auditQuestion?: string) => {
-    void executeSearch({
-      question: nextQuestion,
-      audit_question: auditQuestion,
-      page: 0,
-      size:
-        response?.size ?? submittedRequest?.size ?? DEFAULT_SEARCH_PAGE_SIZE,
-    });
-  };
-
-  const currentOriginalQuestion = () =>
-    stripAuditQuestionPrefix(
-      response?.original_question || submittedRequest?.question || question,
-    );
-
-  const currentRunnableQuestion = () => {
-    const rawQuestion =
-      response?.original_question || submittedRequest?.question || question;
-    const aiCorrected = parseAiCorrectedQuestion(rawQuestion);
-    return aiCorrected?.rewritten ?? stripAuditQuestionPrefix(rawQuestion);
-  };
-
-  const derivedAuditQuestion = (label: "Edited SearchPlan" | "Filtered Result") =>
-    `[${label}] Original question: ${currentOriginalQuestion()}`;
-
-  const changePage = async (page: number) => {
-    if (!response || response.mode !== "search") {
-      return;
-    }
-
-    searchAbortRef.current?.abort();
-    exportAbortRef.current?.abort();
-    exportAbortRef.current = null;
-    const controller = new AbortController();
-    searchAbortRef.current = controller;
-
-    closeDetail();
-    setSearchError(null);
-    setExportStatus("idle");
-    setExportMessage(null);
-    // We don't set requestStatus to 'loading' to avoid unmounting the ResultTabs
-    // ResultTabs shows a spinner internally or we can just let it be.
-    // Actually, setting requestStatus = 'loading' shows SearchLoadingState and hides the table.
-    // executeSearch does it, so let's keep consistent for now.
-    setRequestStatus("loading");
-
-    try {
-      const { runSearchPlan } = await import("@/services/search-plan-api");
-      const paginatedPlan = {
-        ...response.search_plan,
-        page,
-        size: response.size,
-      };
-      const nextResponse = await runSearchPlan(
-        paginatedPlan,
-        controller.signal,
-        currentOriginalQuestion(),
-        false,
-        false,
-      );
-      if (controller.signal.aborted) {
-        return;
-      }
-
-      setResponse({
-        ...nextResponse,
-        query_id: response.query_id,
-        original_question: response.original_question,
-        summary: response.summary,
-        summary_source: response.summary_source,
-        summary_latency_ms: response.summary_latency_ms,
-      });
-      setIsCurrentQueryPinned(false);
-      setActiveTab(nextResponse.mode === "aggregation" ? "analytics" : "raw");
-
-      const isEmpty =
-        nextResponse.mode === "search"
-          ? nextResponse.events.length === 0
-          : nextResponse.aggregation_results.length === 0;
-      setRequestStatus(isEmpty ? "empty" : "success");
-    } catch (error) {
-      if (isAbortError(error)) {
-        return;
-      }
-      setSearchError(toUiError(error));
-      setRequestStatus("error");
-    } finally {
-      if (searchAbortRef.current === controller) {
-        searchAbortRef.current = null;
-      }
-    }
-  };
-
-  const runRefinedSearchPlan = async (plan: SearchPlanDto) => {
-    if (!response) {
-      return;
-    }
-
-    searchAbortRef.current?.abort();
-    exportAbortRef.current?.abort();
-    exportAbortRef.current = null;
-    const controller = new AbortController();
-    searchAbortRef.current = controller;
-
-    closeDetail();
-    setSearchError(null);
-    setExportStatus("idle");
-    setExportMessage(null);
-    setRequestStatus("loading");
-
-    try {
-      const { runSearchPlan } = await import("@/services/search-plan-api");
-      const nextResponse = await runSearchPlan(
-        plan,
-        controller.signal,
-        derivedAuditQuestion("Filtered Result"),
-        false,
-        true,
-      );
-      if (controller.signal.aborted) {
-        return;
-      }
-
-      setResponse(nextResponse);
-      setSummaryVisible(false);
-      setIsCurrentQueryPinned(false);
-      setActiveTab(nextResponse.mode === "aggregation" ? "analytics" : "raw");
-
-      const isEmpty =
-        nextResponse.mode === "search"
-          ? nextResponse.events.length === 0
-          : nextResponse.aggregation_results.length === 0;
-      setRequestStatus(isEmpty ? "empty" : "success");
-    } catch (error) {
-      if (isAbortError(error)) {
-        return;
-      }
-      setSearchError(toUiError(error));
-      setRequestStatus("error");
-    } finally {
-      if (searchAbortRef.current === controller) {
-        searchAbortRef.current = null;
-      }
-      if (
-        !controller.signal.aborted &&
-        historyOpenRef.current &&
-        canUseHistory
-      ) {
-        void loadHistory(historyPageRef.current);
-      }
-    }
-  };
-
-  const retrySearch = () => {
-    if (submittedRequest) {
-      void executeSearch(submittedRequest);
-    }
-  };
-
-  const selectFollowUpSuggestion = (nextQuestion: string) => {
-    setQuestion(nextQuestion);
-    setSearchFocusSignal((value) => value + 1);
-    navigate("/search");
-  };
-
-  const selectDefaultSuggestion = (nextQuestion: string) => {
-    setQuestion(nextQuestion);
-    setSearchFocusSignal((value) => value + 1);
-  };
-
-  const retryEventDetail = () => {
-    if (selectedEventId) {
-      void loadEventDetail(selectedEventId);
-    }
-  };
-
-  const runHistoryItem = (item: SearchHistoryItemDto) => {
-    const aiCorrected = parseAiCorrectedQuestion(item.question);
-    const runnableQuestion = aiCorrected?.rewritten ?? item.question;
-    historyOpenRef.current = false;
-    setHistoryOpen(false);
-    setQuestion(runnableQuestion);
-    void executeSearch({
-      question: runnableQuestion,
-      page: 0,
-      size:
-        response?.size ?? submittedRequest?.size ?? DEFAULT_SEARCH_PAGE_SIZE,
-    });
-  };
-
-  const fillHistoryItemQuestion = (item: SearchHistoryItemDto) => {
-    const aiCorrected = parseAiCorrectedQuestion(item.question);
-    const runnableQuestion = aiCorrected?.rewritten ?? item.question;
-    historyOpenRef.current = false;
-    setHistoryOpen(false);
-    setQuestion(runnableQuestion);
-    setSearchFocusSignal((value) => value + 1);
-    navigate("/search");
-  };
+  const {
+    question,
+    setQuestion,
+    response,
+    summaryVisible,
+    followUpSuggestionKey,
+    searchFocusSignal,
+    originalAiSearchPlan,
+    isCurrentQueryPinned,
+    requestStatus,
+    searchError,
+    activeTab,
+    setActiveTab,
+    submitQuestion,
+    currentOriginalQuestion,
+    currentRunnableQuestion,
+    changePage,
+    runRefinedSearchPlan,
+    runEditedSearchPlan,
+    handleTogglePinCurrentQuery,
+    retrySearch,
+    selectFollowUpSuggestion,
+    selectDefaultSuggestion,
+    runHistoryItem,
+    fillHistoryItemQuestion,
+    buildAiCorrectedAuditQuestion,
+  } = useSearchWorkflow({
+    canUseHistory,
+    closeEventDetail: eventDetail.close,
+    resetExport: searchExport.reset,
+    reloadHistoryIfOpen,
+    navigate,
+  });
 
   const navigateToAuditLogs = () => {
     navigate("/audit-logs");
   };
 
-  const handleExport = async (overrideQueryId?: string) => {
-    const targetQueryId = overrideQueryId ?? response?.query_id;
-    if (!targetQueryId || !canUseExport) {
-      return;
-    }
-
-    exportAbortRef.current?.abort();
-    const controller = new AbortController();
-    exportAbortRef.current = controller;
-    setExportStatus("loading");
-    setExportMessage(null);
-
-    try {
-      if (isMockMode) {
-        if (!overrideQueryId && response) {
-          downloadMockCsv({
-            mode: response.mode,
-            events: response.events,
-            aggregationResults: response.aggregation_results,
-          });
-          setExportMessage(null);
-        } else {
-          setExportMessage(
-            "Exporting historical query is not fully supported in pure mock mode.",
-          );
-        }
-      } else {
-        const exported = await exportSearchCsv(
-          targetQueryId,
-          controller.signal,
-        );
-        if (controller.signal.aborted) {
-          return;
-        }
-        downloadCsvBlob(exported.blob, exported.filename);
-        setExportMessage(null);
-      }
-      setExportStatus("success");
-    } catch (error) {
-      if (isAbortError(error)) {
-        return;
-      }
-      const uiError = toUiError(error);
-      setExportStatus("error");
-      setExportMessage(
-        [uiError.message, ...uiError.errors].filter(Boolean).join(" "),
-      );
-    } finally {
-      if (exportAbortRef.current === controller) {
-        exportAbortRef.current = null;
-      }
-    }
-  };
+  const handleExport = (overrideQueryId?: string) =>
+    searchExport.exportSearch({
+      queryId: overrideQueryId,
+      response,
+      canExport: canUseExport,
+      isMockMode,
+    });
 
   return (
     <div className="dark flex min-h-svh bg-background text-foreground">
@@ -650,7 +136,7 @@ function App() {
         authLoading={auth.loading}
         authEnabled={auth.enabled}
         activePage={activePage}
-        onPageChange={(p) => navigate(`/${p}`)}
+        onPageChange={(p) => navigate(pathForPage(p))}
         onOpenAuditLogs={navigateToAuditLogs}
         onLogout={auth.signOut}
       />
@@ -700,6 +186,7 @@ function App() {
               <InvestigationsPage
                 onRunAgain={(item) => {
                   navigate("/search");
+                  historyModal.close();
                   runHistoryItem(item);
                 }}
                 onExport={(queryId) => void handleExport(queryId)}
@@ -731,12 +218,7 @@ function App() {
                   focusSignal={searchFocusSignal}
                   onOpenQueryLibrary={() => navigate('/query-library')}
                   onOpenRecentQueries={
-                    canUseHistory
-                      ? () => {
-                          setHistoryOpen(true);
-                          void loadHistory(0);
-                        }
-                      : undefined
+                    canUseHistory ? historyModal.openRecentQueries : undefined
                   }
                 />
 
@@ -772,64 +254,7 @@ function App() {
                           }),
                         )
                       }
-                      onRunEditedPlan={async (editedPlan) => {
-                        searchAbortRef.current?.abort();
-                        exportAbortRef.current?.abort();
-                        exportAbortRef.current = null;
-                        const controller = new AbortController();
-                        searchAbortRef.current = controller;
-                        closeDetail();
-
-                        try {
-                          const { runSearchPlan } =
-                            await import("@/services/search-plan-api");
-                          const nextResponse = await runSearchPlan(
-                            editedPlan,
-                            controller.signal,
-                            derivedAuditQuestion("Edited SearchPlan"),
-                            true,
-                            true,
-                          );
-                          if (controller.signal.aborted) {
-                            return;
-                          }
-                          setResponse(nextResponse);
-                          setSummaryVisible(true);
-                          setFollowUpSuggestionKey(
-                            `${nextResponse.query_id}:${stripAuditQuestionPrefix(nextResponse.original_question)}`,
-                          );
-                          setIsCurrentQueryPinned(false);
-                          setSearchError(null);
-                          setExportStatus("idle");
-                          setExportMessage(null);
-                          setActiveTab(
-                            nextResponse.mode === "aggregation"
-                              ? "analytics"
-                              : "raw",
-                          );
-                          const isEmpty =
-                            nextResponse.mode === "search"
-                              ? nextResponse.events.length === 0
-                              : nextResponse.aggregation_results.length === 0;
-                          setRequestStatus(isEmpty ? "empty" : "success");
-                        } catch (error) {
-                          if (isAbortError(error)) {
-                            return;
-                          }
-                          throw error;
-                        } finally {
-                          if (searchAbortRef.current === controller) {
-                            searchAbortRef.current = null;
-                          }
-                          if (
-                            !controller.signal.aborted &&
-                            historyOpenRef.current &&
-                            canUseHistory
-                          ) {
-                            void loadHistory(historyPageRef.current);
-                          }
-                        }
-                      }}
+                      onRunEditedPlan={runEditedSearchPlan}
                     />
 
                     {summaryVisible ? (
@@ -851,19 +276,19 @@ function App() {
                       totalPages={response.total_pages}
                       isMockMode={isMockMode}
                       queryId={response.query_id}
-                      exportStatus={exportStatus}
-                      exportMessage={exportMessage}
+                      exportStatus={searchExport.status}
+                      exportMessage={searchExport.message}
                       canExportCsv={canUseExport}
                       exportDisabled={
                         requestStatus === "loading" ||
-                        exportStatus === "loading" ||
+                        searchExport.status === "loading" ||
                         !response.query_id ||
                         !canUseExport
                       }
                       response={response}
                       onTabChange={setActiveTab}
                       onPageChange={changePage}
-                      onSelectEvent={openEventDetail}
+                      onSelectEvent={eventDetail.openEventDetail}
                       onExport={() => void handleExport(response.query_id)}
                       onApplyResultPlan={(plan) =>
                         void runRefinedSearchPlan(plan)
@@ -893,8 +318,7 @@ function App() {
           element={
             <QueryLibraryPage
               onUseQuery={(q) => {
-                setQuestion(q);
-                setSearchFocusSignal((s) => s + 1);
+                selectDefaultSuggestion(q);
                 navigate('/search');
               }}
             />
@@ -905,43 +329,34 @@ function App() {
       </Routes>
 
       <EventDetailDrawer
-        event={eventDetail}
-        status={detailStatus}
-        error={detailError}
+        event={eventDetail.eventDetail}
+        status={eventDetail.status}
+        error={eventDetail.error}
         canViewRawLog={canUseRawLog}
-        open={detailOpen}
+        open={eventDetail.open}
         onOpenChange={(open) => {
           if (!open) {
-            closeDetail();
+            eventDetail.close();
           }
         }}
-        onRetry={retryEventDetail}
+        onRetry={eventDetail.retry}
       />
 
       <HistorySheet
-        open={historyOpen && canUseHistory}
-        status={historyStatus}
-        response={historyResponse}
-        error={historyError}
-        onOpenChange={(open) => {
-          const nextOpen = open && canUseHistory;
-          historyOpenRef.current = nextOpen;
-          setHistoryOpen(nextOpen);
-          if (!nextOpen) {
-            historyAbortRef.current?.abort();
-            historyAbortRef.current = null;
-          } else {
-            void loadHistory(0); // recent queries
-          }
-        }}
+        open={historyModal.open && canUseHistory}
+        status={historyModal.status}
+        response={historyModal.response}
+        error={historyModal.error}
+        onOpenChange={historyModal.setModalOpen}
         onViewAll={() => {
-          setHistoryOpen(false);
+          historyModal.close();
           navigate("/investigations");
         }}
         onRunAgain={(item) => {
+          historyModal.close();
           fillHistoryItemQuestion(item);
         }}
-        onRetry={() => loadHistory(0)}
+        onRetry={() => historyModal.load(0)}
       />
     </div>
   );

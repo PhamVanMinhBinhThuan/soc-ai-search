@@ -12,6 +12,7 @@ import com.soc.ai.search.search.execution.ElasticsearchAggregationResponseMapper
 import com.soc.ai.search.search.execution.ElasticsearchSearchResponseMapper;
 import com.soc.ai.search.search.execution.SearchExecutionResult;
 import com.soc.ai.search.search.plan.SearchPlan;
+import com.soc.ai.search.search.plan.SearchPlanContract;
 import org.apache.http.util.EntityUtils;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RestClient;
@@ -20,7 +21,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class ExportSearchExecutor {
 
-    static final int MAX_EXPORT_ROWS = 10_000;
+    static final int MAX_EXPORT_ROWS = SearchPlanContract.MAX_EXPORT_ROWS;
     static final int BATCH_SIZE = 1_000;
 
     private static final List<String> SOURCE_FIELDS = List.of(

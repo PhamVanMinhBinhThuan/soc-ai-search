@@ -14,6 +14,7 @@ import com.soc.ai.search.llm.LlmSearchPlanRequest;
 import com.soc.ai.search.llm.prompt.SearchPlanJsonParseException;
 import com.soc.ai.search.llm.prompt.SearchPlanJsonParser;
 import com.soc.ai.search.llm.prompt.SearchPlanPromptBuilder;
+import com.soc.ai.search.security.CurrentUserService;
 import com.soc.ai.search.search.execution.AggregationSearchResponse;
 import com.soc.ai.search.search.execution.SearchPlanExecutor;
 import com.soc.ai.search.search.execution.SearchPlanSearchResponse;
@@ -37,6 +38,7 @@ public class NaturalLanguageSearchService {
     private final SearchAuditService searchAuditService;
     private final QueryIdGenerator queryIdGenerator;
     private final ResultSummaryService resultSummaryService;
+    private final CurrentUserService currentUserService;
 
     public NaturalLanguageSearchService(
             SearchPlanPromptBuilder promptBuilder,
@@ -45,7 +47,8 @@ public class NaturalLanguageSearchService {
             SearchPlanExecutor searchPlanExecutor,
             SearchAuditService searchAuditService,
             QueryIdGenerator queryIdGenerator,
-            ResultSummaryService resultSummaryService) {
+            ResultSummaryService resultSummaryService,
+            CurrentUserService currentUserService) {
         this.promptBuilder = promptBuilder;
         this.llmClient = llmClient;
         this.searchPlanJsonParser = searchPlanJsonParser;
@@ -53,14 +56,22 @@ public class NaturalLanguageSearchService {
         this.searchAuditService = searchAuditService;
         this.queryIdGenerator = queryIdGenerator;
         this.resultSummaryService = resultSummaryService;
+        this.currentUserService = currentUserService;
     }
 
     public NaturalLanguageSearchResponse search(NaturalLanguageSearchRequest request) {
         UUID queryId = queryIdGenerator.generate();
         var startedAt = System.nanoTime();
+        var identity = currentUserService.currentIdentity();
         SearchPlan searchPlan = null;
 
         try {
+            LOGGER.info(
+                    "Natural-language search started. query_id={} user_identity={} page={} size={}",
+                    queryId,
+                    identity,
+                    request.page(),
+                    request.size());
             var initialLlmResponse = callLlm(promptBuilder.buildSearchPlanRequest(request.question()));
             var llmLatencyMs = initialLlmResponse.latencyMs();
 
@@ -93,6 +104,7 @@ public class NaturalLanguageSearchService {
                         aggregationResponse,
                         summaryResult);
                 saveSuccessAudit(queryId, request, searchPlan, response);
+                logSuccess(queryId, identity, response);
                 return response;
             }
 
@@ -110,13 +122,31 @@ public class NaturalLanguageSearchService {
                     searchResponse,
                     summaryResult);
             saveSuccessAudit(queryId, request, searchPlan, response);
+            logSuccess(queryId, identity, response);
             return response;
         } catch (AuditPersistenceException exception) {
             throw exception;
         } catch (RuntimeException exception) {
+            LOGGER.warn(
+                    "Natural-language search failed. query_id={} user_identity={} mode={} latency_ms={} error_type={}",
+                    queryId,
+                    identity,
+                    searchPlan == null ? null : searchPlan.mode(),
+                    elapsedMs(startedAt),
+                    exception.getClass().getSimpleName());
             saveFailureAudit(queryId, request, searchPlan, startedAt, exception);
             throw exception;
         }
+    }
+
+    private void logSuccess(UUID queryId, String identity, NaturalLanguageSearchResponse response) {
+        LOGGER.info(
+                "Natural-language search completed. query_id={} user_identity={} mode={} total={} latency_ms={}",
+                queryId,
+                identity,
+                response.mode(),
+                response.total(),
+                response.latencyMs());
     }
 
     private NaturalLanguageSearchResponse searchResponse(

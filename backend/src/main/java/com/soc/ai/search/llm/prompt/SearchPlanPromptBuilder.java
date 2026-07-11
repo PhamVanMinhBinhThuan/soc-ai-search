@@ -4,72 +4,11 @@ import java.util.List;
 import java.util.StringJoiner;
 
 import com.soc.ai.search.llm.LlmSearchPlanRequest;
+import com.soc.ai.search.search.plan.SearchPlanContract;
 import org.springframework.stereotype.Service;
 
 @Service
 public class SearchPlanPromptBuilder {
-
-    private static final List<String> ALLOWED_FIELDS = List.of(
-            "timestamp.from",
-            "timestamp.to",
-            "event_id",
-            "source",
-            "severity",
-            "event_type",
-            "user",
-            "host",
-            "ip",
-            "country_code",
-            "message_query",
-            "aggregation.type",
-            "aggregation.field",
-            "aggregation.top_n",
-            "aggregation.interval",
-            "page",
-            "size");
-
-    private static final List<String> AGGREGATION_FIELDS = List.of(
-            "source",
-            "severity",
-            "event_type",
-            "user",
-            "host",
-            "ip",
-            "country_code");
-
-    private static final List<String> SUPPORTED_TIME_VALUES = List.of(
-            "now",
-            "now-<number>h for relative hours, for example now-12h or now-24h",
-            "now-<number>d for relative days, for example now-10d, now-11d, now-12d, or now-30d",
-            "ISO-8601 absolute timestamp");
-
-    private static final List<String> SUPPORTED_SEVERITIES = List.of(
-            "low",
-            "medium",
-            "high",
-            "critical");
-
-    private static final List<String> SUPPORTED_EVENT_TYPES = List.of(
-            "failed_login",
-            "account_lockout",
-            "firewall_block",
-            "malware_detected",
-            "privilege_escalation",
-            "suspicious_outbound",
-            "data_exfiltration",
-            "large_transfer",
-            "successful_login",
-            "dns_query",
-            "process_start",
-            "file_access");
-
-    private static final List<String> SUPPORTED_SOURCES = List.of(
-            "windows-auth",
-            "vpn",
-            "firewall",
-            "edr",
-            "proxy",
-            "dns");
 
     private static final List<String> KNOWN_USERS = List.of(
             "admin",
@@ -248,12 +187,12 @@ public class SearchPlanPromptBuilder {
                 size must be between 1 and 100.
                 message_query is full-text search on the event message field and must not contain wildcard or script syntax.
                 """.formatted(
-                bulletList(ALLOWED_FIELDS),
-                bulletList(AGGREGATION_FIELDS),
-                bulletList(SUPPORTED_TIME_VALUES),
-                bulletList(SUPPORTED_SEVERITIES),
-                bulletList(SUPPORTED_SOURCES),
-                bulletList(SUPPORTED_EVENT_TYPES),
+                bulletList(SearchPlanContract.SEARCH_PLAN_SCHEMA_FIELDS),
+                bulletList(SearchPlanContract.AGGREGATION_FIELD_ALLOWLIST.stream().sorted().toList()),
+                bulletList(SearchPlanContract.SUPPORTED_TIME_VALUES),
+                bulletList(SearchPlanContract.SUPPORTED_SEVERITIES),
+                bulletList(SearchPlanContract.SUPPORTED_SOURCES),
+                bulletList(SearchPlanContract.SUPPORTED_EVENT_TYPES),
                 bulletList(EVENT_TYPE_MAPPING_EXAMPLES),
                 bulletList(KNOWN_USERS),
                 bulletList(KNOWN_HOSTS),

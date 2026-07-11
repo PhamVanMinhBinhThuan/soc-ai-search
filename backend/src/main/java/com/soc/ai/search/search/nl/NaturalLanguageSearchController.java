@@ -1,19 +1,9 @@
 package com.soc.ai.search.search.nl;
 
-import java.util.List;
-
-import com.soc.ai.search.audit.AuditPersistenceException;
-import com.soc.ai.search.search.execution.SearchErrorResponse;
-import com.soc.ai.search.search.execution.SearchExecutionException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.MethodArgumentNotValidException;
-import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -38,61 +28,5 @@ public class NaturalLanguageSearchController {
                     + "then executes Elasticsearch search.")
     public NaturalLanguageSearchResponse search(@Valid @RequestBody NaturalLanguageSearchRequest request) {
         return naturalLanguageSearchService.search(request);
-    }
-
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    ResponseEntity<SearchErrorResponse> handleBeanValidation(MethodArgumentNotValidException exception) {
-        var errors = exception.getBindingResult().getFieldErrors().stream()
-                .map(error -> error.getField() + ": " + error.getDefaultMessage())
-                .toList();
-        return ResponseEntity
-                .badRequest()
-                .body(new SearchErrorResponse("Invalid natural language search request", errors));
-    }
-
-    @ExceptionHandler(HttpMessageNotReadableException.class)
-    ResponseEntity<SearchErrorResponse> handleUnreadableMessage(HttpMessageNotReadableException exception) {
-        String detailMessage = "Request body cannot be parsed";
-        Throwable cause = exception.getCause();
-        if (cause instanceof com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException unrecognized) {
-            detailMessage = "Validation failed: Unrecognized field '" + unrecognized.getPropertyName() + "'. This field is not in the allowlist.";
-        } else if (cause instanceof com.fasterxml.jackson.databind.JsonMappingException mappingEx) {
-            detailMessage = "Invalid JSON structure: " + mappingEx.getOriginalMessage();
-        } else if (cause != null) {
-            detailMessage = cause.getMessage();
-        }
-
-        return ResponseEntity
-                .badRequest()
-                .body(new SearchErrorResponse("Invalid request body", List.of(detailMessage)));
-    }
-
-    @ExceptionHandler(NaturalLanguageSearchException.class)
-    ResponseEntity<SearchErrorResponse> handleNaturalLanguageSearch(NaturalLanguageSearchException exception) {
-        return ResponseEntity
-                .status(HttpStatus.BAD_GATEWAY)
-                .body(new SearchErrorResponse(exception.getMessage(), exception.errors()));
-    }
-
-    @ExceptionHandler(NaturalLanguageSearchRateLimitException.class)
-    ResponseEntity<SearchErrorResponse> handleNaturalLanguageSearchRateLimit(
-            NaturalLanguageSearchRateLimitException exception) {
-        return ResponseEntity
-                .status(HttpStatus.TOO_MANY_REQUESTS)
-                .body(new SearchErrorResponse(exception.getMessage(), exception.errors()));
-    }
-
-    @ExceptionHandler(SearchExecutionException.class)
-    ResponseEntity<SearchErrorResponse> handleSearchExecution() {
-        return ResponseEntity
-                .status(HttpStatus.SERVICE_UNAVAILABLE)
-                .body(new SearchErrorResponse("Search dependency is unavailable", List.of("Elasticsearch search failed")));
-    }
-
-    @ExceptionHandler(AuditPersistenceException.class)
-    ResponseEntity<SearchErrorResponse> handleAuditPersistence(AuditPersistenceException exception) {
-        return ResponseEntity
-                .status(HttpStatus.SERVICE_UNAVAILABLE)
-                .body(new SearchErrorResponse(exception.getMessage(), List.of("PostgreSQL audit persistence failed")));
     }
 }

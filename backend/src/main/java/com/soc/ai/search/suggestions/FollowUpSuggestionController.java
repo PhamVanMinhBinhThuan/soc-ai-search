@@ -1,13 +1,9 @@
 package com.soc.ai.search.suggestions;
 
-import com.soc.ai.search.search.execution.SearchErrorResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.MethodArgumentNotValidException;
-import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
@@ -29,15 +25,5 @@ public class FollowUpSuggestionController {
             description = "Requires SOC_VIEWER. Suggestions do not execute search and do not create audit history.")
     public FollowUpSuggestionResponse suggest(@Valid @RequestBody FollowUpSuggestionRequest request) {
         return service.suggest(request);
-    }
-
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    ResponseEntity<SearchErrorResponse> handleBeanValidation(MethodArgumentNotValidException exception) {
-        var errors = exception.getBindingResult().getFieldErrors().stream()
-                .map(error -> error.getField() + ": " + error.getDefaultMessage())
-                .toList();
-        return ResponseEntity
-                .badRequest()
-                .body(new SearchErrorResponse("Invalid follow-up suggestion request", errors));
     }
 }

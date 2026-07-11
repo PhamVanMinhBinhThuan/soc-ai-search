@@ -140,24 +140,53 @@ export async function executeMockSearchPlan(
   // We check the plan payload to return some fake data matching the request.
   const isFailedLogins = plan.filters?.event_type?.includes('failed_login')
   const isCriticalHigh = plan.filters?.severity?.includes('critical')
+  const baseResponse = (
+    total: number,
+    latencyMs: number,
+  ): Pick<
+    SearchPlanResponseDto,
+    | 'query_id'
+    | 'total'
+    | 'page'
+    | 'size'
+    | 'total_pages'
+    | 'latency_ms'
+    | 'search_latency_ms'
+    | 'summary_latency_ms'
+    | 'summary'
+    | 'summary_source'
+  > => ({
+    query_id: `00000000-0000-4000-8000-${String(plan.page + plan.size).padStart(12, '0')}`,
+    total,
+    page: plan.page,
+    size: plan.size,
+    total_pages:
+      plan.mode === 'search' && plan.size > 0
+        ? Math.ceil(total / plan.size)
+        : 0,
+    latency_ms: latencyMs,
+    search_latency_ms: latencyMs,
+    summary_latency_ms: 0,
+    summary: null,
+    summary_source: null,
+  })
 
   if (plan.mode === 'search') {
+    const total = isFailedLogins ? 312 : isCriticalHigh ? 482 : 1946
     return {
+      ...baseResponse(total, 50),
       mode: 'search',
       generated_dsl: { query: 'mock search plan' },
-      total: isFailedLogins ? 312 : isCriticalHigh ? 482 : 1946,
-      latency_ms: 50,
       events: [],
     }
   }
 
   if (plan.aggregation?.type === 'date_histogram') {
     return {
+      ...baseResponse(1946, 100),
       mode: 'aggregation',
       aggregation_type: 'date_histogram',
       generated_dsl: { aggs: 'mock date histogram' },
-      total: 1946,
-      latency_ms: 100,
       aggregation_results: Array.from({ length: 24 }).map((_, i) => ({
         key: new Date(Date.now() - (24 - i) * 60 * 60 * 1000).toISOString(),
         value: Math.floor(Math.random() * 500) + 100,
@@ -167,11 +196,10 @@ export async function executeMockSearchPlan(
 
   if (plan.aggregation?.type === 'group_by' && plan.aggregation.field === 'severity') {
     return {
+      ...baseResponse(1946, 45),
       mode: 'aggregation',
       aggregation_type: 'group_by',
       generated_dsl: { aggs: 'mock severity' },
-      total: 1946,
-      latency_ms: 45,
       aggregation_results: [
         { key: 'Critical', value: 186 },
         { key: 'High', value: 296 },
@@ -183,11 +211,10 @@ export async function executeMockSearchPlan(
 
   if (plan.aggregation?.type === 'top_n' && plan.aggregation.field === 'ip') {
     return {
+      ...baseResponse(1946, 80),
       mode: 'aggregation',
       aggregation_type: 'top_n',
       generated_dsl: { aggs: 'mock top ip' },
-      total: 1946,
-      latency_ms: 80,
       aggregation_results: [
         { key: '203.0.113.45', value: 874 },
         { key: '198.51.100.22', value: 612 },
@@ -200,11 +227,10 @@ export async function executeMockSearchPlan(
 
   // Fallback
   return {
+    ...baseResponse(0, 10),
     mode: plan.mode,
     aggregation_type: plan.aggregation?.type ?? null,
     generated_dsl: {},
-    total: 0,
-    latency_ms: 10,
     aggregation_results: [],
   }
 }

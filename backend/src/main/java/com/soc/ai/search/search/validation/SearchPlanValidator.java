@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
@@ -17,6 +16,7 @@ import com.soc.ai.search.search.plan.AggregationType;
 import com.soc.ai.search.search.plan.SearchFilters;
 import com.soc.ai.search.search.plan.SearchMode;
 import com.soc.ai.search.search.plan.SearchPlan;
+import com.soc.ai.search.search.plan.SearchPlanContract;
 import com.soc.ai.search.search.plan.TimeRange;
 import jakarta.validation.Validator;
 import org.springframework.stereotype.Service;
@@ -26,29 +26,6 @@ public class SearchPlanValidator {
 
     private static final Pattern RELATIVE_TIME_PATTERN = Pattern.compile("^now-(\\d+)(h|d)$");
     private static final Pattern IPV4_PATTERN = Pattern.compile("^((25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)(\\.|$)){4}$");
-    private static final int MAX_RELATIVE_HOURS = 720;
-    private static final int MAX_RELATIVE_DAYS = 90;
-    private static final int MAX_ENTITY_FILTER_VALUES = 10;
-    private static final int MAX_EVENT_ID_FILTER_VALUES = 20;
-
-    private static final Set<String> AGGREGATION_FIELD_ALLOWLIST = Set.of(
-            "source",
-            "severity",
-            "event_type",
-            "user",
-            "host",
-            "ip",
-            "country_code");
-
-    private static final Set<String> SEARCH_SORT_FIELD_ALLOWLIST = Set.of(
-            "timestamp",
-            "severity",
-            "source",
-            "event_type",
-            "user",
-            "host",
-            "ip",
-            "country_code");
 
     private final Validator beanValidator;
 
@@ -205,8 +182,9 @@ public class SearchPlanValidator {
             return;
         }
 
-        if (!AGGREGATION_FIELD_ALLOWLIST.contains(field)) {
-            errors.add("aggregation.field: must be one of " + String.join(", ", AGGREGATION_FIELD_ALLOWLIST));
+        if (!SearchPlanContract.AGGREGATION_FIELD_ALLOWLIST.contains(field)) {
+            errors.add("aggregation.field: must be one of "
+                    + String.join(", ", SearchPlanContract.AGGREGATION_FIELD_ALLOWLIST));
         }
     }
 
@@ -215,8 +193,8 @@ public class SearchPlanValidator {
             return;
         }
 
-        if (topN < 1 || topN > 100) {
-            errors.add("aggregation.top_n: must be between 1 and 100");
+        if (topN < 1 || topN > SearchPlanContract.MAX_TOP_N) {
+            errors.add("aggregation.top_n: must be between 1 and " + SearchPlanContract.MAX_TOP_N);
         }
     }
 
@@ -252,8 +230,9 @@ public class SearchPlanValidator {
             }
 
             rejectDangerousValue("sort.field", sort.field(), errors);
-            if (sort.field() != null && !SEARCH_SORT_FIELD_ALLOWLIST.contains(sort.field())) {
-                errors.add("sort.field: must be one of " + String.join(", ", SEARCH_SORT_FIELD_ALLOWLIST));
+            if (sort.field() != null && !SearchPlanContract.SEARCH_SORT_FIELD_ALLOWLIST.contains(sort.field())) {
+                errors.add("sort.field: must be one of "
+                        + String.join(", ", SearchPlanContract.SEARCH_SORT_FIELD_ALLOWLIST));
             }
         }
     }
@@ -318,8 +297,8 @@ public class SearchPlanValidator {
         }
 
         return switch (unit) {
-            case "h" -> amount <= MAX_RELATIVE_HOURS;
-            case "d" -> amount <= MAX_RELATIVE_DAYS;
+            case "h" -> amount <= SearchPlanContract.MAX_RELATIVE_HOURS;
+            case "d" -> amount <= SearchPlanContract.MAX_RELATIVE_DAYS;
             default -> false;
         };
     }
@@ -342,8 +321,8 @@ public class SearchPlanValidator {
             errors.add(field + ": must not be empty");
             return;
         }
-        if (values.size() > MAX_ENTITY_FILTER_VALUES) {
-            errors.add(field + ": must contain at most " + MAX_ENTITY_FILTER_VALUES + " values");
+        if (values.size() > SearchPlanContract.MAX_ENTITY_FILTER_VALUES) {
+            errors.add(field + ": must contain at most " + SearchPlanContract.MAX_ENTITY_FILTER_VALUES + " values");
         }
 
         for (var value : values) {
@@ -375,8 +354,9 @@ public class SearchPlanValidator {
             errors.add("filters.event_id: must not be empty");
             return;
         }
-        if (values.size() > MAX_EVENT_ID_FILTER_VALUES) {
-            errors.add("filters.event_id: must contain at most " + MAX_EVENT_ID_FILTER_VALUES + " values");
+        if (values.size() > SearchPlanContract.MAX_EVENT_ID_FILTER_VALUES) {
+            errors.add("filters.event_id: must contain at most "
+                    + SearchPlanContract.MAX_EVENT_ID_FILTER_VALUES + " values");
         }
 
         for (var value : values) {

@@ -39,6 +39,7 @@ import com.soc.ai.search.search.plan.HistogramInterval;
 import com.soc.ai.search.search.plan.SearchMode;
 import com.soc.ai.search.search.plan.SearchPlan;
 import com.soc.ai.search.search.validation.SearchPlanValidator;
+import com.soc.ai.search.security.CurrentUserService;
 import com.soc.ai.search.summary.ResultSummaryService;
 import com.soc.ai.search.summary.SummaryResult;
 import com.soc.ai.search.summary.SummarySource;
@@ -60,6 +61,8 @@ class NaturalLanguageSearchServiceTest {
     private final QueryIdGenerator queryIdGenerator = () -> queryId;
     private final ResultSummaryService resultSummaryService =
             org.mockito.Mockito.mock(ResultSummaryService.class);
+    private final CurrentUserService currentUserService =
+            org.mockito.Mockito.mock(CurrentUserService.class);
 
     @Test
     void mockProviderSearchesFailedLoginChinaWithoutApiKey() {
@@ -358,6 +361,7 @@ class NaturalLanguageSearchServiceTest {
     }
 
     private NaturalLanguageSearchService service(LlmClient llmClient, SearchPlanExecutor executor) {
+        when(currentUserService.currentIdentity()).thenReturn("demo1");
         when(resultSummaryService.summarizeSearch(
                 any(String.class),
                 any(SearchPlan.class),
@@ -381,7 +385,8 @@ class NaturalLanguageSearchServiceTest {
                 executor,
                 searchAuditService,
                 queryIdGenerator,
-                resultSummaryService);
+                resultSummaryService,
+                currentUserService);
     }
 
     private LlmProperties mockProperties() {

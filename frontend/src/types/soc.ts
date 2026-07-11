@@ -141,16 +141,19 @@ export type NaturalLanguageSearchResponseDto = {
 };
 
 export type SearchPlanResponseDto = {
-  query_id?: string;
+  query_id: string;
   mode: SearchMode;
   aggregation_type?: AggregationType | null;
   generated_dsl: Record<string, unknown>;
   total: number;
+  page: number;
+  size: number;
+  total_pages: number;
   search_latency_ms?: number;
   summary_latency_ms?: number;
   latency_ms: number;
-  summary?: string;
-  summary_source?: SummarySource;
+  summary?: string | null;
+  summary_source?: SummarySource | null;
   aggregation_results?: AggregationResultItemDto[];
   chart_metadata?: ChartMetadataDto | null;
   events?: SearchEventDto[];

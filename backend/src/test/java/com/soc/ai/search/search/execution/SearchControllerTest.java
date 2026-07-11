@@ -20,6 +20,7 @@ import com.soc.ai.search.audit.SearchAuditService;
 import com.soc.ai.search.search.plan.AggregationType;
 import com.soc.ai.search.search.plan.SearchMode;
 import com.soc.ai.search.search.plan.SearchPlan;
+import com.soc.ai.search.security.CurrentUserService;
 import com.soc.ai.search.security.SecurityConfig;
 import com.soc.ai.search.summary.ResultSummaryService;
 import com.soc.ai.search.summary.SummaryResult;
@@ -52,6 +53,9 @@ class SearchControllerTest {
 
     @MockitoBean
     private QueryIdGenerator queryIdGenerator;
+
+    @MockitoBean
+    private CurrentUserService currentUserService;
 
     @Test
     void searchPlanReturnsResponseWithoutSummaryByDefault() throws Exception {

@@ -10,6 +10,7 @@ import com.soc.ai.search.search.plan.AggregationOrderBy;
 import com.soc.ai.search.search.plan.SearchFilters;
 import com.soc.ai.search.search.plan.SearchMode;
 import com.soc.ai.search.search.plan.SearchPlan;
+import com.soc.ai.search.search.plan.SearchPlanContract;
 import com.soc.ai.search.search.plan.SortOrder;
 import com.soc.ai.search.search.plan.SortPlan;
 import com.soc.ai.search.search.plan.TimeRange;
@@ -18,8 +19,6 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class SearchPlanCompiler {
-
-    private static final int DEFAULT_AGGREGATION_BUCKET_LIMIT = 20;
 
     private final SearchPlanValidator validator;
 
@@ -162,7 +161,7 @@ public class SearchPlanCompiler {
 
     private int bucketLimit(AggregationPlan aggregation) {
         if (aggregation.topN() == null) {
-            return DEFAULT_AGGREGATION_BUCKET_LIMIT;
+            return SearchPlanContract.DEFAULT_AGGREGATION_BUCKET_LIMIT;
         }
 
         return aggregation.topN();

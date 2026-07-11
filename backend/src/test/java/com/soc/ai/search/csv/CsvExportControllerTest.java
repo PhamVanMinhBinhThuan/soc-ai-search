@@ -11,6 +11,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.util.UUID;
 
+import com.soc.ai.search.security.CurrentUserService;
 import com.soc.ai.search.security.SecurityConfig;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +29,9 @@ class CsvExportControllerTest {
 
     @MockitoBean
     private CsvExportService exportService;
+
+    @MockitoBean
+    private CurrentUserService currentUserService;
 
     @Test
     void returnsStreamingCsvWithSafeHeaders() throws Exception {

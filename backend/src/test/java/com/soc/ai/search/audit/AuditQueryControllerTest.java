@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.UUID;
 
 import com.soc.ai.search.search.plan.SearchMode;
+import com.soc.ai.search.security.CurrentUserService;
 import com.soc.ai.search.security.SecurityConfig;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -28,6 +29,9 @@ class AuditQueryControllerTest {
 
     @MockitoBean
     private AuditQueryService queryService;
+
+    @MockitoBean
+    private CurrentUserService currentUserService;
 
     @Test
     void returnsPaginatedHistory() throws Exception {

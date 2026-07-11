@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.soc.ai.search.security.CurrentUserService;
 import com.soc.ai.search.security.RbacPermissionService;
+import com.soc.ai.search.search.plan.SearchPlanContract;
 
 @Service
 public class AuditQueryService {
@@ -29,7 +30,7 @@ public class AuditQueryService {
             Sort.Order.desc("pinnedAt"),
             Sort.Order.desc("createdAt"),
             Sort.Order.desc("id"));
-    private static final int AUDIT_EXPORT_MAX_ROWS = 10_000;
+    private static final int AUDIT_EXPORT_MAX_ROWS = SearchPlanContract.MAX_EXPORT_ROWS;
 
     private final SearchQueryLogRepository repository;
     private final CurrentUserService currentUserService;
