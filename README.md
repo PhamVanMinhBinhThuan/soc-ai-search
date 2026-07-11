@@ -1,4 +1,4 @@
-# SOC AI Search
+﻿# SOC AI Search
 
 SOC AI Search is a Security Operations Center investigation console that lets analysts search and aggregate security events with natural language while keeping the backend in control of execution.
 
@@ -105,7 +105,7 @@ infra/elasticsearch/             Elasticsearch index mapping
 infra/keycloak/realm-export/     Keycloak realm export
 scripts/                         Bootstrap, seed, and smoke-test scripts
 docs/                            Architecture and project documentation
-plan/                            Implementation plans and prompts
+docs/plan/                       Implementation plans and prompts
 .github/workflows/               CI/CD workflows
 Caddyfile                        Production reverse proxy config
 docker-compose.yml               Base local/runtime services

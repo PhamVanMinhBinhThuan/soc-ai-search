@@ -164,7 +164,7 @@ pwsh ./scripts/smoke-test-day-11-domain.ps1 -VpsIp "<VPS_IP>"
 - `Caddyfile`: route domain public vào service nội bộ.
 - `.github/workflows/deploy.yml`: GitHub Actions CD qua SSH.
 - `.env.example`: các biến môi trường mẫu cho local và deploy.
-- `plan/day-11-implements.md`: ghi lại quá trình thuê VPS, mua domain, DNS, Caddy, CI/CD và lỗi đã gặp.
+- `docs/plan/day-11-implements.md`: ghi lại quá trình thuê VPS, mua domain, DNS, Caddy, CI/CD và lỗi đã gặp.
 
 Lưu ý: nếu thấy tài liệu cũ nhắc AWS/Nginx/Certbot thì đó không còn là deployment hiện tại. Deployment production hiện tại là **DigitalOcean + Docker Compose + Caddy**.
 

@@ -1,4 +1,4 @@
-# P2 - Deploy, Dataset, Testing & Q&A
+﻿# P2 - Deploy, Dataset, Testing & Q&A
 
 P2 không nhất thiết phải nói hết trong slide. Nhưng nếu hội đồng hỏi sâu, bạn có thể dùng các ý này để trả lời chắc hơn.
 
@@ -52,7 +52,7 @@ pwsh ./scripts/seed-events.ps1 -Count 10000
 - `Caddyfile`
 - `.github/workflows/deploy.yml`
 - `docs/deployment.md`
-- `plan/day-11-implements.md`
+- `docs/plan/day-11-implements.md`
 
 ### Public endpoints cần nhớ
 
