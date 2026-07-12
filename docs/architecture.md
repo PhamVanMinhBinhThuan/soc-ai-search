@@ -18,7 +18,7 @@ flowchart LR
     ES[("Elasticsearch\nsoc-events-v1")]
     PG[("PostgreSQL\nsearch_query_logs")]
     KC["Keycloak\nOIDC + RBAC"]
-    LLM["Mock / Gemini"]
+    LLM["Mock, Gemini, or Anthropic"]
 
     User --> Browser
     Browser --> Caddy
@@ -34,7 +34,7 @@ flowchart LR
 
 ## 3. Runtime Boundaries
 
-- The frontend never calls Elasticsearch or Gemini directly.
+- The frontend never calls Elasticsearch or LLM providers directly.
 - The backend is the only component allowed to compile Elasticsearch DSL.
 - Elasticsearch stores SOC event documents.
 - PostgreSQL stores application metadata only.
@@ -98,6 +98,7 @@ Index: `soc-events-v1`
 | Field | Type | Purpose |
 | --- | --- | --- |
 | `timestamp` | `date` | Time range, sort, time series |
+| `event_id` | `keyword` | Stable event identity, detail lookup, advanced exact filter |
 | `source` | `keyword` | Filter and aggregation |
 | `severity` | `keyword` | Filter, sort, aggregation |
 | `event_type` | `keyword` | Filter and aggregation |
@@ -179,7 +180,7 @@ Main user-facing areas:
 - All Investigations
 - Recent Queries
 - System Audit Logs
-- Event Detail Drawer
+- Event Detail modal
 
 Important UI flows:
 

@@ -15,7 +15,8 @@ sequenceDiagram
     KC-->>FE: Authorization code callback
     FE->>KC: Exchange code for tokens
     FE->>BE: GET /api/v1/auth/me with Bearer token
-    BE->>KC: Validate issuer/JWKS
+    BE->>KC: Load/cache issuer metadata and JWKS when needed
+    BE->>BE: Verify JWT signature, issuer, expiry, and roles
     BE-->>FE: Current user, roles, permissions
     FE-->>User: Render role-gated UI
 ```
@@ -197,7 +198,7 @@ sequenceDiagram
     API-->>FE: source=llm, suggestions=[]
 ```
 
-If the provider is mock or Gemini fails, the UI hides this section. There is no static fallback for this feature.
+If the provider is mock or the configured live LLM provider fails, the UI hides this section. There is no static fallback for this feature.
 
 ## 8. Query Library
 
@@ -272,7 +273,7 @@ sequenceDiagram
     participant API as Audit API
     participant PG as PostgreSQL
 
-    Admin->>API: GET /api/v1/audit-logs/export.csv with current filters
+    Admin->>API: GET /api/v1/audit-logs/export with current filters
     API->>PG: Query matching audit rows
     API-->>Admin: Stream audit CSV
 ```
@@ -294,4 +295,4 @@ sequenceDiagram
     API-->>FE: Event detail response
 ```
 
-The event table is optimized for scanning; the detail drawer retrieves the full raw log on demand.
+The event table is optimized for scanning; the centered event detail modal retrieves the full raw log on demand.

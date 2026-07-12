@@ -34,7 +34,7 @@ soc-ai-search-frontend
 | --- | --- |
 | `SOC_VIEWER` | Read-only user. Can search and inspect event results. |
 | `SOC_ANALYST` | Investigation user. Can edit SearchPlan, pin history, access investigations, and export result CSV. |
-| `SOC_ADMIN` | Administrative user. Inherits analyst capabilities and can access system audit logs and Keycloak admin tools. |
+| `SOC_ADMIN` | Administrative user. Inherits analyst capabilities and can access system audit logs. |
 
 ## 3. Login Flow
 
@@ -51,11 +51,12 @@ sequenceDiagram
     KC-->>FE: Return authorization code
     FE->>KC: Exchange code for tokens
     FE->>BE: API request with Bearer access token
-    BE->>KC: Validate token signature and issuer
+    BE->>KC: Load/cache issuer metadata and JWKS when needed
+    BE->>BE: Verify token signature, issuer, expiry, and roles
     BE-->>FE: Authorized response
 ```
 
-The frontend obtains the access token through the Keycloak OIDC flow. API requests attach this access token as a Bearer token.
+The frontend obtains the access token through the Keycloak OIDC flow. API requests attach this access token as a Bearer token. The backend validates JWTs with Spring Security using the issuer and JWKS configuration; it does not call the Keycloak admin API for normal request authorization.
 
 ## 4. Token Renewal
 

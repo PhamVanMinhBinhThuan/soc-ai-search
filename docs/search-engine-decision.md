@@ -32,6 +32,7 @@ Elasticsearch fits the project because it supports:
 | Field | Type | Used for |
 | --- | --- | --- |
 | `timestamp` | `date` | range, sort, date histogram |
+| `event_id` | `keyword` | stable event identity, detail lookup, advanced exact filter |
 | `source` | `keyword` | filter, group_by, top_n |
 | `severity` | `keyword` | filter, sort, group_by, top_n |
 | `event_type` | `keyword` | filter, group_by, top_n |

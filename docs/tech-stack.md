@@ -12,7 +12,7 @@ SOC AI Search uses a React SPA, a Spring Boot modular monolith, Elasticsearch fo
 | Frontend | TypeScript | Type-safe UI code |
 | Frontend | Vite | Build tool and dev server |
 | Frontend | Tailwind CSS | Dark SOC/SIEM styling |
-| Frontend | shadcn/ui | UI primitives |
+| Frontend | Radix UI / shadcn-style primitives | Accessible UI primitives |
 | Frontend | lucide-react | Icons |
 | Frontend | Recharts | Bar/line/count visualizations |
 | Frontend | CodeMirror | SearchPlan editor |
@@ -27,6 +27,7 @@ SOC AI Search uses a React SPA, a Spring Boot modular monolith, Elasticsearch fo
 | Identity | Keycloak | OIDC, JWT, realm roles |
 | AI | Mock LLM provider | Deterministic local/CI behavior |
 | AI | Google Gemini | Live SearchPlan, summary, refine, and suggestions |
+| AI | Anthropic Claude | Alternative live LLM provider |
 | DevOps | Docker Compose | Local and production runtime |
 | Edge | Caddy | HTTPS reverse proxy |
 | CI/CD | GitHub Actions | Test, build, deploy, smoke tests |
@@ -40,7 +41,7 @@ The frontend provides:
 - Event Search.
 - Query Transparency.
 - Query Result filtering/sorting.
-- Event Detail drawer.
+- Event Detail modal.
 - Query Library.
 - Recent Queries and All Investigations.
 - System Audit Logs.
@@ -50,7 +51,7 @@ The frontend provides:
 Frontend constraints:
 
 - `VITE_*` values are build-time variables.
-- The frontend does not call Elasticsearch, PostgreSQL, or Gemini directly.
+- The frontend does not call Elasticsearch, PostgreSQL, or LLM providers directly.
 - Frontend role checks are for UX only; backend RBAC is authoritative.
 
 ## 4. Backend Responsibilities
@@ -111,6 +112,7 @@ Supported providers:
 
 - `mock`
 - `gemini`
+- `anthropic`
 
 LLM-backed features:
 

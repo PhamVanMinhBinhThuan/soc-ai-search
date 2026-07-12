@@ -20,6 +20,7 @@ The system must store SOC events in Elasticsearch index `soc-events-v1`.
 Required fields:
 
 - `timestamp`
+- `event_id`
 - `source`
 - `severity`
 - `event_type`
@@ -65,6 +66,7 @@ The system must reject:
 - unsafe script/wildcard/query string expressions
 - invalid IP values
 - invalid country codes
+- invalid or excessive event ID filters
 - invalid pagination
 - invalid time expressions
 - unsupported aggregation field combinations
@@ -81,6 +83,7 @@ Relative time support:
 Search mode must support filters:
 
 - timestamp
+- event_id
 - source
 - severity
 - event_type
@@ -88,6 +91,7 @@ Search mode must support filters:
 - host
 - ip
 - country_code
+- event_id
 - message_query
 
 The following fields support multi-value filters:
@@ -197,7 +201,7 @@ Requirements:
 - Severity distribution
 - Top source IPs
 - Events over time
-- Auto-refresh every 10 minutes
+- Auto-refresh every 3 minutes
 - Partial failure isolation: one broken card must not break the whole dashboard
 
 ## 11. History, Investigations, and Audit
@@ -252,7 +256,7 @@ Audit CSV export must:
 
 ## 13. Event Detail
 
-The event detail drawer must:
+The event detail modal must:
 
 - load event detail by id
 - show formatted fields

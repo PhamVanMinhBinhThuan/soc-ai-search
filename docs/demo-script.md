@@ -135,7 +135,7 @@ After a successful search, show AI follow-up suggestions if available.
 
 Say:
 
-> These are AI-generated next investigation steps. If Gemini is unavailable or mock mode is used, this section simply does not appear.
+> These are AI-generated next investigation steps. If the configured live LLM provider is unavailable or mock mode is used, this section simply does not appear.
 
 ## 10. Investigations
 
