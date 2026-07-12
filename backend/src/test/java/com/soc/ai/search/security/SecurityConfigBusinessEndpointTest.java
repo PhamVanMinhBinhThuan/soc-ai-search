@@ -4,8 +4,8 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.soc.ai.search.search.nl.NaturalLanguageSearchController;
-import com.soc.ai.search.search.nl.NaturalLanguageSearchService;
+import com.soc.ai.search.search.api.NaturalLanguageSearchController;
+import com.soc.ai.search.search.application.NaturalLanguageSearchService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;

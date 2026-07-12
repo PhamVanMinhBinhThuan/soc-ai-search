@@ -19,34 +19,34 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import com.soc.ai.search.audit.AuditLogItem;
-import com.soc.ai.search.audit.AuditQueryController;
-import com.soc.ai.search.audit.AuditQueryService;
-import com.soc.ai.search.audit.AuditStatus;
-import com.soc.ai.search.audit.PagedResponse;
-import com.soc.ai.search.audit.QueryIdGenerator;
-import com.soc.ai.search.audit.SearchAuditService;
-import com.soc.ai.search.audit.SearchHistoryItem;
-import com.soc.ai.search.csv.CsvExportController;
-import com.soc.ai.search.csv.CsvExportService;
-import com.soc.ai.search.csv.PreparedCsvExport;
-import com.soc.ai.search.event.EventController;
-import com.soc.ai.search.event.EventDetailResponse;
-import com.soc.ai.search.event.EventDetailService;
-import com.soc.ai.search.event.EventIngestService;
-import com.soc.ai.search.event.IngestEventRequest;
-import com.soc.ai.search.event.IngestEventResponse;
-import com.soc.ai.search.search.execution.SearchController;
-import com.soc.ai.search.search.execution.SearchEvent;
-import com.soc.ai.search.search.execution.SearchPlanExecutor;
-import com.soc.ai.search.search.execution.SearchPlanSearchResponse;
-import com.soc.ai.search.search.plan.SearchMode;
-import com.soc.ai.search.search.plan.SearchPlan;
-import com.soc.ai.search.search.refine.QueryRefinementController;
-import com.soc.ai.search.search.refine.QueryRefinementRequest;
-import com.soc.ai.search.search.refine.QueryRefinementResponse;
-import com.soc.ai.search.search.refine.QueryRefinementService;
-import com.soc.ai.search.summary.ResultSummaryService;
+import com.soc.ai.search.audit.api.AuditLogItem;
+import com.soc.ai.search.audit.api.AuditQueryController;
+import com.soc.ai.search.audit.application.AuditQueryService;
+import com.soc.ai.search.audit.domain.AuditStatus;
+import com.soc.ai.search.audit.api.PagedResponse;
+import com.soc.ai.search.audit.application.QueryIdGenerator;
+import com.soc.ai.search.audit.application.SearchAuditService;
+import com.soc.ai.search.audit.api.SearchHistoryItem;
+import com.soc.ai.search.export.api.CsvExportController;
+import com.soc.ai.search.export.application.CsvExportService;
+import com.soc.ai.search.export.domain.PreparedCsvExport;
+import com.soc.ai.search.event.api.EventController;
+import com.soc.ai.search.event.api.EventDetailResponse;
+import com.soc.ai.search.event.infrastructure.elasticsearch.EventDetailService;
+import com.soc.ai.search.event.infrastructure.elasticsearch.EventIngestService;
+import com.soc.ai.search.event.api.IngestEventRequest;
+import com.soc.ai.search.event.api.IngestEventResponse;
+import com.soc.ai.search.search.api.SearchController;
+import com.soc.ai.search.search.domain.result.SearchEvent;
+import com.soc.ai.search.search.infrastructure.elasticsearch.SearchPlanExecutor;
+import com.soc.ai.search.search.domain.result.SearchPlanSearchResponse;
+import com.soc.ai.search.search.domain.plan.SearchMode;
+import com.soc.ai.search.search.domain.plan.SearchPlan;
+import com.soc.ai.search.search.refinement.api.QueryRefinementController;
+import com.soc.ai.search.search.refinement.api.QueryRefinementRequest;
+import com.soc.ai.search.search.refinement.api.QueryRefinementResponse;
+import com.soc.ai.search.search.refinement.application.QueryRefinementService;
+import com.soc.ai.search.summary.application.ResultSummaryService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -219,7 +219,7 @@ class RbacEndpointGuardTest {
 
     @Test
     void analystCanReadHistoryButCannotReadAuditLogs() throws Exception {
-        when(auditQueryService.history(org.mockito.ArgumentMatchers.eq(0), org.mockito.ArgumentMatchers.eq(20), org.mockito.ArgumentMatchers.any(com.soc.ai.search.audit.AuditLogFilters.class))).thenReturn(new PagedResponse<>(
+        when(auditQueryService.history(org.mockito.ArgumentMatchers.eq(0), org.mockito.ArgumentMatchers.eq(20), org.mockito.ArgumentMatchers.any(com.soc.ai.search.audit.api.AuditLogFilters.class))).thenReturn(new PagedResponse<>(
                 List.of(new SearchHistoryItem(
                         UUID.fromString("22222222-2222-2222-2222-222222222222"),
                         "failed login china",
@@ -246,7 +246,7 @@ class RbacEndpointGuardTest {
 
     @Test
     void adminCanReadAuditLogsThroughRoleHierarchy() throws Exception {
-        when(auditQueryService.auditLogs(org.mockito.ArgumentMatchers.eq(0), org.mockito.ArgumentMatchers.eq(50), org.mockito.ArgumentMatchers.any(com.soc.ai.search.audit.AuditLogFilters.class))).thenReturn(new PagedResponse<>(
+        when(auditQueryService.auditLogs(org.mockito.ArgumentMatchers.eq(0), org.mockito.ArgumentMatchers.eq(50), org.mockito.ArgumentMatchers.any(com.soc.ai.search.audit.api.AuditLogFilters.class))).thenReturn(new PagedResponse<>(
                 List.of(new AuditLogItem(
                         UUID.fromString("33333333-3333-3333-3333-333333333333"),
                         "admin.one",
@@ -266,7 +266,7 @@ class RbacEndpointGuardTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].user_identity").value("admin.one"));
 
-        when(auditQueryService.history(org.mockito.ArgumentMatchers.eq(0), org.mockito.ArgumentMatchers.eq(20), org.mockito.ArgumentMatchers.any(com.soc.ai.search.audit.AuditLogFilters.class))).thenReturn(new PagedResponse<>(List.of(), 0, 20, 0, 0));
+        when(auditQueryService.history(org.mockito.ArgumentMatchers.eq(0), org.mockito.ArgumentMatchers.eq(20), org.mockito.ArgumentMatchers.any(com.soc.ai.search.audit.api.AuditLogFilters.class))).thenReturn(new PagedResponse<>(List.of(), 0, 20, 0, 0));
         mockMvc.perform(get("/api/v1/search/history").with(role(RoleNames.ROLE_ADMIN)))
                 .andExpect(status().isOk());
     }

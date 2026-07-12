@@ -112,22 +112,22 @@
                         <exclude>com/soc/ai/search/**/**Response*.class</exclude>
                         <exclude>com/soc/ai/search/**/**Error*.class</exclude>
                         <exclude>com/soc/ai/search/**/**Exception*.class</exclude>
-                        <exclude>com/soc/ai/search/search/plan/**/*.class</exclude>
-                        <exclude>com/soc/ai/search/audit/SearchQueryLog.class</exclude>
-                        <exclude>com/soc/ai/search/audit/StoredSearchQuery.class</exclude>
-                        <exclude>com/soc/ai/search/audit/PagedResponse.class</exclude>
-                        <exclude>com/soc/ai/search/audit/SearchHistoryItem.class</exclude>
-                        <exclude>com/soc/ai/search/audit/AuditLogItem.class</exclude>
-                        <exclude>com/soc/ai/search/csv/Prepared*.class</exclude>
-                        <exclude>com/soc/ai/search/llm/Llm*.class</exclude>
-                        <exclude>com/soc/ai/search/search/execution/*Result*.class</exclude>
-                        <exclude>com/soc/ai/search/search/execution/SearchEvent.class</exclude>
-                        <exclude>com/soc/ai/search/search/execution/ChartMetadata.class</exclude>
-                        <exclude>com/soc/ai/search/summary/*Payload*.class</exclude>
-                        <exclude>com/soc/ai/search/summary/*Bucket*.class</exclude>
-                        <exclude>com/soc/ai/search/summary/*Result*.class</exclude>
-                        <exclude>com/soc/ai/search/summary/*SampleEvent*.class</exclude>
-                        <exclude>com/soc/ai/search/summary/SearchSummaryData.class</exclude>
+                        <exclude>com/soc/ai/search/search/domain/plan/**/*.class</exclude>
+                        <exclude>com/soc/ai/search/audit/infrastructure/jpa/SearchQueryLog.class</exclude>
+                        <exclude>com/soc/ai/search/audit/domain/StoredSearchQuery.class</exclude>
+                        <exclude>com/soc/ai/search/audit/api/PagedResponse.class</exclude>
+                        <exclude>com/soc/ai/search/audit/api/SearchHistoryItem.class</exclude>
+                        <exclude>com/soc/ai/search/audit/api/AuditLogItem.class</exclude>
+                        <exclude>com/soc/ai/search/export/domain/Prepared*.class</exclude>
+                        <exclude>com/soc/ai/search/llm/application/Llm*.class</exclude>
+                        <exclude>com/soc/ai/search/search/domain/result/*Result*.class</exclude>
+                        <exclude>com/soc/ai/search/search/domain/result/SearchEvent.class</exclude>
+                        <exclude>com/soc/ai/search/search/domain/result/ChartMetadata.class</exclude>
+                        <exclude>com/soc/ai/search/summary/domain/*Payload*.class</exclude>
+                        <exclude>com/soc/ai/search/summary/domain/*Bucket*.class</exclude>
+                        <exclude>com/soc/ai/search/summary/domain/*Result*.class</exclude>
+                        <exclude>com/soc/ai/search/summary/domain/*SampleEvent*.class</exclude>
+                        <exclude>com/soc/ai/search/summary/domain/SearchSummaryData.class</exclude>
                         <exclude>com/soc/ai/search/security/CurrentUser.class</exclude>
                     </excludes>
                 </configuration>
